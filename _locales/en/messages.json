@@ -1,0 +1,11 @@
+{
+	"extName": {
+		"message": "Crypto-Message",
+		"description": "Extension name."
+	},
+
+	"extDescription": {
+		"message": "PGP for Facebook messages",
+		"description": "Extension description"
+	}
+}
