@@ -28,7 +28,7 @@
 		{
 			"matches": ["https://*.facebook.com/messages/*"],
 			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/content/encrypt.js", "js/lib/sjcl.js"],
+			"js" : ["js/lib/openpgp.min.js", "js/content/encrypt.js"],
 			"run_at": "document_idle"
 		}
 	],

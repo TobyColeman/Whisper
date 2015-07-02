@@ -1,12 +1,3 @@
 #encrypt-toggle{
 	color: rgb(149, 149, 149) !important;
-	cursor: pointer;
-	cursor: hand;
-}
-
-#encrypt-toggle, 
-#encrypt-toggle:visited, 
-#encrypt-toggle:hover, 
-#encrypt-toggle:active {
-  color: inherit;
 }

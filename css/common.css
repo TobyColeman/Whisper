@@ -1,0 +1,26 @@
+/* clickable ionicon */
+.ion-clickable, 
+.ion-clickable:visited, 
+.ion-clickable:hover, 
+.ion-clickable:active {
+ 	color: inherit;
+	cursor: pointer;
+	cursor: hand;
+}
+
+/* custom styling for ionicons */
+.ion-big{
+	font-size: 30px;
+}
+
+.ion-abestos{
+	color:#7f8c8d!important;
+}
+
+.ion-alizarin{
+	color: #e74c3c!important;
+}
+
+.ion-emerald{
+	color:#2ecc71!important;
+}

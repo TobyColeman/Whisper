@@ -1,0 +1,23 @@
+/*generic stuff */
+body{
+	margin:0px;
+}
+
+.header{
+	color: white;
+	text-align: center;
+	-webkit-font-smoothing: antialiased;
+	background-color:#7f8c8d;
+	padding:5px 10px;
+	border-radius:2px;
+	margin:0px;	
+}
+
+
+/* container to center ionicon */
+.icon-container {
+	width:200px;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
