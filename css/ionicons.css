@@ -1,0 +1,46 @@
+@charset "UTF-8";
+/*!
+  Ionicons, v2.0.0
+  Created by Ben Sperry for the Ionic Framework, http://ionicons.com/
+  https://twitter.com/benjsperry  https://twitter.com/ionicframework
+  MIT License: https://github.com/driftyco/ionicons
+
+  Android-style icons originally built by Google’s
+  Material Design Icons: https://github.com/google/material-design-icons
+  used under CC BY http://creativecommons.org/licenses/by/4.0/
+  Modified icons to fit ionicon’s grid from original.
+*/
+@font-face { 
+	font-family: "Ionicons"; 
+	src: url('chrome-extension://__MSG_@@extension_id__/fonts/ionicons.eot?v=2.0.0'); 
+	src: url('chrome-extension://__MSG_@@extension_id__miefhklphgnfkphdpd__/fonts/ionicons.eot?v=2.0.0#iefix') format("embedded-opentype"), 
+	url('chrome-extension://__MSG_@@extension_id__/fonts/ionicons.ttf?v=2.0.0') format("truetype"), 
+	url('chrome-extension://__MSG_@@extension_id__/fonts/ionicons.woff?v=2.0.0') format("woff"), 
+	url('chrome-extension://__MSG_@@extension_id__/fonts/ionicons.svg?v=2.0.0#Ionicons') format("svg"); 
+	font-weight: normal; 
+	font-style: normal; }
+.ion, .ionicons, .ion-android-lock:before, .ion-android-unlock:before, .ion-help:before, .ion-ios-gear:before, .ion-ios-locked:before, .ion-ios-locked-outline:before, .ion-ios-unlocked:before, .ion-ios-unlocked-outline:before, .ion-lock-combination:before, .ion-locked:before, .ion-unlocked:before { display: inline-block; font-family: "Ionicons"; speak: none; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; text-rendering: auto; line-height: 1; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+.ion-android-lock:before { content: ""; }
+
+.ion-android-unlock:before { content: ""; }
+
+.ion-help:before { content: ""; }
+
+.ion-ios-gear:before { content: ""; }
+
+.ion-ios-locked:before { content: ""; }
+
+.ion-ios-locked-outline:before { content: ""; }
+
+.ion-ios-unlocked:before { content: ""; }
+
+.ion-ios-unlocked-outline:before { content: ""; }
+
+.ion-lock-combination:before { content: ""; }
+
+.ion-locked:before { content: ""; }
+
+.ion-unlocked:before { content: ""; }
+
+/*# sourceMappingURL=ionicons.css.map */

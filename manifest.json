@@ -15,7 +15,8 @@
 		"default_icon": {
 			"38": "images/lock38.png"
 		},
-		"default_title": "Crypto Message"
+		"default_title": "Crypto Message",
+		"default_popup": "popup.html"
 	},
 
 	"permissions": [
@@ -26,8 +27,8 @@
 	"content_scripts": [
 		{
 			"matches": ["https://*.facebook.com/messages/*"],
-			"css": ["css/facebook-messages.css", "css/messenger.css"],
-			"js" : ["js/encrypt.js", "js/sjcl.js"],
+			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
+			"js" : ["js/content/encrypt.js", "js/lib/sjcl.js"],
 			"run_at": "document_idle"
 		}
 	],
@@ -36,6 +37,10 @@
 		"scripts": ["js/background/tab_switch.js"],
 		"persistent": false
 	},
+
+	"web_accessible_resources": [
+		"fonts/*.*"
+	],
 
 	"author": "Toby Coleman"
 }
