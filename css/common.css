@@ -8,6 +8,17 @@
 	cursor: hand;
 }
 
+/* whisper styled header */
+.header{
+	color: white;
+	text-align: center;
+	-webkit-font-smoothing: antialiased;
+	background-color:#7f8c8d;
+	padding:5px 10px;
+	border-radius:2px;
+	margin:0px;	
+}
+
 /* custom styling for ionicons */
 .ion-big{
 	font-size: 30px;

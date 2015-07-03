@@ -2,6 +2,7 @@
 	"manifest_version": 2,
 	"name": "__MSG_extNAME__",
 	"version": "1.0.0",
+	"author": "Toby Coleman",
 
 	"default_locale": "en",
 	"description": "__MSG_extDescription__",
@@ -18,6 +19,8 @@
 		"default_title": "Crypto Message",
 		"default_popup": "popup.html"
 	},
+
+	"options_page": "options.html",
 
 	"permissions": [
 		"tabs",
@@ -40,7 +43,5 @@
 
 	"web_accessible_resources": [
 		"fonts/*.*"
-	],
-
-	"author": "Toby Coleman"
+	]	
 }
