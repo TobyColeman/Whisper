@@ -1,4 +1,4 @@
-(function() {
+window.addEventListener("load", function() {
 
 // gets all messages currently loaded
 var message = document.getElementsByClassName('clearfix _42ef');
@@ -33,9 +33,40 @@ openpgp.generateKeyPair(options).then(function(keypair) {
     // success
     var privkey = keypair.privateKeyArmored;
     var pubkey = keypair.publicKeyArmored;
+    console.log(pubkey);
     console.log(privkey);
+
+    var publicKey = openpgp.key.readArmored(pubkey)
+
+	openpgp.encryptMessage(publicKey.keys, 'Hello, World!').then(function(pgpMessage) {
+	    // success
+
+		var privateKey = openpgp.key.readArmored(privkey).keys[0];
+		privateKey.decrypt('super long and hard to guess secret');
+
+		console.log(pgpMessage);
+		console.log('length: ' + pgpMessage.length );
+
+		pgpMessage = openpgp.message.readArmored(pgpMessage);
+
+		openpgp.decryptMessage(privateKey, pgpMessage).then(function(plaintext) {
+		    // success
+		    console.log(plaintext);
+		}).catch(function(error) {
+		    // failure
+		});
+
+
+
+	}).catch(function(error) {
+	    // failure
+	});
+
+
 }).catch(function(error) {
     // failure
 });
 
-})();
+
+
+}, false);
