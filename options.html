@@ -12,29 +12,37 @@
 		<h1 class="header">Whisper - Dashboard</h1>
 
 		<h2>My Key</h2>
+		<div id="keyGenProgress">
+			<h3 class="text-center">Generating Key. This may take some time...</h3>
+		</div>
 
 		<div id="key_creation">
 			<p>You do not yet have a key.</p>
 			<h3>Generate New Key</h3>
-			<form>
-				<input class="text-input" type="text" name="user_id" placeholder="your Facebook ID">
+			<form name="keyGenForm" id="keyGenForm">
+				<input class="text-input" type="text" name="fb_id" placeholder="your Facebook ID" required>
 				<br>
-				<input class="text-input" type="text" name="user_email" placeholder="your email">
+				<input class="text-input" type="text" name="name" placeholder="your name" required>
 				<br>
-				<input class="text-input" type="password" name="password" placeholder="password">
+				<input class="text-input" type="email" name="email" placeholder="your email" required>
+				<br>
+				<input class="text-input" type="password" name="password" placeholder="password" required>
 				<br>
 				<label>Key bit-length</label>
 				<br>
-				<select class="dropdown-input">
-					<option value="1024" selected="yes">1024</option>
+				<select class="dropdown-input" name="key_length" required>
+					<option value="1024" selected="selected">1024</option>
 					<option value="2048">2048</option>
 				</select>
+				<br>
+				<button type="submit" value="submit" id="generateKeySubmit">Submit</button>
 			</form>
 		</div>
 
 		<table id="key_table">
 			<thead>
 				<tr>
+					<th>Facebook Id</th>
 					<th>Name</th>
 					<th>Email</th>
 					<th></th>
@@ -44,10 +52,11 @@
 			</thead>
 			<tbody>
 				<tr>
-					<td id="user_id">Ihai01</td>
-					<td id="key_email">chalky0123@hotmail.com</td>
+					<td id="user_id">User ID</td>
+					<td id="user_name">User Name</td>
+					<td id="key_email">User Email</td>
 					<td id="key_show_btn"><a href="#">show key</a></td>
-					<td id="key_length">1024</td>
+					<td id="key_length">Key Length</td>
 					<td class="text-center">
 						<span id="" class="ion-trash-b ion-medium ion-clickable">
 						</span>

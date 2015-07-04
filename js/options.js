@@ -1,68 +1,71 @@
 window.addEventListener("load", init(), false);
 
+// reference to openpgp crypto library
+var openpgp = window.openpgp;
+
 // clickables on the dashboard page
 var delete_btns;
 var keyDetailsBtn;
 
 // static fields on the dashboard page
-var idField;
-var emailField;
-var keyLengthField;
 var keyCreationForm;
-var keyTable;
 var friendTable;
 var noFriendMsg;
 
-// http://openpgpjs.org/
-var openpgp = window.openpgp;
+// elements that display the user's key
+var keyTable;
+var keyTableName;
+var keyTableId;
+var keyTableEmail;
+var keyTableLength;
 
+// dictionary storing all the keys 
+var keys = {};
 
 function init(){
 
 	// clickables on dashboard
 	delete_btns = document.getElementsByClassName('ion-trash-b ion-medium ion-clickable');
-	addListenerToClass(delete_btns, 'click', requestDelete);
-
+	keyForm = document.getElementById('keyGenForm');
 	keyDetailsBtn = document.getElementById('key_show_btn');
 
-	// static fields in the key table
-	idField = document.getElementById('user_id');
-	emailField = document.getElementById('key_email');
-	keyLengthField = document.getElementById('key_length');
+	// event listeners
+	keyForm.addEventListener('submit', handleKeyForm);
+	addListenerToClass(delete_btns, 'click', requestDelete);
+
+	// elements that display the user's key
+	keyTable = document.getElementById('key_table');
+	keyTableName = document.getElementById('user_name');
+	keyTableId = document.getElementById('user_id');
+	keyTableEmail = document.getElementById('key_email');
+	keyTableLength = document.getElementById('key_length');
 
 	// visibility toggled for these depending on local storage
 	keyCreationForm = document.getElementById('key_creation');
-	keyTable = document.getElementById('key_table');
 	friendTable = document.getElementById('friend_list');
 	noFriendMsg = document.getElementById('no_friends');
+	keyGenProgress = document.getElementById('keyGenProgress');
 
-	// check if the user has made a key
-	getKey(null, function(keyChain){
+	// check if the user has made a key --- whisper_key used for user's key always
+	getKey('whisper_key', function(keyChain){
 
-
-		// make new key...
-		keygen(1024, 'Toby Coleman <tobych82@gmail.com>', '1234', function(key){
-			console.log(key);
-		});
-
+		// if the user has no key, display form to make one
 		if(keyChain['whisper_key'] === undefined){
 			// set UI
 			keyCreationForm.style.display = "block";
 			keyTable.style.display = "none";
 
 		}
+		// otherwise display the details of their key
 		else{
 			// Set UI
 			keyCreationForm.style.display = "none";
+			// store user key in memory for fast retreival & update UI 
+			keys['whisper_key'] = new Key(keyChain['whisper_key']);
+			updateKeyTable(keys['whisper_key']);
 			keyTable.style.display = "block";
-
 		}
-
-		// debugging stuff ... remove
-		console.log('key: ' + keyChain['whisper_key']);
 	});
-
-
 
 	// check if the user has any friends' key
 	hasFriends(function(friends){
@@ -75,6 +78,54 @@ function init(){
 			noFriendMsg.style.display = "block";
 		}
 	});
+}
+
+// grabs all the data from the Key class
+function updateKeyTable(key){
+	keyTableName.innerHTML = key.getName();
+	keyTableId.innerHTML = key.fb_id;
+	keyTableEmail.innerHTML = key.getEmail();
+	keyTableLength.innerHTML = key.getPubKeyLength();
+
+}
+
+// handles the creation of a key by the user
+function handleKeyForm(e){
+	e.preventDefault();
+	var form = document.forms["keyGenForm"];
+	var fb_id = form.fb_id.value.trim();
+	var name = form.name.value.trim();
+	var email = form.email.value.trim();
+	var password = form.password.value;
+	var keyLength = form.key_length.options[form.key_length.selectedIndex].value;
+
+	// display generating....
+
+	keyGenProgress.style.display = "block";
+
+	keygen(keyLength, name + ' ' + '<' + email + '>', password, function(keypair){
+		// update ui
+		keyGenProgress.style.display = "none";
+
+		// read in the keys 
+		var privKey = keypair.privateKeyArmored;
+		var pubKey = keypair.publicKeyArmored;
+
+		// store the user's keys
+		setKey(fb_id, pubKey, privKey, function(){
+			keyCreationForm.style.display = "none";
+
+			// could probably tidy this up... calling get just avoids
+			// having to pass in a harcoded object in the format it is daved into localstorage
+			getKey('whisper_key', function(keyChain){
+				// store user key in memory for fast retreival & update UI 
+				keys['whisper_key'] = new Key(keyChain['whisper_key']);
+				updateKeyTable(keys['whisper_key']);
+				keyTable.style.display = "block";
+			});
+		});
+	});
+	form.reset();
 }
 
 
@@ -93,7 +144,6 @@ function requestDelete(element){
 
 
 // should probably be moved into a more generic js file...
-
 function addListenerToClass(elements, listener, callback){
 	if(elements.length === 0){
 		return -1;

@@ -68,3 +68,14 @@ label{
 	display:none;
 }
 
+#keyGenProgress{
+	display:none;
+	border-radius:4px;
+	max-width: 350px;
+	background-color: #a94442;
+}
+
+#keyGenProgress h3{
+	padding: 8px 16px;
+	color: white;
+}
