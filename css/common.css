@@ -24,6 +24,10 @@
 	font-size: 30px;
 }
 
+.ion-medium{
+	font-size: 20px;
+}
+
 .ion-abestos{
 	color:#7f8c8d!important;
 }
@@ -34,4 +38,8 @@
 
 .ion-emerald{
 	color:#2ecc71!important;
+}
+
+.text-center{
+	text-align:center;
 }

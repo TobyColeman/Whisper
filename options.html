@@ -3,21 +3,92 @@
 	<head>
 		<title>Whisper - Dashboard</title>
 		<link rel="stylesheet" type="text/css" href="css/common.css">
+		<link rel="stylesheet" type="text/css" href="css/ionicons.css">
+		<link rel="stylesheet" type="text/css" href="css/options.css">
 	</head>
 
 	<body>
 
 		<h1 class="header">Whisper - Dashboard</h1>
 
-		<h1>My Key</h1>
+		<h2>My Key</h2>
 
-		
+		<div id="key_creation">
+			<p>You do not yet have a key.</p>
+			<h3>Generate New Key</h3>
+			<form>
+				<input class="text-input" type="text" name="user_id" placeholder="your Facebook ID">
+				<br>
+				<input class="text-input" type="text" name="user_email" placeholder="your email">
+				<br>
+				<input class="text-input" type="password" name="password" placeholder="password">
+				<br>
+				<label>Key bit-length</label>
+				<br>
+				<select class="dropdown-input">
+					<option value="1024" selected="yes">1024</option>
+					<option value="2048">2048</option>
+				</select>
+			</form>
+		</div>
+
+		<table id="key_table">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Email</th>
+					<th></th>
+					<th>Length</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td id="user_id">Ihai01</td>
+					<td id="key_email">chalky0123@hotmail.com</td>
+					<td id="key_show_btn"><a href="#">show key</a></td>
+					<td id="key_length">1024</td>
+					<td class="text-center">
+						<span id="" class="ion-trash-b ion-medium ion-clickable">
+						</span>
+					</td>	
+				</tr>
+			</tbody>
+		</table>
+
+		<br>
+		<h2 id="friend_header">Friends' Keys</h2>
+		<p id="no_friends">No keys to display.</p>
 
 
-		<h1>Friends' Keys</h1>
+		<div id="friend_list">
+			<table id="friend_table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Email</th>
+						<th></th>
+						<th>Length</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td id="user_id">Ihai01</td>
+						<td id="key_email">chalky0123@hotmail.com</td>
+						<td id="key_show_btn"><a href="#">show key</a></td>
+						<td id="key_length">1024</td>
+						<td class="text-center">
+							<span id="" class="ion-trash-b ion-medium ion-clickable">
+							</span>
+						</td>	
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
-
-
-
+		<script type="text/javascript" src="js/lib/openpgp.min.js"></script>
+		<script type="text/javascript" src="js/keymanager.js"></script>
+		<script type="text/javascript" src="js/options.js"></script>		
 	</body>
 </html>
