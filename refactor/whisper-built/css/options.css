@@ -2,6 +2,7 @@ body{
 	font-family: Helvetica;
 }
 
+/* table styling */
 table{
 	border-spacing: 0px;
 }
@@ -19,6 +20,7 @@ th, td{
 	line-height: 30px;
 }
 
+/* input elements, some styling used from http://getbootstrap.com/ */
 .text-input{
 	border: 1px solid #ccc;
 	padding: 4px 6px;
@@ -52,24 +54,15 @@ label{
 	padding-bottom: 10px;
 }
 
-#key_creation{
-	display: none;
-}
 
-#key_table{
-	display: none;
-}
-
-#no_friends{
+/* used for elements that have toggableable visibility */
+.invis{
 	display:none;
 }
 
-#friend_list{
-	display:none;
-}
 
+/* popup that displays when key is generating */
 #keyGenProgress{
-	display:none;
 	border-radius:4px;
 	max-width: 350px;
 	background-color: #a94442;

@@ -33,13 +33,13 @@
 		{
 			"matches": ["https://*.facebook.com/messages/*"],
 			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/lib/openpgp.min.js", "js/content/encrypt.js"],
+			"js" : ["js/whisper-options.js"],
 			"run_at": "document_idle"
 		}
 	],
 
 	"background": {
-		"scripts": ["js/background/tab_switch.js"],
+		"scripts": ["js/background.js"],
 		"persistent": false
 	},
 

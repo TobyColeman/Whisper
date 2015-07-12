@@ -12,11 +12,11 @@
 		<h1 class="header">Whisper - Dashboard</h1>
 
 		<h2>My Key</h2>
-		<div id="keyGenProgress">
+		<div id="keyGenProgress" class="invis">
 			<h3 class="text-center">Generating Key. This may take some time...</h3>
 		</div>
 
-		<div id="key_creation">
+		<div id="keyFormWrapper" class="invis">
 			<p>You do not yet have a key.</p>
 			<h3>Generate New Key</h3>
 			<form name="keyGenForm" id="keyGenForm">
@@ -39,7 +39,7 @@
 			</form>
 		</div>
 
-		<table id="key_table">
+		<table id="key_table" class="invis">
 			<thead>
 				<tr>
 					<th>Facebook Id</th>
@@ -67,10 +67,10 @@
 
 		<br>
 		<h2 id="friend_header">Friends' Keys</h2>
-		<p id="no_friends">No keys to display.</p>
+		<p id="no_friends" class="invis">No keys to display.</p>
 
 
-		<div id="friend_list">
+		<div id="friend_list" class="invis">
 			<table id="friend_table">
 				<thead>
 					<tr>
@@ -96,8 +96,6 @@
 			</table>
 		</div>
 
-		<script type="text/javascript" src="js/lib/openpgp.min.js"></script>
-		<script type="text/javascript" src="js/keymanager.js"></script>
-		<script type="text/javascript" src="js/options.js"></script>		
+		<script type="text/javascript" src="js/whisper-options.js"></script>		
 	</body>
 </html>
