@@ -127,7 +127,6 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 			document.forms["keyGenForm"].style.display = "none";
 			document.forms["keyInsForm"].style.display = "block";
 		}
-		console.log(e.target.value);
 	}
 
 
