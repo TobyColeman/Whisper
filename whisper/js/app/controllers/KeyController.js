@@ -1,5 +1,5 @@
-define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'EventManager'],
-    function(StoreController, Key, optionsView, openpgp, EventManager) {
+define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
+    function(StoreController, Key, openpgp, EventManager) {
 
         var instance = null;
 
@@ -22,18 +22,20 @@ define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'Ev
             // check if the user has a key
             StoreController.getKey('whisper_key', function(result) {
                 if (result['whisper_key'] === undefined)
-                    optionsView.renderUserKey(false);
+                    EventManager.publish('noPrivKey', {visible:false})
                 else
-                    optionsView.renderUserKey(true, [new Key(result['whisper_key'])]);
-
+                    EventManager.publish('newPrivKey', {visible : true,
+                                                        keys       : [new Key(result['whisper_key'])]
+                                                       });
             });
 
             // check if the user has any friends
             StoreController.hasFriends(function(friends) {
                 if (friends)
-                    optionsView.renderFriendTable(true, friends);
+                    EventManager.publish('newPubKey', {visible : true,
+                                                       keys       : friends});
                 else
-                    optionsView.renderFriendTable(false);
+                    EventManager.publish('noPubKeys', {visible: false});
             })
         }
 
@@ -55,11 +57,11 @@ define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'Ev
                 var pubKey = keypair.publicKeyArmored;
 
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
-                    optionsView.renderUserKey(true, [new Key({
+                    EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
                         'fb_id': data.fb_id,
                         'pubKey': pubKey,
                         'privKey': privKey
-                    })]);
+                    })]});
                 });
             });
         }
@@ -74,23 +76,28 @@ define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'Ev
             var result = self.checkKeyIntegrity(data.privKey);
 
             if (result['err']) {
-                optionsView.renderError('Invalid Key')
+                EventManager.publish('error', {error:'Invalid Key'});
                 return;
             }
 
-            if (!self.validateKeyPassword(result['privKey'], data.password)) {
-                optionsView.renderError('Wrong password')
+            if(!result['key'].isPrivate()){
+                EventManager.publish('error', {error:'Please Insert a Private Key'});
                 return;
             }
 
-            var pubKey = result['privKey'].toPublic().armor();
+            if (!self.validateKeyPassword(result['key'], data.password)) {
+                EventManager.publish('error', {error:'Wrong password'});
+                return;
+            }
+
+            var pubKey = result['key'].toPublic().armor();
 
             StoreController.setKey(data.fb_id, pubKey, result['privKey'], function() {
-                optionsView.renderUserKey(true, [new Key({
+                EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
                     'fb_id': data.fb_id,
                     'pubKey': pubKey,
-                    'privKey': result['privKey']
-                })]);
+                    'privKey': data.privKey
+                })]});
             });
         }
 
@@ -99,22 +106,27 @@ define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'Ev
             var result = self.checkKeyIntegrity(data.pubKey);
 
             if (result['err']) {
-                optionsView.renderError('Invalid Key')
+                EventManager.publish('error', {error:'Invalid Key'});
                 return;
             }
 
-            StoreController.getKey(data.fb_id, function(result) {
+            if(!result['key'].isPublic()){
+                EventManager.publish('error', {error:'Please Insert a Public Key'});
+                return;
+            }
+
+            StoreController.getKey(null, function(result) {
 
                 if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
-                    optionsView.renderError('Key Already Exists For: ' + data.fb_id);
+                    EventManager.publish('error', {error:'Key Already Exists For: ' + data.fb_id});
                     return;
                 }
 
                 StoreController.setKey(data.fb_id, data.pubKey, null, function() {
-                    optionsView.renderFriendTable(true, [new Key({
+                    EventManager.publish('newPubKey', {visible:true, keys:[new Key({
                         'fb_id': data.fb_id,
                         'pubKey': data.pubKey
-                    })]);
+                    })]});
                 });
             });
         }
@@ -133,7 +145,7 @@ define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'Ev
                 };
 
             return {
-                'privKey': result.keys[0]
+                'key': result.keys[0]
             };
 
         }

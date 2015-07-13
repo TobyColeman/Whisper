@@ -668,8 +668,181 @@ define("StoreController", ['Key'], function(Key){
 
 
 
+define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
+    function(StoreController, Key, openpgp, EventManager) {
+
+        var instance = null;
+
+        function KeyController() {
+            self = this;
+            if (instance !== null)
+                throw new Error("KeyController instance already exists");
+        }
+
+        /*
+         * runs initially when the options page loads, checks if the user has a key / friends
+         * and sets the view accordingly
+         */
+        KeyController.prototype.init = function() {
+
+            EventManager.subscribe('newKey', this.generateKey);
+            EventManager.subscribe('privKeyInsert', this.insertPrivKey);
+            EventManager.subscribe('pubKeyInsert', this.insertPubKey);
+
+            // check if the user has a key
+            StoreController.getKey('whisper_key', function(result) {
+                if (result['whisper_key'] === undefined)
+                    EventManager.publish('noPrivKey', {visible:false})
+                else
+                    EventManager.publish('newPrivKey', {visible : true,
+                                                        keys       : [new Key(result['whisper_key'])]
+                                                       });
+            });
+
+            // check if the user has any friends
+            StoreController.hasFriends(function(friends) {
+                if (friends)
+                    EventManager.publish('newPubKey', {visible : true,
+                                                       keys       : friends});
+                else
+                    EventManager.publish('noPubKeys', {visible: false});
+            })
+        }
+
+
+
+        /*
+         * generates a new openpgp key and stores in localstorge
+         * @param data {object} contains form data for creating the key
+         */
+        KeyController.prototype.generateKey = function(data) {
+            var options = {
+                numBits: data.numBits,
+                userId: data.name + ' <' + data.email + '>',
+                passphrase: data.password
+            }
+
+            openpgp.generateKeyPair(options).then(function(keypair) {
+                var privKey = keypair.privateKeyArmored;
+                var pubKey = keypair.publicKeyArmored;
+
+                StoreController.setKey(data.fb_id, pubKey, privKey, function() {
+                    EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
+                        'fb_id': data.fb_id,
+                        'pubKey': pubKey,
+                        'privKey': privKey
+                    })]});
+                });
+            });
+        }
+
+
+        /*
+         * Used when a user wants to insert an already generate private key
+         * @param data {object} contains facebook id and private key
+         */
+        KeyController.prototype.insertPrivKey = function(data) {
+
+            var result = self.checkKeyIntegrity(data.privKey);
+
+            if (result['err']) {
+                EventManager.publish('error', {error:'Invalid Key'});
+                return;
+            }
+
+            if(!result['key'].isPrivate()){
+                EventManager.publish('error', {error:'Please Insert a Private Key'});
+                return;
+            }
+
+            if (!self.validateKeyPassword(result['key'], data.password)) {
+                EventManager.publish('error', {error:'Wrong password'});
+                return;
+            }
+
+            var pubKey = result['key'].toPublic().armor();
+
+            StoreController.setKey(data.fb_id, pubKey, result['privKey'], function() {
+                EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
+                    'fb_id': data.fb_id,
+                    'pubKey': pubKey,
+                    'privKey': data.privKey
+                })]});
+            });
+        }
+
+        KeyController.prototype.insertPubKey = function(data) {
+
+            var result = self.checkKeyIntegrity(data.pubKey);
+
+            if (result['err']) {
+                EventManager.publish('error', {error:'Invalid Key'});
+                return;
+            }
+
+            if(!result['key'].isPublic()){
+                EventManager.publish('error', {error:'Please Insert a Public Key'});
+                return;
+            }
+
+            StoreController.getKey(null, function(result) {
+
+                if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
+                    EventManager.publish('error', {error:'Key Already Exists For: ' + data.fb_id});
+                    return;
+                }
+
+                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
+                    EventManager.publish('newPubKey', {visible:true, keys:[new Key({
+                        'fb_id': data.fb_id,
+                        'pubKey': data.pubKey
+                    })]});
+                });
+            });
+        }
+
+
+        /*
+         * checks if the key is a vali
+         */
+        KeyController.prototype.checkKeyIntegrity = function(key) {
+
+            var result = openpgp.key.readArmored(key);
+
+            if (result['err'])
+                return {
+                    'err': result['err'][0].message
+                };
+
+            return {
+                'key': result.keys[0]
+            };
+
+        }
+
+
+        /*
+         * checks if the correct password has been entered for the private key
+         */
+        KeyController.prototype.validateKeyPassword = function(key, password) {
+            // wrong password check
+            if (!key.decrypt(password))
+                return false;
+            return true;
+        }
+
+
+        KeyController.getInstance = function() {
+            if (instance === null)
+                instance = new KeyController();
+            return instance;
+        }
+
+        return KeyController.getInstance();
+    });
 define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
+	var self = this;
 
 	function bindEvent(){
 		document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
@@ -678,6 +851,11 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 		document.getElementById('keyOpts').addEventListener('change', handleKeyGenType);
 		document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
 		Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', requestDelete);
+		EventManager.subscribe('newPubKey', this.renderFriendTable);
+		EventManager.subscribe('newPrivKey', this.renderUserKey);
+		EventManager.subscribe('noPrivKey', this.renderUserKey);
+		EventManager.subscribe('noPubKeys', this.renderFriendTable);
+		EventManager.subscribe('error', this.renderError);
 	}
 
 
@@ -688,10 +866,11 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
 	/*
 	 * Displays error messages passed down from the controller
+	 * @param data.error {string} error message displayed to the user
 	 */
-	function renderError(message){
+	function renderError(data){
 		var errorBlock = document.getElementById('errorBlock');
-		errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + message;
+		errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
 		document.getElementById('keyGenProgress').style.display = "none";
 		errorBlock.style.display = "block";
 
@@ -703,21 +882,21 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
 	/* 
 	 * sets the visibility of the key table / creation form
-	 * @param visible {boolean}		if true should show user's key
-	 * @param key 	  {Key} 	    the user's key
+	 * @param data.visible {boolean}	if true should show user's key
+	 * @param data.keys    {array} 	    contains Key objects
 	 */
-	function renderUserKey(visible, keys){
+	function renderUserKey(data){
 
 		var keyFormWrapper = document.getElementById('keyFormWrapper');
 		var keyTable = document.getElementById('key_table');
 
-		if(!visible){
+		if(!data.visible){
 			keyFormWrapper.style.display = "block";
 			keyTable.style.display = "none";
 			return;		
 		}
 
-		updateTableRows(keys, keyTable);
+		updateTableRows(data.keys, keyTable);
 		keyTable.style.display = "block";
 
 		document.getElementById('keyGenProgress').style.display = "none";
@@ -728,18 +907,19 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 	/* 
 	 * sets the visibility of the table displaying the user's friends' keys
 	 */
-	function renderFriendTable(visible, keys){
+	function renderFriendTable(data){
 
 		var friendTable = document.getElementById('friend_table');
 		var noFriendMsg = document.getElementById('no_friends');
 
-        if(!visible){
+        if(!data.visible){
+
         	noFriendMsg.style.display = "block";
         	friendTable.style.display = "none";
         	return;
         }
 
-        updateTableRows(keys, friendTable);
+        updateTableRows(data.keys, friendTable);
 		friendTable.style.display = "block";
 		document.forms["friendInsForm"].reset();
 		noFriendMsg.style.display = "none";
@@ -797,7 +977,6 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 			document.forms["keyGenForm"].style.display = "none";
 			document.forms["keyInsForm"].style.display = "block";
 		}
-		console.log(e.target.value);
 	}
 
 
@@ -887,157 +1066,6 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 	}
 
 });
-define("KeyController", ['StoreController', 'Key', 'optionsView', 'openpgp', 'EventManager'], 
-function (StoreController, Key, optionsView, openpgp, EventManager) {
-
-    var instance = null;
-
-    function KeyController(){
-        self = this;
-        if(instance !== null)
-            throw new Error("KeyController instance already exists");
-    }
-
-    /*
-     * runs initially when the options page loads, checks if the user has a key / friends
-     * and sets the view accordingly
-     */
-    KeyController.prototype.init = function(){
-
-        EventManager.subscribe('newKey', this.generateKey);
-        EventManager.subscribe('privKeyInsert', this.insertPrivKey);
-        EventManager.subscribe('pubKeyInsert', this.insertPubKey);
-
-        // check if the user has a key
-        StoreController.getKey('whisper_key', function(result){
-            if(result['whisper_key'] === undefined)
-                optionsView.renderUserKey(false);
-            else
-                optionsView.renderUserKey(true, [new Key(result['whisper_key'])]);           
-
-        });
-
-        // check if the user has any friends
-        StoreController.hasFriends(function(friends){
-            if(friends)
-                optionsView.renderFriendTable(true, friends);
-            else
-                optionsView.renderFriendTable(false);
-        })
-    }
-
-
-
-    /*
-     * generates a new openpgp key and stores in localstorge
-     * @param data {object} contains form data for creating the key
-     */
-    KeyController.prototype.generateKey = function(data){
-        var options = {
-            numBits: data.numBits,
-            userId: data.name + ' <' + data.email + '>',
-            passphrase: data.password
-        }
-
-        openpgp.generateKeyPair(options).then(function(keypair){
-            var privKey = keypair.privateKeyArmored;
-            var pubKey = keypair.publicKeyArmored;
-
-            StoreController.setKey(data.fb_id, pubKey, privKey, function(){
-                optionsView.renderUserKey(true, [new Key({'fb_id': data.fb_id,
-                                                         'pubKey': pubKey,
-                                                         'privKey': privKey})]);              
-            });
-        });
-    }
-
-
-    /*
-     * Used when a user wants to insert an already generate private key
-     * @param data {object} contains facebook id and private key
-     */
-    KeyController.prototype.insertPrivKey = function(data){
-
-        var result = self.checkKeyIntegrity(data.privKey);
-
-        if(result['err']){
-            optionsView.renderError('Invalid Key')
-            return;
-        }
-
-        if(!self.validateKeyPassword(result['privKey'], data.password)){
-            optionsView.renderError('Wrong password')
-            return;
-        }
-
-        var pubKey = result['privKey'].toPublic().armor();
-
-        StoreController.setKey(data.fb_id, pubKey, result['privKey'], function(){
-            optionsView.renderUserKey(true, [new Key({'fb_id': data.fb_id,
-                                                     'pubKey': pubKey,
-                                                     'privKey': result['privKey']})]);              
-        });
-    }
-
-    KeyController.prototype.insertPubKey = function(data){
-
-        var result = self.checkKeyIntegrity(data.pubKey);
-
-        if(result['err']){
-            optionsView.renderError('Invalid Key')
-            return;
-        }
-
-        StoreController.getKey(data.fb_id, function(result){
-
-            if(result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id){
-                optionsView.renderError('Key Already Exists For: ' + data.fb_id);
-                return;
-            }
-
-            StoreController.setKey(data.fb_id, data.pubKey, null, function(){
-                optionsView.renderFriendTable(true, [new Key({'fb_id': data.fb_id,
-                                                         'pubKey': data.pubKey})]);            
-            });    
-        });
-    }
-
-
-    /*
-     * checks if the key is a vali
-     */ 
-    KeyController.prototype.checkKeyIntegrity = function(key){
-
-        var result = openpgp.key.readArmored(key);
-
-        if(result['err'])
-            return {'err': result['err'][0].message}; 
-
-        return {'privKey': result.keys[0]};
-
-    }
-
-
-    /*
-     * checks if the correct password has been entered for the private key
-     */
-    KeyController.prototype.validateKeyPassword = function(key, password){
-        // wrong password check
-        if(!key.decrypt(password))
-            return false;
-        return true;      
-    }
-
-
-    KeyController.getInstance = function(){
-        if(instance === null)
-            instance = new KeyController();
-        return instance;
-    }
-
-    return KeyController.getInstance();
-});
-
 define('whisper-options',['KeyController', 'optionsView'], function (KeyController, optionsView) {
     KeyController.init();
     optionsView.bindEvents();

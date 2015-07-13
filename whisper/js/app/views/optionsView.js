@@ -1,5 +1,6 @@
 define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
+	var self = this;
 
 	function bindEvent(){
 		document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
@@ -8,6 +9,11 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 		document.getElementById('keyOpts').addEventListener('change', handleKeyGenType);
 		document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
 		Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', requestDelete);
+		EventManager.subscribe('newPubKey', this.renderFriendTable);
+		EventManager.subscribe('newPrivKey', this.renderUserKey);
+		EventManager.subscribe('noPrivKey', this.renderUserKey);
+		EventManager.subscribe('noPubKeys', this.renderFriendTable);
+		EventManager.subscribe('error', this.renderError);
 	}
 
 
@@ -18,10 +24,11 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
 	/*
 	 * Displays error messages passed down from the controller
+	 * @param data.error {string} error message displayed to the user
 	 */
-	function renderError(message){
+	function renderError(data){
 		var errorBlock = document.getElementById('errorBlock');
-		errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + message;
+		errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
 		document.getElementById('keyGenProgress').style.display = "none";
 		errorBlock.style.display = "block";
 
@@ -33,21 +40,21 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 
 	/* 
 	 * sets the visibility of the key table / creation form
-	 * @param visible {boolean}		if true should show user's key
-	 * @param key 	  {Key} 	    the user's key
+	 * @param data.visible {boolean}	if true should show user's key
+	 * @param data.keys    {array} 	    contains Key objects
 	 */
-	function renderUserKey(visible, keys){
+	function renderUserKey(data){
 
 		var keyFormWrapper = document.getElementById('keyFormWrapper');
 		var keyTable = document.getElementById('key_table');
 
-		if(!visible){
+		if(!data.visible){
 			keyFormWrapper.style.display = "block";
 			keyTable.style.display = "none";
 			return;		
 		}
 
-		updateTableRows(keys, keyTable);
+		updateTableRows(data.keys, keyTable);
 		keyTable.style.display = "block";
 
 		document.getElementById('keyGenProgress').style.display = "none";
@@ -58,18 +65,19 @@ define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
 	/* 
 	 * sets the visibility of the table displaying the user's friends' keys
 	 */
-	function renderFriendTable(visible, keys){
+	function renderFriendTable(data){
 
 		var friendTable = document.getElementById('friend_table');
 		var noFriendMsg = document.getElementById('no_friends');
 
-        if(!visible){
+        if(!data.visible){
+
         	noFriendMsg.style.display = "block";
         	friendTable.style.display = "none";
         	return;
         }
 
-        updateTableRows(keys, friendTable);
+        updateTableRows(data.keys, friendTable);
 		friendTable.style.display = "block";
 		document.forms["friendInsForm"].reset();
 		noFriendMsg.style.display = "none";
