@@ -536,138 +536,150 @@ define("EventManager", [],function(){
 
     return EventManager.getInstance();
 });
-define('Key',['openpgp'], function (openpgp) {
+define('Key',['openpgp'], function(openpgp) {
 
-	/*
-	 * @param pgpKey {dict} contains a public key, optional private key and a facebook id
-	 */
+    /*
+     * @param pgpKey {dict} contains a public key, optional private key and a facebook id
+     */
     function Key(pgpKey) {
-		this.pubKey = pgpKey['pubKey'];
-		this.privKey = pgpKey['privKey'] === undefined ? null : pgpKey['privKey'];
-		this.fb_id = pgpKey['fb_id'];
+        this.pubKey = pgpKey['pubKey'];
+        this.privKey = pgpKey['privKey'] === undefined ? null : pgpKey['privKey'];
+        this.fb_id = pgpKey['fb_id'];
     }
+
 
     /*
      * @returns {string} the id of the key, format: FirstName LastName <email@domain.com>
      */
-	Key.prototype.getId = function(){
-		return openpgp.key.readArmored(this.pubKey).keys[0].users[0].userId.userid;
-	}
+    Key.prototype.getId = function() {
+        return openpgp.key.readArmored(this.pubKey).keys[0].users[0].userId.userid;
+    }
 
-	/*
-	 * @returns {string} the name part of the key's id
-	 */
-	Key.prototype.getName = function(){
-		var id = this.getId();
-		var name = id.split('<')[0];
-		return name;
-	}
 
-	/*
-	 * @returns {string} the email part of the key's id
-	 */
-	Key.prototype.getEmail = function(){
-		var id = this.getId();
-		var email = id.split('<')[1].replace('>', '');
-		return email;
-	}
+    /*
+     * @returns {string} the name part of the key's id
+     */
+    Key.prototype.getName = function() {
+        var id = this.getId();
+        var name = id.split('<')[0];
+        return name;
+    }
 
-	/*
-	 * @returns {integer} the length of the key
-	 */
-	Key.prototype.getPubKeyLength = function(){
-		var publicKeyPacket = openpgp.key.readArmored(this.pubKey).keys[0].primaryKey;
 
-	    if (publicKeyPacket !== null) {
-	        strength = getBitLength(publicKeyPacket);
-	    }
+    /*
+     * @returns {string} the email part of the key's id
+     */
+    Key.prototype.getEmail = function() {
+        var id = this.getId();
+        var email = id.split('<')[1].replace('>', '');
+        return email;
+    }
 
-	    function getBitLength(publicKeyPacket) {
-	        var size = -1;
-	        if (publicKeyPacket.mpi.length > 0) {
-	            size = (publicKeyPacket.mpi[0].byteLength() * 8);
-	        }
-	        return size;
-	    }
-	    return strength;	
-	}
+
+    /*
+     * @returns {integer} the length of the key
+     */
+    Key.prototype.getPubKeyLength = function() {
+        var publicKeyPacket = openpgp.key.readArmored(this.pubKey).keys[0].primaryKey;
+
+        if (publicKeyPacket !== null) {
+            strength = getBitLength(publicKeyPacket);
+        }
+
+        function getBitLength(publicKeyPacket) {
+            var size = -1;
+            if (publicKeyPacket.mpi.length > 0) {
+                size = (publicKeyPacket.mpi[0].byteLength() * 8);
+            }
+            return size;
+        }
+        return strength;
+    }
 
     return Key;
 });
-define("StoreController", ['Key'], function(Key){
+define("StoreController", ['Key'], function(Key) {
 
     var instance = null;
 
-    function StoreController(){
-        if(instance !== null)
+    function StoreController() {
+        if (instance !== null)
             throw new Error("StoreController instance already exists");
     }
 
 
-	/*
-	 * Get a key from local storage
-	 * @param key      {string} the key used to store data
-	 * @param callback {function} the function to execute when storing is complete
-	 */
-	StoreController.prototype.getKey = function(key, callback){
-		chrome.storage.local.get(key, callback);
-	}
+    /*
+     * Get a key from local storage
+     * @param key      {string} the key used to store data
+     * @param callback {function} the function to execute when storing is complete
+     */
+    StoreController.prototype.getKey = function(key, callback) {
+        chrome.storage.local.get(key, callback);
+    }
 
-	/* 
-	 * Stores armored keys
-	 * @param fb_id    {string} facebook id used in the key
-	 * @param pubKey   {string} public part of the keypair
-	 * @param privKey  {string} private part of the keypair
-	 * @param callback {function} the function to execute when retreival is complete
-	 */
-	StoreController.prototype.setKey = function(fb_id, pubKey, privKey, callback){
 
-		var data = {};
+    /* 
+     * Stores armored keys
+     * @param fb_id    {string} facebook id used in the key
+     * @param pubKey   {string} public part of the keypair
+     * @param privKey  {string} private part of the keypair
+     * @param callback {function} the function to execute when retreival is complete
+     */
+    StoreController.prototype.setKey = function(fb_id, pubKey, privKey, callback) {
 
-		if(privKey !== null){
-			data['whisper_key'] = {'fb_id': fb_id, 'privKey': privKey,'pubKey' : pubKey};
-		}
-		else{
-			data[fb_id] = {'fb_id': fb_id, 'pubKey': pubKey};
-		}
+        var data = {};
 
-		chrome.storage.local.set(data, callback);
-	}
+        if (privKey !== null) {
+            data['whisper_key'] = {
+                'fb_id': fb_id,
+                'privKey': privKey,
+                'pubKey': pubKey
+            };
+        } else {
+            data[fb_id] = {
+                'fb_id': fb_id,
+                'pubKey': pubKey
+            };
+        }
 
-	/* 
-	 * Find out of user has any friends
-	 * @param callback {function} executed when retreival from ls is complete
-	 */
-	StoreController.prototype.hasFriends = function(callback){
-		this.getKey(null, function(results){
+        chrome.storage.local.set(data, callback);
+    }
 
-			var friends = false;
-			// since user only has one key pair, we can assume the remaining 
-			// items in the dict are their friends' public keys
-			if(Object.keys(results).length > 1){
-				delete results['whisper_key'];
-				friends = [];
-				for(key in results){
-					friends.push(new Key({"fb_id" : results[key].fb_id,
-										  "pubKey": results[key].pubKey}));
-				}
-			}
-			callback(friends);
-		});
-	}
 
-    StoreController.getInstance = function(){
-        if(instance === null)
+    /* 
+     * Find out if user has any friends/public keys in storages
+     * @param callback {function} executed when retreival from ls is complete
+     */
+    StoreController.prototype.hasFriends = function(callback) {
+
+        this.getKey(null, function(results) {
+
+            var friends = false;
+            // since user only has one key pair, we can assume the remaining 
+            // items in the dict are their friends' public keys
+            if (Object.keys(results).length > 1) {
+                delete results['whisper_key'];
+                friends = [];
+                for (key in results) {
+                    friends.push(new Key({
+                        "fb_id": results[key].fb_id,
+                        "pubKey": results[key].pubKey
+                    }));
+                }
+            }
+            callback(friends);
+        });
+    }
+
+
+    StoreController.getInstance = function() {
+        if (instance === null)
             instance = new StoreController();
         return instance;
     }
 
     return StoreController.getInstance();
 });
-
-
-
-
 define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
     function(StoreController, Key, openpgp, EventManager) {
 
@@ -692,23 +704,29 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             // check if the user has a key
             StoreController.getKey('whisper_key', function(result) {
                 if (result['whisper_key'] === undefined)
-                    EventManager.publish('noPrivKey', {visible:false})
+                    EventManager.publish('noPrivKey', {
+                        visible: false
+                    })
                 else
-                    EventManager.publish('newPrivKey', {visible : true,
-                                                        keys       : [new Key(result['whisper_key'])]
-                                                       });
+                    EventManager.publish('newPrivKey', {
+                        visible: true,
+                        keys: [new Key(result['whisper_key'])]
+                    });
             });
 
             // check if the user has any friends
             StoreController.hasFriends(function(friends) {
                 if (friends)
-                    EventManager.publish('newPubKey', {visible : true,
-                                                       keys       : friends});
+                    EventManager.publish('newPubKey', {
+                        visible: true,
+                        keys: friends
+                    });
                 else
-                    EventManager.publish('noPubKeys', {visible: false});
+                    EventManager.publish('noPubKeys', {
+                        visible: false
+                    });
             })
         }
-
 
 
         /*
@@ -716,6 +734,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
          * @param data {object} contains form data for creating the key
          */
         KeyController.prototype.generateKey = function(data) {
+            // options used to generate the key
             var options = {
                 numBits: data.numBits,
                 userId: data.name + ' <' + data.email + '>',
@@ -726,12 +745,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var privKey = keypair.privateKeyArmored;
                 var pubKey = keypair.publicKeyArmored;
 
+                // store the key and notify subscribers of its' creation
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
-                    EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
-                        'fb_id': data.fb_id,
-                        'pubKey': pubKey,
-                        'privKey': privKey
-                    })]});
+                    EventManager.publish('newPrivKey', {
+                        visible: true,
+                        keys: [new Key({
+                            'fb_id': data.fb_id,
+                            'pubKey': pubKey,
+                            'privKey': privKey
+                        })]
+                    });
                 });
             });
         }
@@ -746,64 +769,88 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             var result = self.checkKeyIntegrity(data.privKey);
 
             if (result['err']) {
-                EventManager.publish('error', {error:'Invalid Key'});
+                EventManager.publish('error', {
+                    error: 'Invalid Key'
+                });
                 return;
             }
 
-            if(!result['key'].isPrivate()){
-                EventManager.publish('error', {error:'Please Insert a Private Key'});
+            if (!result['key'].isPrivate()) {
+                EventManager.publish('error', {
+                    error: 'Please Insert a Private Key'
+                });
                 return;
             }
 
             if (!self.validateKeyPassword(result['key'], data.password)) {
-                EventManager.publish('error', {error:'Wrong password'});
+                EventManager.publish('error', {
+                    error: 'Wrong password'
+                });
                 return;
             }
 
             var pubKey = result['key'].toPublic().armor();
 
             StoreController.setKey(data.fb_id, pubKey, result['privKey'], function() {
-                EventManager.publish('newPrivKey', {visible:true, keys:[new Key({
-                    'fb_id': data.fb_id,
-                    'pubKey': pubKey,
-                    'privKey': data.privKey
-                })]});
-            });
-        }
-
-        KeyController.prototype.insertPubKey = function(data) {
-
-            var result = self.checkKeyIntegrity(data.pubKey);
-
-            if (result['err']) {
-                EventManager.publish('error', {error:'Invalid Key'});
-                return;
-            }
-
-            if(!result['key'].isPublic()){
-                EventManager.publish('error', {error:'Please Insert a Public Key'});
-                return;
-            }
-
-            StoreController.getKey(null, function(result) {
-
-                if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
-                    EventManager.publish('error', {error:'Key Already Exists For: ' + data.fb_id});
-                    return;
-                }
-
-                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
-                    EventManager.publish('newPubKey', {visible:true, keys:[new Key({
+                EventManager.publish('newPrivKey', {
+                    visible: true,
+                    keys: [new Key({
                         'fb_id': data.fb_id,
-                        'pubKey': data.pubKey
-                    })]});
+                        'pubKey': pubKey,
+                        'privKey': data.privKey
+                    })]
                 });
             });
         }
 
 
         /*
-         * checks if the key is a vali
+         * Used when a user wants to insert an already generate private key
+         * @param data {object} contains facebook id and public key
+         */
+        KeyController.prototype.insertPubKey = function(data) {
+
+            var result = self.checkKeyIntegrity(data.pubKey);
+
+            if (result['err']) {
+                EventManager.publish('error', {
+                    error: 'Invalid Key'
+                });
+                return;
+            }
+
+            if (!result['key'].isPublic()) {
+                EventManager.publish('error', {
+                    error: 'Please Insert a Public Key'
+                });
+                return;
+            }
+
+            StoreController.getKey(null, function(result) {
+
+                if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
+                    EventManager.publish('error', {
+                        error: 'Key Already Exists For: ' + data.fb_id
+                    });
+                    return;
+                }
+
+                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
+                    EventManager.publish('newPubKey', {
+                        visible: true,
+                        keys: [new Key({
+                            'fb_id': data.fb_id,
+                            'pubKey': data.pubKey
+                        })]
+                    });
+                });
+            });
+        }
+
+
+        /*
+         * checks if the key is a valid
+         * @param key {string} public/private openpgp key
          */
         KeyController.prototype.checkKeyIntegrity = function(key) {
 
@@ -823,6 +870,9 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         /*
          * checks if the correct password has been entered for the private key
+         * @param key {string} private openpgp key
+         * @param password {string} password associated with private key
+         * @return {boolean} true if the password successfully decrypts key
          */
         KeyController.prototype.validateKeyPassword = function(key, password) {
             // wrong password check
@@ -840,230 +890,240 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         return KeyController.getInstance();
     });
-define("optionsView", ['Utils', 'EventManager'], function (Utils, EventManager){
+define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
 
-	var self = this;
-
-	function bindEvent(){
-		document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
-		document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
-		document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
-		document.getElementById('keyOpts').addEventListener('change', handleKeyGenType);
-		document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-		Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', requestDelete);
-		EventManager.subscribe('newPubKey', this.renderFriendTable);
-		EventManager.subscribe('newPrivKey', this.renderUserKey);
-		EventManager.subscribe('noPrivKey', this.renderUserKey);
-		EventManager.subscribe('noPubKeys', this.renderFriendTable);
-		EventManager.subscribe('error', this.renderError);
-	}
-
-
-	function showKeyDetails(){
-		console.log('clicked');
-	}
+    function bindEvent() {
+    	// form events
+        document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
+        document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
+        document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
+        // click events
+        document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
+        document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
+        Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', requestDelete);
+        // events emitted from EventManager (stuff from the controllers)
+        EventManager.subscribe('newPubKey', renderFriendTable);
+        EventManager.subscribe('newPrivKey', renderUserKey);
+        EventManager.subscribe('noPrivKey', renderUserKey);
+        EventManager.subscribe('noPubKeys', renderFriendTable);
+        EventManager.subscribe('error', renderError);
+    }
 
 
-	/*
-	 * Displays error messages passed down from the controller
-	 * @param data.error {string} error message displayed to the user
-	 */
-	function renderError(data){
-		var errorBlock = document.getElementById('errorBlock');
-		errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
-		document.getElementById('keyGenProgress').style.display = "none";
-		errorBlock.style.display = "block";
-
-		setTimeout(function(){
-			errorBlock.style.display = "none";
-		}, 5000);
-	}
+    function showKeyDetails() {
+        console.log('clicked');
+    }
 
 
-	/* 
-	 * sets the visibility of the key table / creation form
-	 * @param data.visible {boolean}	if true should show user's key
-	 * @param data.keys    {array} 	    contains Key objects
-	 */
-	function renderUserKey(data){
+    /*
+     * Displays error messages passed down from the controller
+     * @param data.error {string} error message displayed to the user
+     */
+    function renderError(data) {
+        var errorBlock = document.getElementById('errorBlock');
+        errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
+        document.getElementById('keyGenProgress').style.display = "none";
+        errorBlock.style.display = "block";
 
-		var keyFormWrapper = document.getElementById('keyFormWrapper');
-		var keyTable = document.getElementById('key_table');
-
-		if(!data.visible){
-			keyFormWrapper.style.display = "block";
-			keyTable.style.display = "none";
-			return;		
-		}
-
-		updateTableRows(data.keys, keyTable);
-		keyTable.style.display = "block";
-
-		document.getElementById('keyGenProgress').style.display = "none";
-		keyFormWrapper.style.display = "none";	
-	}
+        setTimeout(function() {
+            errorBlock.style.display = "none";
+        }, 5000);
+    }
 
 
-	/* 
-	 * sets the visibility of the table displaying the user's friends' keys
-	 */
-	function renderFriendTable(data){
+    /* 
+     * sets the visibility of the key table / creation form
+     * @param data.visible {boolean}	if true should show table
+     * @param data.keys    {array} 	    contains Key objects
+     */
+    function renderUserKey(data) {
 
-		var friendTable = document.getElementById('friend_table');
-		var noFriendMsg = document.getElementById('no_friends');
+        var keyFormWrapper = document.getElementById('keyFormWrapper');
+        var keyTable = document.getElementById('key_table');
 
-        if(!data.visible){
-
-        	noFriendMsg.style.display = "block";
-        	friendTable.style.display = "none";
-        	return;
+        if (!data.visible) {
+            keyFormWrapper.style.display = "block";
+            keyTable.style.display = "none";
+            return;
         }
 
+        // update the rows in the table where user's key is displayed
+        updateTableRows(data.keys, keyTable);
+
+        // display the table and hide creation form
+        keyTable.style.display = "block";
+        document.getElementById('keyGenProgress').style.display = "none";
+        keyFormWrapper.style.display = "none";
+    }
+
+
+    /* 
+     * sets the visibility of the table displaying the user's friends' keys
+     * @param data.visible {boolean}	if true should show table
+     * @param data.keys    {array} 	    contains Key objects
+     */
+    function renderFriendTable(data) {
+
+        var friendTable = document.getElementById('friend_table');
+        var noFriendMsg = document.getElementById('no_friends');
+
+        if (!data.visible) {
+            noFriendMsg.style.display = "block";
+            friendTable.style.display = "none";
+            return;
+        }
+
+        // update the rows in the table where public keys are displayed
         updateTableRows(data.keys, friendTable);
-		friendTable.style.display = "block";
-		document.forms["friendInsForm"].reset();
-		noFriendMsg.style.display = "none";
-	}
 
-	/* 
-	 * Updates the key table with the user's details
-	 */ 
-	function updateTableRows(keys, table){
-
-		keys.forEach(function(key, index){
-			var row = table.insertRow(index+1);
-			row.insertCell(0).innerHTML = key.fb_id;
-			row.insertCell(1).innerHTML = key.getName();
-			row.insertCell(2).innerHTML = key.getEmail();
-
-			// used for showing details of a key
-			var showBtn = document.createElement("A");
-			showBtn.innerHTML="show key";
-			showBtn.href="#";
-			showBtn.addEventListener('click', showKeyDetails);
-
-			// used for deleting a key
-			var deleteBtn = document.createElement("SPAN");
-			deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-			deleteBtn.addEventListener('click', requestDelete);
-
-			// user may have multiple private keys in future, so this would
-			// only need to be slightly modified 
-			if(key.privKey != null){
-				showBtn.setAttribute('data-uid', 'whisper_key');
-				deleteBtn.setAttribute('data-uid', 'whisper_key');
-			}
-			else{
-				showBtn.setAttribute('data-uid', key.fb_id);
-				deleteBtn.setAttribute('data-uid', key.fb_id);
-			}
-			row.insertCell(3).appendChild(showBtn);
-			row.insertCell(4).innerHTML = key.getPubKeyLength();
-			row.insertCell(5).appendChild(deleteBtn);
-		});
-	}
+        // display the table and reset public key insertion form
+        friendTable.style.display = "block";
+        document.forms["friendInsForm"].reset();
+        noFriendMsg.style.display = "none";
+    }
 
 
-	/*
-	 * Controls which input form should be displayed to input user's key
-	 */
-	function handleKeyGenType(e){
+    /* 
+     * Updates the key table with the user's details
+     * @param keys {array} an array of Key objects
+     * @param table {element} the table to append rows to
+     */
+    function updateTableRows(keys, table) {
 
-		if(e.target.value == 1){
-			document.forms["keyGenForm"].style.display = "block";
-			document.forms["keyInsForm"].style.display = "none";
-		}
-		else{
-			document.forms["keyGenForm"].style.display = "none";
-			document.forms["keyInsForm"].style.display = "block";
-		}
-	}
+        keys.forEach(function(key, index) {
+            var row = table.insertRow(index + 1);
+            row.insertCell(0).innerHTML = key.fb_id;
+            row.insertCell(1).innerHTML = key.getName();
+            row.insertCell(2).innerHTML = key.getEmail();
 
+            // used for showing details of a key
+            var showBtn = document.createElement("A");
+            showBtn.innerHTML = "show key";
+            showBtn.href = "#";
+            showBtn.addEventListener('click', showKeyDetails);
 
-	/* 
-	 * handles the creation of a key by the user
-	 */
-	function handleKeyForm(e){
-		// grab all the form data
-		e.preventDefault();
-		var form = document.forms["keyGenForm"];
-		var fb_id = form.fb_id.value.trim();
-		var name = form.name.value.trim();
-		var email = form.email.value.trim();
-		var password = form.password.value;
-		var numBits = form.numBits[form.numBits.selectedIndex].value;
+            // used for deleting a key
+            var deleteBtn = document.createElement("SPAN");
+            deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
+            deleteBtn.addEventListener('click', requestDelete);
 
-		// notify the user a key is being generated
-		document.getElementById('keyGenProgress').style.display = "block";
+            /* 
+             * TODO: User may have multiple private keys in future, so this would
+             * only need to be slightly modified 
+             */
+            if (key.privKey != null) {
+                showBtn.setAttribute('data-uid', 'whisper_key');
+                deleteBtn.setAttribute('data-uid', 'whisper_key');
+            } else {
+                showBtn.setAttribute('data-uid', key.fb_id);
+                deleteBtn.setAttribute('data-uid', key.fb_id);
+            }
 
-		// push an event to let the controller know a key has been requested
-		EventManager.publish('newKey', {'fb_id'		: fb_id,
-										'name' 		: name,
-										'email'		: email,
-										'password'	: password,
-										'numBits'	: numBits});
-	}
-
-
-	/* 
-	 * Grabs form data and requests private key to be stored
-	 */
-	function handlePrivInsert(e){
-		e.preventDefault();
-		var form = document.forms["keyInsForm"];
-		var fb_id = form.fb_id.value.trim();
-		var password = form.password.value;
-		var privKey = form.privKey.value.trim();
-
-		// notify the user a key is being generated
-		document.getElementById('keyGenProgress').style.display = "block";
-
-		EventManager.publish('privKeyInsert', {'fb_id': fb_id,
-											   'password': password,
-										   	   'privKey': privKey});
-	}
+            row.insertCell(3).appendChild(showBtn);
+            row.insertCell(4).innerHTML = key.getPubKeyLength();
+            row.insertCell(5).appendChild(deleteBtn);
+        });
+    }
 
 
-	/* 
-	 * Grabs form data and requests public key to be stored
-	 */
-	function handlePubInsert(e){
-		e.preventDefault();
-		var form = document.forms["friendInsForm"];
-		var fb_id = form.fb_id.value.trim();
-		var pubKey = form.pubKey.value.trim();
+    // Grabs the form data needed to create a key & requests its' creation
+    function handleKeyForm(e) {
+        // grab all the form data
+        e.preventDefault();
+        var form = document.forms["keyGenForm"];
+        var fb_id = form.fb_id.value.trim();
+        var name = form.name.value.trim();
+        var email = form.email.value.trim();
+        var password = form.password.value;
+        var numBits = form.numBits[form.numBits.selectedIndex].value;
 
-		EventManager.publish('pubKeyInsert', {'fb_id': fb_id,
-											  'pubKey': pubKey});
-	}
+        // notify the user a key is being generated
+        document.getElementById('keyGenProgress').style.display = "block";
 
-	function toggleFriendForm(e){
-		if(document.forms["friendInsForm"].style.display == "none"){
-			document.forms["friendInsForm"].style.display = "block";
-		}
-		else{
-			document.forms["friendInsForm"].style.display = "none";
-		}
-	}
+        // push an event to let the controller know a new key has been requested
+        EventManager.publish('newKey', {
+            'fb_id': fb_id,
+            'name': name,
+            'email': email,
+            'password': password,
+            'numBits': numBits
+        });
+    }
 
 
-	// warn the user about deleting the element
-	function requestDelete(element){
-		// get the id of the key to be deleted
-		console.log(element.target.id);
-		// confirm they want to delete the key
+    // Grabs already generated private key & requests its' insertion
+    function handlePrivInsert(e) {
+        e.preventDefault();
+        var form = document.forms["keyInsForm"];
+        var fb_id = form.fb_id.value.trim();
+        var password = form.password.value;
+        var privKey = form.privKey.value.trim();
 
-		// remove the key from local storage
+        // notify the user a key is being generated
+        document.getElementById('keyGenProgress').style.display = "block";
 
-		// update the table
-	}
+        EventManager.publish('privKeyInsert', {
+            'fb_id': fb_id,
+            'password': password,
+            'privKey': privKey
+        });
+    }
 
-	return{
-		renderUserKey: renderUserKey,
-		renderFriendTable: renderFriendTable,
-		renderError: renderError,
-		bindEvents: bindEvent
-	}
+
+    // Grabs form data and requests public key to be stored
+    function handlePubInsert(e) {
+        e.preventDefault();
+        var form = document.forms["friendInsForm"];
+        var fb_id = form.fb_id.value.trim();
+        var pubKey = form.pubKey.value.trim();
+
+        EventManager.publish('pubKeyInsert', {
+            'fb_id': fb_id,
+            'pubKey': pubKey
+        });
+    }
+
+
+    // Sets the visibility of the public key form
+    function toggleFriendForm(e) {
+        if (document.forms["friendInsForm"].style.display == "none") {
+            document.forms["friendInsForm"].style.display = "block";
+        } else {
+            document.forms["friendInsForm"].style.display = "none";
+        }
+    }
+
+
+    // Sets the visibility of the private key forms
+    function toggleKeyGenType(e) {
+
+        if (e.target.value == 1) {
+            document.forms["keyGenForm"].style.display = "block";
+            document.forms["keyInsForm"].style.display = "none";
+        } else {
+            document.forms["keyGenForm"].style.display = "none";
+            document.forms["keyInsForm"].style.display = "block";
+        }
+    }
+
+
+    // warn the user about deleting the element
+    function requestDelete(element) {
+        // get the id of the key to be deleted
+        console.log(element.target.id);
+        // confirm they want to delete the key
+
+        // remove the key from local storage
+
+        // update the table
+    }
+
+    return {
+        renderUserKey: renderUserKey,
+        renderFriendTable: renderFriendTable,
+        renderError: renderError,
+        bindEvents: bindEvent
+    }
 
 });
 define('whisper-options',['KeyController', 'optionsView'], function (KeyController, optionsView) {
