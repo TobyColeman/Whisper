@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Whisper - Dashboard</title>
+		<link rel="stylesheet" type="text/css" href="css/common.css">
+		<link rel="stylesheet" type="text/css" href="css/ionicons.css">
+		<link rel="stylesheet" type="text/css" href="css/options.css">
+	</head>
+
+	<body>
+
+		<h1 class="header">Whisper - Dashboard</h1>
+
+		<div id="errorBlock" class="redBlock invis">
+			<h3 name="blockText" class="text-center"></h3>
+		</div>
+		
+		<h2>My Key</h2>
+
+		<div id="keyGenProgress" class="redBlock invis">
+			<h3 name="blockText" class="text-center">Generating Key. This may take some time...</h3>
+		</div>
+
+
+
+		<!-- KEY CREATION -->
+		<div id="keyFormWrapper" class="invis">
+			<p>You do not yet have a key.</p>
+
+			<select class="dropdown-input" id="keyOpts" required>
+				<option value="1" selected="selected">Generate Key</option>
+				<option value="2">Insert Key</option>
+			</select>
+
+			<form id="keyGenForm">
+				<input class="text-input" type="text" name="fb_id" placeholder="your Facebook ID" required>
+				<br>
+				<input class="text-input" type="text" name="name" placeholder="your name" required>
+				<br>
+				<input class="text-input" type="email" name="email" placeholder="your email" required>
+				<br>
+				<input class="text-input" type="password" name="password" placeholder="password" required>
+				<br>
+				<label>Key bit-length</label>
+				<br>
+				<select class="dropdown-input" name="numBits" required>
+					<option value="1024" selected="selected">1024</option>
+					<option value="2048">2048</option>
+				</select>
+				<br>
+				<button type="submit" value="submit">Submit</button>
+			</form>
+
+			<form id="keyInsForm" class="invis">
+				<input class="text-input" type="text" name="fb_id" placeholder="your Facebook ID" required>
+				<br>
+				<input class="text-input" type="password" name="password" placeholder="your password" required>
+				<br>
+				<textarea class="textarea-large" name="privKey" spellcheck="false" placeholder="paste your private key here..." required></textarea>
+				<br>
+				<button type="submit" value="submit">Submit</button>
+			</form>
+
+
+
+		</div>
+
+		<!-- USER'S KEY TABLE -->
+		<table id="key_table" class="invis">
+			<thead>
+				<tr>
+					<th>Facebook Id</th>
+					<th>Name</th>
+					<th>Email</th>
+					<th></th>
+					<th>Length</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+
+		<br>
+
+		<h2 id="friend_header">Friends' Keys</h2>
+		<p id="no_friends" class="invis">No keys to display.</p>
+
+		<!-- FRIENDS' KEY TABLE -->
+		<div class="wrapper">
+
+			<table id="friend_table" class="col-left invis">
+				<thead>
+					<tr>
+						<th>Facebook Id</th>
+						<th>Name</th>
+						<th>Email</th>
+						<th></th>
+						<th>Length</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+
+			<div id="friendFormWrapper" class="col-left">
+				<h2><a href="#" id="friendFormToggle">Insert Friends' Key</a></h2>
+				<br>
+				<form id="friendInsForm" >
+					<input class="text-input" type="text" name="fb_id" placeholder="Friend's Facebook ID" required>
+					<button type="submit" value="submit">Submit</button>
+					<br>
+					<textarea class="textarea-medium" name="pubKey" spellcheck="false" 
+							  placeholder="paste your friend's public key here..." required>
+				    </textarea>
+					<br>
+				</form>
+
+			</div>
+
+		</div>
+
+		<dialog id="keyModal">
+		  <h3 name="modalHeading"></h3>
+		  <button class="close">Okay</button>
+		</dialog>
+
+		<script type="text/javascript" src="js/whisper-options.js"></script>		
+	</body>
+</html>

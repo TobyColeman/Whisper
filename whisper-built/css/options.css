@@ -1,0 +1,97 @@
+body{
+	font-family: Helvetica;
+}
+
+/* table styling */
+table{
+	border-spacing: 0px;
+}
+
+
+td{
+	border-top: 1px solid #ddd;
+}
+
+
+th, td{
+	text-align: left;	
+	padding-right: 20px;
+	font-size: medium;
+	line-height: 30px;
+}
+
+/* input elements, some styling used from http://getbootstrap.com/ */
+.text-input, textarea{
+	border: 1px solid #ccc;
+	padding: 4px 6px;
+	margin-bottom: 10px;
+	font-size: 14px;
+	vertical-align: middle;
+	line-height: 20px;
+	border-radius: 4px;
+	transition: border linear .2s,box-shadow linear .2s;
+	box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+	background-color: #fff;
+}
+
+.textarea-large{
+	width:547px;
+	height: 323px;
+}
+
+.textarea-medium{
+	width: 500px;
+	height: 200px;
+}
+
+select {
+  width: 180px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+
+.dropdown-input{
+	padding: 4px 6px;
+	margin-bottom: 10px;
+	font-size: 14px;
+	color: #555;
+	vertical-align: middle;
+	  border-radius: 4px;
+}
+
+label{
+	display: inline-block;
+	padding-bottom: 10px;
+}
+
+
+/* used for elements that have toggableable visibility */
+.invis{
+	display:none;
+}
+
+
+/* popup that displays when key is generating */
+.redBlock{
+	border-radius:4px;
+	max-width: 350px;
+	background-color: #a94442;
+}
+
+.redBlock h3{
+	padding: 8px 16px;
+	color: white;
+}
+
+.col-left{
+	float: left;
+	padding-right: 20px;
+}
+
+.col-right{
+	float:right;
+}
+
+#errorBlock{
+	margin: 0px auto;
+}
