@@ -1,10 +1,9 @@
 // TODO: Could split this up into more modular parts to make it easier to read
 // TODO: Remove StoreController and publish events instead
-
 define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
 
     function bindEvent() {
-    	// form events
+        // form events
         document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
         document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
         document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
@@ -13,7 +12,9 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         // click events
         document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
         document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-        Utils.addListenerToClass('close', 'click', function(){this.parentNode.close()});
+        Utils.addListenerToClass('close', 'click', function() {
+            this.parentNode.close()
+        });
 
         // events emitted from EventManager (stuff from the controllers)
         EventManager.subscribe('newPubKey', renderFriendTable);
@@ -101,7 +102,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
      */
     function updateTableRows(keys, table) {
 
-    	keys = Array.isArray(keys) ? keys : [keys];
+        keys = Array.isArray(keys) ? keys : [keys];
 
         keys.forEach(function(key, index) {
             var row = table.insertRow(index + 1);
@@ -223,7 +224,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
     // displays a modal asking user to confirm deletion
     function promptDelete(e) {
 
-    	// store a reference to the stuff needed for deletion 
+        // store a reference to the stuff needed for deletion 
         var row = e.target.parentNode.parentElement;
         var rowIndex = row.rowIndex;
         var tableId = row.parentElement.parentElement.id;
@@ -233,83 +234,86 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         // store the references in hiden form and displays modal
         updateModal();
 
-        function updateModal(){
-        	var modal = document.getElementById('delModal');
-        	modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
-        	document.forms["delForm"].keyId.value = keyId;
-        	document.forms["delForm"].rowIndex.value = rowIndex;
-        	document.forms["delForm"].tableId.value = tableId;			    
-        	modal.showModal();
+        function updateModal() {
+            var modal = document.getElementById('delModal');
+            modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
+            document.forms["delForm"].keyId.value = keyId;
+            document.forms["delForm"].rowIndex.value = rowIndex;
+            document.forms["delForm"].tableId.value = tableId;
+            modal.showModal();
         }
     }
 
 
     // grabs hidden form data and attempts to delete key from storage
-	function doDelete(e){
+    function doDelete(e) {
 
-		e.preventDefault();
+        e.preventDefault();
 
-		var keyId = document.forms["delForm"].keyId.value;
-		var tableId = document.forms["delForm"].tableId.value;
-		var rowIndex = document.forms["delForm"].rowIndex.value;
+        var keyId = document.forms["delForm"].keyId.value;
+        var tableId = document.forms["delForm"].tableId.value;
+        var rowIndex = document.forms["delForm"].rowIndex.value;
 
-    	StoreController.delKey(keyId, function(success){
+        StoreController.delKey(keyId, function(success) {
 
-    		if (!success){
-    			renderError({error: 'Could not find key'});
-    			return;
-    		}
+            if (!success) {
+                renderError({
+                    error: 'Could not find key'
+                });
+                return;
+            }
 
-    		if (keyId === 'whisper_key'){
+            if (keyId === 'whisper_key') {
                 EventManager.publish('noPrivKey', {
                     visible: false
                 });
-    		}
+            }
 
-    		document.getElementById(tableId).rows[rowIndex].remove();
+            document.getElementById(tableId).rows[rowIndex].remove();
 
-    		document.forms["delForm"].parentNode.close();
-    	});
+            document.forms["delForm"].parentNode.close();
+        });
     };
 
 
     // display key details to the user
     function showKeyDetails(e) {
 
-    	getKeyFromTable(e, updateModal);
+        getKeyFromTable(e, updateModal);
 
-	    // Helper function for getting key from table, checks if key exists.
-	    function getKeyFromTable(e, callback){
-	        var keyId = e.target.getAttribute('data-uid');
+        // Helper function for getting key from table, checks if key exists.
+        function getKeyFromTable(e, callback) {
+            var keyId = e.target.getAttribute('data-uid');
 
-	        StoreController.getKey(keyId, function(key){
-	        	if(!key){
-	        		renderError({error: 'Could not find key'});
-	        		return;
-	        	}
-	        	callback(key);
-	        });
-	    }
+            StoreController.getKey(keyId, function(key) {
+                if (!key) {
+                    renderError({
+                        error: 'Could not find key'
+                    });
+                    return;
+                }
+                callback(key);
+            });
+        }
 
-        function updateModal(key){
-        	window.someKey = key;
-	        var modal = document.getElementById('keyModal');
-	        modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+        function updateModal(key) {
+            window.someKey = key;
+            var modal = document.getElementById('keyModal');
+            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
 
-	        if(key.privKey === null){
-	        	modal.children.namedItem('privKeyText').style.display = "none";
-	        	modal.children.namedItem('privateHeading').style.display = "none";
-	        }
-	        else{
-	        	modal.children.namedItem('privKeyText').style.display = "block";
-	        	modal.children.namedItem('privateHeading').style.display = "block";	        	
-	        }
+            if (key.privKey === null) {
+                modal.children.namedItem('privKeyText').style.display = "none";
+                modal.children.namedItem('privateHeading').style.display = "none";
+            } else {
+                modal.children.namedItem('privKeyText').style.display = "block";
+                modal.children.namedItem('privateHeading').style.display = "block";
+            }
 
-	        modal.children.namedItem('privKeyText').innerHTML = key.privKey;
-	        modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
+            modal.children.namedItem('privKeyText').innerHTML = key.privKey;
+            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
 
-	        modal.showModal();
-	    }
+            modal.showModal();
+        }
     }
 
 

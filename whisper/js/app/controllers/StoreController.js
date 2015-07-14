@@ -14,16 +14,14 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} the function to execute when storing is complete
      */
     StoreController.prototype.getKey = function(key, callback) {
-        chrome.storage.local.get(key, function(result){
-        	// TODO: Should probably convert to keys here instead of in hasFriends()
-        	if (key === null){
-        		callback(result);
-        	}
-            else if (result[key] === undefined){
-            	callback(false);
-            }
-            else{
-            	callback(new Key(result[key]));
+        chrome.storage.local.get(key, function(result) {
+            // TODO: Should probably convert to keys here instead of in hasFriends()
+            if (key === null) {
+                callback(result);
+            } else if (result[key] === undefined) {
+                callback(false);
+            } else {
+                callback(new Key(result[key]));
             }
         });
     }
@@ -63,17 +61,13 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} runs upon deletion/failure
      */
     StoreController.prototype.delKey = function(key_id, callback) {
-    	console.log("KEYID", key_id);
-   		this.getKey(key_id, function(key){
-   			console.log(':::', key);
-   			if (!key){
-   				console.log('not key');
-   				callback(false);
-   			}
-   			else{
-   				chrome.storage.local.remove(key_id, callback(true));
-   			}
-   		})
+        this.getKey(key_id, function(key) {
+            if (!key) {
+                callback(false);
+            } else {
+                chrome.storage.local.remove(key_id, callback(true));
+            }
+        })
     };
 
 

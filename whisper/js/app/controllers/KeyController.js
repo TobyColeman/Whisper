@@ -112,11 +112,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             // key associated with an existing fb_id
             StoreController.getKey(null, function(keys) {
-                if(keys[data.fb_id] !== undefined){
+                if (keys[data.fb_id] !== undefined) {
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;                    
+                    return;
                 }
 
                 var pubKey = result['key'].toPublic().armor();
@@ -161,16 +161,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             StoreController.getKey(null, function(keys) {
 
                 // key associated with an existing fb_id
-                if(keys[data.fb_id] !== undefined){
+                if (keys[data.fb_id] !== undefined) {
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;                    
+                    return;
                 }
 
                 // if for some weird reason their facebook id is 'whisper_key'...
-                if (keys['whisper_key'] !== undefined ) {
-                    if (keys['whisper_key'].fb_id === data.fb_id){
+                if (keys['whisper_key'] !== undefined) {
+                    if (keys['whisper_key'].fb_id === data.fb_id) {
                         EventManager.publish('error', {
                             error: 'Public key cannot have same ID as private key'
                         });
