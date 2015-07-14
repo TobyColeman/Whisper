@@ -449,67 +449,69 @@ for(p=3==H?c?new Array(0,32,2):new Array(30,-2,-2):c?new Array(0,32,2,62,30,-2,6
 d.prototype.xor=ja,d.prototype.andNot=la,d.prototype.not=ma,d.prototype.shiftLeft=na,d.prototype.shiftRight=oa,d.prototype.getLowestSetBit=qa,d.prototype.bitCount=sa,d.prototype.testBit=ta,d.prototype.setBit=va,d.prototype.clearBit=wa,d.prototype.flipBit=xa,d.prototype.add=za,d.prototype.subtract=Aa,d.prototype.multiply=Ba,d.prototype.divide=Da,d.prototype.remainder=Ea,d.prototype.divideAndRemainder=Fa,d.prototype.modPow=Va,d.prototype.modInverse=Ya,d.prototype.pow=Ma,d.prototype.gcd=Wa,d.prototype.isProbablePrime=Za,d.prototype.toMPI=$a,d.prototype.square=Ca},{"../../util.js":74,"./jsbn.js":37}],38:[function(a,b,c){function d(){function a(a){for(var b=0;b<a.length;b++)a[b]=j.getSecureRandomOctet()}this.nextBytes=a}function e(a,b,c){return m=m.bitLength()===b.bitLength()?m.square().mod(b):j.getRandomBigIntegerInRange(h.TWO,b),l=m.modInverse(b).modPow(c,b),a.multiply(l).mod(b)}function f(a,b){return a.multiply(m).mod(b)}function g(){function a(a,b,c,d,g,j,l){k.rsa_blinding&&(a=e(a,b,c));var m=a.mod(g).modPow(d.mod(g.subtract(h.ONE)),g),n=a.mod(j).modPow(d.mod(j.subtract(h.ONE)),j);i.print_debug("rsa.js decrypt\nxpn:"+i.hexstrdump(m.toMPI())+"\nxqn:"+i.hexstrdump(n.toMPI()));var o=n.subtract(m);return 0===o[0]?(o=m.subtract(n),o=o.multiply(l).mod(j),o=j.subtract(o)):o=o.multiply(l).mod(j),o=o.multiply(g).add(m),k.rsa_blinding&&(o=f(o,b)),o}function b(a,b,c){return a.modPowInt(b,c)}function c(a,b,c){return a.modPow(b,c)}function g(a,b,c){return a.modPowInt(b,c)}function j(){this.n=null,this.e=0,this.ee=null,this.d=null,this.p=null,this.q=null,this.dmp1=null,this.dmq1=null,this.u=null}function l(a,b){function c(a){var b=g.exportKey("jwk",a.privateKey);return b instanceof Promise||(b=f(b,"Error exporting RSA key pair.")),b}function e(a){function c(a){var b=a.replace(/\-/g,"+").replace(/_/g,"/"),c=i.hexstrdump(atob(b));return new h(c,16)}var d=new j;return d.n=c(a.n),d.ee=new h(b,16),d.d=c(a.d),d.p=c(a.p),d.q=c(a.q),d.u=d.p.modInverse(d.q),d}function f(a,b){return new Promise(function(c,d){a.onerror=function(a){d(new Error(b))},a.oncomplete=function(a){c(a.target.result)}})}var g=i.getWebCrypto();if(g){var k,l,m=new Uint32Array([parseInt(b,16)]),n=new Uint8Array(m.buffer);return window.crypto&&window.crypto.webkitSubtle?(k={name:"RSA-OAEP",modulusLength:a,publicExponent:n.subarray(0,3)},l=g.generateKey(k,!0,["encrypt","decrypt"])):(k={name:"RSASSA-PKCS1-v1_5",modulusLength:a,publicExponent:n.subarray(0,3),hash:{name:"SHA-1"}},l=g.generateKey(k,!0,["sign","verify"]),l instanceof Promise||(l=f(l,"Error generating RSA key pair."))),l.then(c).then(function(a){return e(a instanceof ArrayBuffer?JSON.parse(String.fromCharCode.apply(null,new Uint8Array(a))):a)})}return new Promise(function(c){var e=new j,f=new d,g=a>>1;for(e.e=parseInt(b,16),e.ee=new h(b,16);;){for(;e.p=new h(a-g,1,f),0!==e.p.subtract(h.ONE).gcd(e.ee).compareTo(h.ONE)||!e.p.isProbablePrime(10););for(;e.q=new h(g,1,f),0!==e.q.subtract(h.ONE).gcd(e.ee).compareTo(h.ONE)||!e.q.isProbablePrime(10););if(e.p.compareTo(e.q)<=0){var i=e.p;e.p=e.q,e.q=i}var k=e.p.subtract(h.ONE),l=e.q.subtract(h.ONE),m=k.multiply(l);if(0===m.gcd(e.ee).compareTo(h.ONE)){e.n=e.p.multiply(e.q),e.d=e.ee.modInverse(m),e.dmp1=e.d.mod(k),e.dmq1=e.d.mod(l),e.u=e.p.modInverse(e.q);break}}c(e)})}this.encrypt=b,this.decrypt=a,this.verify=g,this.sign=c,this.generate=l,this.keyObject=j}var h=a("./jsbn.js"),i=a("../../util.js"),j=a("../random.js"),k=a("../../config"),l=h.ZERO,m=h.ZERO;b.exports=g},{"../../config":17,"../../util.js":74,"../random.js":39,"./jsbn.js":37}],39:[function(a,b,c){function d(){this.buffer=null,this.size=null}var e=a("../type/mpi.js"),f=null;"undefined"==typeof window&&(f=a("crypto")),b.exports={getRandomBytes:function(a){for(var b="",c=0;a>c;c++)b+=String.fromCharCode(this.getSecureRandomOctet());return b},getSecureRandom:function(a,b){for(var c=this.getSecureRandomUint(),d=(b-a).toString(2).length;(c&Math.pow(2,d)-1)>b-a;)c=this.getSecureRandomUint();return a+Math.abs(c&Math.pow(2,d)-1)},getSecureRandomOctet:function(){var a=new Uint8Array(1);return this.getRandomValues(a),a[0]},getSecureRandomUint:function(){var a=new Uint8Array(4),b=new DataView(a.buffer);return this.getRandomValues(a),b.getUint32(0)},getRandomValues:function(a){if(!(a instanceof Uint8Array))throw new Error("Invalid type: buf not an Uint8Array");if("undefined"!=typeof window&&window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(a);else if("undefined"!=typeof window&&"object"==typeof window.msCrypto&&"function"==typeof window.msCrypto.getRandomValues)window.msCrypto.getRandomValues(a);else if(f){var b=f.randomBytes(a.length);a.set(b)}else{if(!this.randomBuffer.buffer)throw new Error("No secure random number generator available.");this.randomBuffer.get(a)}},getRandomBigInteger:function(a){if(1>a)throw new Error("Illegal parameter value: bits < 1");var b=Math.floor((a+7)/8),c=this.getRandomBytes(b);a%8>0&&(c=String.fromCharCode(Math.pow(2,a%8)-1&c.charCodeAt(0))+c.substring(1));var d=new e;return d.fromBytes(c),d.toBigInteger()},getRandomBigIntegerInRange:function(a,b){if(b.compareTo(a)<=0)throw new Error("Illegal parameter value: max <= min");for(var c=b.subtract(a),d=this.getRandomBigInteger(c.bitLength());d.compareTo(c)>0;)d=this.getRandomBigInteger(c.bitLength());return a.add(d)},randomBuffer:new d},d.prototype.init=function(a){this.buffer=new Uint8Array(a),this.size=0},d.prototype.set=function(a){if(!this.buffer)throw new Error("RandomBuffer is not initialized");if(!(a instanceof Uint8Array))throw new Error("Invalid type: buf not an Uint8Array");var b=this.buffer.length-this.size;a.length>b&&(a=a.subarray(0,b)),this.buffer.set(a,this.size),this.size+=a.length},d.prototype.get=function(a){if(!this.buffer)throw new Error("RandomBuffer is not initialized");if(!(a instanceof Uint8Array))throw new Error("Invalid type: buf not an Uint8Array");if(this.size<a.length)throw new Error("Random number buffer depleted");for(var b=0;b<a.length;b++)a[b]=this.buffer[--this.size],this.buffer[this.size]=0}},{"../type/mpi.js":72,crypto:!1}],40:[function(a,b,c){var d=a("./public_key"),e=a("./pkcs1.js");a("./hash");b.exports={verify:function(a,b,c,f,g){switch(a){case 1:case 2:case 3:var h=new d.rsa,i=f[0].toBigInteger(),j=f[0].byteLength(),k=f[1].toBigInteger(),l=c[0].toBigInteger(),m=h.verify(l,k,i),n=e.emsa.encode(b,g,j);return 0===m.compareTo(n);case 16:throw new Error("signing with Elgamal is not defined in the OpenPGP standard.");case 17:var o=new d.dsa,p=c[0].toBigInteger(),q=c[1].toBigInteger(),r=f[0].toBigInteger(),s=f[1].toBigInteger(),t=f[2].toBigInteger(),u=f[3].toBigInteger(),l=g,v=o.verify(b,p,q,l,r,s,t,u);return 0===v.compareTo(p);default:throw new Error("Invalid signature algorithm.")}},sign:function(a,b,c,f){var g;switch(b){case 1:case 2:case 3:var h=new d.rsa,i=c[2].toBigInteger(),j=c[0].toBigInteger();return g=e.emsa.encode(a,f,c[0].byteLength()),h.sign(g,i,j).toMPI();case 17:var k=new d.dsa,l=c[0].toBigInteger(),m=c[1].toBigInteger(),n=c[2].toBigInteger(),o=(c[3].toBigInteger(),c[4].toBigInteger());g=f;var p=k.sign(a,g,n,l,m,o);return p[0].toString()+p[1].toString();case 16:throw new Error("Signing with Elgamal is not defined in the OpenPGP standard.");default:throw new Error("Invalid signature algorithm.")}}}},{"./hash":28,"./pkcs1.js":33,"./public_key":36}],41:[function(a,b,c){function d(a){var b=/^-----BEGIN PGP (MESSAGE, PART \d+\/\d+|MESSAGE, PART \d+|SIGNED MESSAGE|MESSAGE|PUBLIC KEY BLOCK|PRIVATE KEY BLOCK|SIGNATURE)-----$\n/m,c=a.match(b);if(!c)throw new Error("Unknown ASCII armor type");return c[1].match(/MESSAGE, PART \d+\/\d+/)?o.armor.multipart_section:c[1].match(/MESSAGE, PART \d+/)?o.armor.multipart_last:c[1].match(/SIGNED MESSAGE/)?o.armor.signed:c[1].match(/MESSAGE/)?o.armor.message:c[1].match(/PUBLIC KEY BLOCK/)?o.armor.public_key:c[1].match(/PRIVATE KEY BLOCK/)?o.armor.private_key:void 0}function e(){var a="";return p.show_version&&(a+="Version: "+p.versionstring+"\r\n"),p.show_comment&&(a+="Comment: "+p.commentstring+"\r\n"),a+="\r\n"}function f(a){var b=h(a),c=""+String.fromCharCode(b>>16)+String.fromCharCode(b>>8&255)+String.fromCharCode(255&b);return n.encode(c)}function g(a,b){var c=f(a),d=b;return c[0]==d[0]&&c[1]==d[1]&&c[2]==d[2]&&c[3]==d[3]}function h(a){for(var b=11994318,c=0;a.length-c>16;)b=b<<8^q[255&(b>>16^a.charCodeAt(c))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+1))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+2))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+3))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+4))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+5))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+6))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+7))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+8))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+9))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+10))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+11))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+12))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+13))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+14))],b=b<<8^q[255&(b>>16^a.charCodeAt(c+15))],c+=16;for(var d=c;d<a.length;d++)b=b<<8^q[255&(b>>16^a.charCodeAt(c++))];return 16777215&b}function i(a){var b=/^[ \f\r\t\u00a0\u2000-\u200a\u202f\u205f\u3000]*\n/m,c="",d=a,e=b.exec(a);if(null===e)throw new Error("Mandatory blank line missing between armor headers and armor data");return c=a.slice(0,e.index),d=a.slice(e.index+e[0].length),c=c.split("\n"),c.pop(),{headers:c,body:d}}function j(a){for(var b=0;b<a.length;b++)if(!a[b].match(/^(Version|Comment|MessageID|Hash|Charset): .+$/))throw new Error("Improperly formatted armor header: "+a[b])}function k(a){var b=/^=/m,c=a,d="",e=b.exec(a);return null!==e&&(c=a.slice(0,e.index),d=a.slice(e.index+1)),{body:c,checksum:d}}function l(a){var b=/^-----[^-]+-----$\n/m;a=a.replace(/[\t\r ]+\n/g,"\n");var c,e,h,l=d(a),m=a.split(b),o=1;if(a.search(b)!=m[0].length&&(o=0),2!=l){h=i(m[o]);var p=k(h.body);c={data:n.decode(p.body),headers:h.headers,type:l},e=p.checksum}else{h=i(m[o].replace(/^- /gm,""));var q=i(m[o+1].replace(/^- /gm,""));j(q.headers);var r=k(q.body);c={text:h.body.replace(/\n$/,"").replace(/\n/g,"\r\n"),data:n.decode(r.body),headers:h.headers,type:l},e=r.checksum}if(e=e.substr(0,4),!g(c.data,e))throw new Error("Ascii armor integrity check on message failed: '"+e+"' should be '"+f(c.data)+"'");return j(c.headers),c}function m(a,b,c,d){var g=[];switch(a){case o.armor.multipart_section:g.push("-----BEGIN PGP MESSAGE, PART "+c+"/"+d+"-----\r\n"),g.push(e()),g.push(n.encode(b)),g.push("\r\n="+f(b)+"\r\n"),g.push("-----END PGP MESSAGE, PART "+c+"/"+d+"-----\r\n");break;case o.armor.multipart_last:g.push("-----BEGIN PGP MESSAGE, PART "+c+"-----\r\n"),g.push(e()),g.push(n.encode(b)),g.push("\r\n="+f(b)+"\r\n"),g.push("-----END PGP MESSAGE, PART "+c+"-----\r\n");break;case o.armor.signed:g.push("\r\n-----BEGIN PGP SIGNED MESSAGE-----\r\n"),g.push("Hash: "+b.hash+"\r\n\r\n"),g.push(b.text.replace(/\n-/g,"\n- -")),g.push("\r\n-----BEGIN PGP SIGNATURE-----\r\n"),g.push(e()),g.push(n.encode(b.data)),g.push("\r\n="+f(b.data)+"\r\n"),g.push("-----END PGP SIGNATURE-----\r\n");break;case o.armor.message:g.push("-----BEGIN PGP MESSAGE-----\r\n"),g.push(e()),g.push(n.encode(b)),g.push("\r\n="+f(b)+"\r\n"),g.push("-----END PGP MESSAGE-----\r\n");break;case o.armor.public_key:g.push("-----BEGIN PGP PUBLIC KEY BLOCK-----\r\n"),g.push(e()),g.push(n.encode(b)),g.push("\r\n="+f(b)+"\r\n"),g.push("-----END PGP PUBLIC KEY BLOCK-----\r\n\r\n");break;case o.armor.private_key:g.push("-----BEGIN PGP PRIVATE KEY BLOCK-----\r\n"),g.push(e()),g.push(n.encode(b)),g.push("\r\n="+f(b)+"\r\n"),g.push("-----END PGP PRIVATE KEY BLOCK-----\r\n")}return g.join("")}var n=a("./base64.js"),o=a("../enums.js"),p=a("../config"),q=[0,8801531,25875725,17603062,60024545,51751450,35206124,44007191,128024889,120049090,103502900,112007375,70412248,78916387,95990485,88014382,264588937,256049778,240098180,248108927,207005800,215016595,232553829,224014750,140824496,149062475,166599357,157832774,200747345,191980970,176028764,184266919,520933865,529177874,512099556,503334943,480196360,471432179,487973381,496217854,414011600,405478443,422020573,430033190,457094705,465107658,448029500,439496647,281648992,273666971,289622637,298124950,324696449,333198714,315665548,307683447,392699481,401494690,383961940,375687087,352057528,343782467,359738805,368533838,1041867730,1050668841,1066628831,1058355748,1032471859,1024199112,1006669886,1015471301,968368875,960392720,942864358,951368477,975946762,984451313,1000411399,992435708,836562267,828023200,810956886,818967725,844041146,852051777,868605623,860066380,914189410,922427545,938981743,930215316,904825475,896059e3,878993294,887231349,555053627,563297984,547333942,538569677,579245274,570480673,588005847,596249900,649392898,640860153,658384399,666397428,623318499,631331096,615366894,606833685,785398962,777416777,794487231,802989380,759421523,767923880,751374174,743392165,695319947,704115056,687564934,679289981,719477610,711202705,728272487,737067676,2083735460,2092239711,2109313705,2101337682,2141233477,2133257662,2116711496,2125215923,2073216669,2064943718,2048398224,2057199467,2013339772,2022141063,2039215473,2030942602,1945504045,1936737750,1920785440,1929023707,1885728716,1893966647,1911503553,1902736954,1951893524,1959904495,1977441561,1968902626,2009362165,2000822798,1984871416,1992881923,1665111629,1673124534,1656046400,1647513531,1621913772,1613380695,1629922721,1637935450,1688082292,1679317903,1695859321,1704103554,1728967061,1737211246,1720132760,1711368291,1828378820,1820103743,1836060105,1844855090,1869168165,1877963486,1860430632,1852155859,1801148925,1809650950,1792118e3,1784135691,1757986588,1750004711,1765960209,1774462698,1110107254,1118611597,1134571899,1126595968,1102643863,1094667884,1077139354,1085643617,1166763343,1158490548,1140961346,1149762745,1176011694,1184812885,1200772771,1192499800,1307552511,1298785796,1281720306,1289958153,1316768798,1325007077,1341561107,1332794856,1246636998,1254647613,1271201483,1262662192,1239272743,1230733788,1213667370,1221678289,1562785183,1570797924,1554833554,1546300521,1588974462,1580441477,1597965939,1605978760,1518843046,1510078557,1527603627,1535847760,1494504007,1502748348,1486784330,1478020017,1390639894,1382365165,1399434779,1408230112,1366334967,1375129868,1358579962,1350304769,1430452783,1438955220,1422405410,1414423513,1456544974,1448562741,1465633219,1474135352];b.exports={encode:m,decode:l}},{"../config":17,"../enums.js":43,"./base64.js":42}],42:[function(a,b,c){function d(a,b){var c,d,e,g=b?b:[],h=0,i=0,j=a.length;for(e=0;j>e;e++)d=a.charCodeAt(e),0===i?(g.push(f.charAt(d>>2&63)),c=(3&d)<<4):1==i?(g.push(f.charAt(c|d>>4&15)),c=(15&d)<<2):2==i&&(g.push(f.charAt(c|d>>6&3)),h+=1,h%60===0&&g.push("\n"),g.push(f.charAt(63&d))),h+=1,h%60===0&&g.push("\n"),i+=1,3==i&&(i=0);return i>0&&(g.push(f.charAt(c)),h+=1,h%60===0&&g.push("\n"),g.push("="),h+=1),1==i&&(h%60===0&&g.push("\n"),g.push("=")),b?void 0:g.join("")}function e(a){var b,c,d=[],e=0,g=0,h=a.length;for(c=0;h>c;c++)b=f.indexOf(a.charAt(c)),b>=0&&(e&&d.push(String.fromCharCode(g|b>>6-e&255)),e=e+2&7,g=b<<e&255);return d.join("")}var f="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";b.exports={encode:d,decode:e}},{}],43:[function(a,b,c){"use strict";b.exports={s2k:{simple:0,salted:1,iterated:3,gnu:101},publicKey:{rsa_encrypt_sign:1,rsa_encrypt:2,rsa_sign:3,elgamal:16,dsa:17},symmetric:{plaintext:0,idea:1,tripledes:2,cast5:3,blowfish:4,aes128:7,aes192:8,aes256:9,twofish:10},compression:{uncompressed:0,zip:1,zlib:2,bzip2:3},hash:{md5:1,sha1:2,ripemd:3,sha256:8,sha384:9,sha512:10,sha224:11},packet:{publicKeyEncryptedSessionKey:1,signature:2,symEncryptedSessionKey:3,onePassSignature:4,secretKey:5,publicKey:6,secretSubkey:7,compressed:8,symmetricallyEncrypted:9,marker:10,literal:11,trust:12,userid:13,publicSubkey:14,userAttribute:17,symEncryptedIntegrityProtected:18,modificationDetectionCode:19},literal:{binary:"b".charCodeAt(),text:"t".charCodeAt(),utf8:"u".charCodeAt()},signature:{binary:0,text:1,standalone:2,cert_generic:16,cert_persona:17,cert_casual:18,cert_positive:19,cert_revocation:48,subkey_binding:24,key_binding:25,key:31,key_revocation:32,subkey_revocation:40,timestamp:64,third_party:80},signatureSubpacket:{signature_creation_time:2,signature_expiration_time:3,exportable_certification:4,trust_signature:5,regular_expression:6,revocable:7,key_expiration_time:9,placeholder_backwards_compatibility:10,preferred_symmetric_algorithms:11,revocation_key:12,issuer:16,notation_data:20,preferred_hash_algorithms:21,preferred_compression_algorithms:22,key_server_preferences:23,preferred_key_server:24,primary_user_id:25,policy_uri:26,key_flags:27,signers_user_id:28,reason_for_revocation:29,features:30,signature_target:31,embedded_signature:32},keyFlags:{certify_keys:1,sign_data:2,encrypt_communication:4,encrypt_storage:8,split_private_key:16,authentication:32,shared_private_key:128},keyStatus:{invalid:0,expired:1,revoked:2,valid:3,no_self_cert:4},armor:{multipart_section:0,multipart_last:1,signed:2,message:3,public_key:4,private_key:5},write:function(a,b){if("number"==typeof b&&(b=this.read(a,b)),void 0!==a[b])return a[b];throw new Error("Invalid enum value.")},read:function(a,b){for(var c in a)if(a[c]==b)return c;throw new Error("Invalid enum value.")}}},{}],44:[function(a,b,c){"use strict";b.exports=a("./openpgp.js"),b.exports.key=a("./key.js"),b.exports.message=a("./message.js"),b.exports.cleartext=a("./cleartext.js"),b.exports.util=a("./util.js"),b.exports.packet=a("./packet"),b.exports.MPI=a("./type/mpi.js"),b.exports.S2K=a("./type/s2k.js"),b.exports.Keyid=a("./type/keyid.js"),b.exports.armor=a("./encoding/armor.js"),b.exports.enums=a("./enums.js"),b.exports.config=a("./config/config.js"),b.exports.crypto=a("./crypto"),b.exports.Keyring=a("./keyring"),b.exports.AsyncProxy=a("./worker/async_proxy.js")},{"./cleartext.js":12,"./config/config.js":16,"./crypto":32,"./encoding/armor.js":41,"./enums.js":43,"./key.js":45,"./keyring":46,"./message.js":49,"./openpgp.js":50,"./packet":53,"./type/keyid.js":71,"./type/mpi.js":72,"./type/s2k.js":73,"./util.js":74,"./worker/async_proxy.js":75}],45:[function(a,b,c){"use strict";function d(a){if(!(this instanceof d))return new d(a);if(this.primaryKey=null,this.revocationSignature=null,this.directSignatures=null,this.users=null,this.subKeys=null,this.packetlist2structure(a),!this.primaryKey||!this.users)throw new Error("Invalid key: need at least key and user ID packet")}function e(a,b){return a.algorithm!==o.read(o.publicKey,o.publicKey.dsa)&&a.algorithm!==o.read(o.publicKey,o.publicKey.rsa_sign)&&(!b.keyFlags||0!==(b.keyFlags[0]&o.keyFlags.encrypt_communication)||0!==(b.keyFlags[0]&o.keyFlags.encrypt_storage))}function f(a,b){return!(a.algorithm!=o.read(o.publicKey,o.publicKey.dsa)&&a.algorithm!=o.read(o.publicKey,o.publicKey.rsa_sign)&&a.algorithm!=o.read(o.publicKey,o.publicKey.rsa_encrypt_sign)||b.keyFlags&&0===(b.keyFlags[0]&o.keyFlags.sign_data))}function g(a,b){return 3==a.version&&0!==a.expirationTimeV3?new Date(a.created.getTime()+24*a.expirationTimeV3*3600*1e3):4==a.version&&b.keyNeverExpires===!1?new Date(a.created.getTime()+1e3*b.keyExpirationTime):null}function h(a,b,c,d){a=a[c],a&&(b[c]?a.forEach(function(a){a.isExpired()||d&&!d(a)||b[c].some(function(b){return b.signature===a.signature})||b[c].push(a)}):b[c]=a)}function i(a){return this instanceof i?(this.userId=a.tag==o.packet.userid?a:null,this.userAttribute=a.tag==o.packet.userAttribute?a:null,this.selfCertifications=null,this.otherCertifications=null,void(this.revocationCertifications=null)):new i(a)}function j(a){return this instanceof j?(this.subKey=a,this.bindingSignature=null,void(this.revocationSignature=null)):new j(a)}function k(a){var b={};b.keys=[];try{var c=p.decode(a);if(c.type!=o.armor.public_key&&c.type!=o.armor.private_key)throw new Error("Armored text not of type key");var e=new n.List;e.read(c.data);var f=e.indexOfTag(o.packet.publicKey,o.packet.secretKey);if(0===f.length)throw new Error("No key packet found in armored text");for(var g=0;g<f.length;g++){var h=e.slice(f[g],f[g+1]);try{var i=new d(h);b.keys.push(i)}catch(j){b.err=b.err||[],b.err.push(j)}}}catch(j){b.err=b.err||[],b.err.push(j)}return b}function l(a){function b(){return g=new n.SecretKey,g.algorithm=o.read(o.publicKey,a.keyType),g.generate(a.numBits)}function c(){return k=new n.SecretSubkey,k.algorithm=o.read(o.publicKey,a.keyType),k.generate(a.numBits)}function e(){return a.passphrase&&(g.encrypt(a.passphrase),k.encrypt(a.passphrase)),f=new n.List,h=new n.Userid,h.read(a.userId),i={},i.userid=h,i.key=g,j=new n.Signature,j.signatureType=o.signature.cert_generic,j.publicKeyAlgorithm=a.keyType,j.hashAlgorithm=q.prefer_hash_algorithm,j.keyFlags=[o.keyFlags.certify_keys|o.keyFlags.sign_data],j.preferredSymmetricAlgorithms=[],j.preferredSymmetricAlgorithms.push(o.symmetric.aes256),j.preferredSymmetricAlgorithms.push(o.symmetric.aes192),j.preferredSymmetricAlgorithms.push(o.symmetric.aes128),j.preferredSymmetricAlgorithms.push(o.symmetric.cast5),j.preferredSymmetricAlgorithms.push(o.symmetric.tripledes),j.preferredHashAlgorithms=[],j.preferredHashAlgorithms.push(o.hash.sha256),j.preferredHashAlgorithms.push(o.hash.sha1),j.preferredHashAlgorithms.push(o.hash.sha512),j.preferredCompressionAlgorithms=[],j.preferredCompressionAlgorithms.push(o.compression.zlib),j.preferredCompressionAlgorithms.push(o.compression.zip),q.integrity_protect&&(j.features=[],j.features.push(1)),j.sign(g,i),i={},i.key=g,i.bind=k,l=new n.Signature,l.signatureType=o.signature.subkey_binding,l.publicKeyAlgorithm=a.keyType,l.hashAlgorithm=q.prefer_hash_algorithm,l.keyFlags=[o.keyFlags.encrypt_communication|o.keyFlags.encrypt_storage],l.sign(g,i),f.push(g),f.push(h),f.push(j),f.push(k),f.push(l),a.unlocked||(g.clearPrivateMPIs(),k.clearPrivateMPIs()),new d(f)}var f,g,h,i,j,k,l;if(a.keyType=a.keyType||o.publicKey.rsa_encrypt_sign,a.keyType!==o.publicKey.rsa_encrypt_sign)throw new Error("Only RSA Encrypt or Sign supported");a.passphrase||(a.unlocked=!0);var m=b(),p=c();return Promise.all([m,p]).then(e)}function m(a){for(var b={},c=0;c<a.length;c++){var d=a[c].getPrimaryUser();if(!d||!d.selfCertificate.preferredSymmetricAlgorithms)return q.encryption_cipher;d.selfCertificate.preferredSymmetricAlgorithms.forEach(function(a,c){var d=b[a]||(b[a]={prio:0,count:0,algo:a});d.prio+=64>>c,d.count++})}var e={prio:0,algo:q.encryption_cipher};for(var f in b)try{f!==o.symmetric.plaintext&&f!==o.symmetric.idea&&o.read(o.symmetric,f)&&b[f].count===a.length&&b[f].prio>e.prio&&(e=b[f])}catch(g){}return e.algo}var n=a("./packet"),o=a("./enums.js"),p=a("./encoding/armor.js"),q=a("./config"),r=a("./util");d.prototype.packetlist2structure=function(a){for(var b,c,d,e=0;e<a.length;e++)switch(a[e].tag){case o.packet.publicKey:case o.packet.secretKey:this.primaryKey=a[e],c=this.primaryKey.getKeyId();break;case o.packet.userid:case o.packet.userAttribute:b=new i(a[e]),this.users||(this.users=[]),this.users.push(b);break;case o.packet.publicSubkey:case o.packet.secretSubkey:b=null,this.subKeys||(this.subKeys=[]),d=new j(a[e]),this.subKeys.push(d);break;case o.packet.signature:switch(a[e].signatureType){case o.signature.cert_generic:case o.signature.cert_persona:case o.signature.cert_casual:case o.signature.cert_positive:if(!b){r.print_debug("Dropping certification signatures without preceding user packet");continue}a[e].issuerKeyId.equals(c)?(b.selfCertifications||(b.selfCertifications=[]),b.selfCertifications.push(a[e])):(b.otherCertifications||(b.otherCertifications=[]),b.otherCertifications.push(a[e]));break;case o.signature.cert_revocation:b?(b.revocationCertifications||(b.revocationCertifications=[]),b.revocationCertifications.push(a[e])):(this.directSignatures||(this.directSignatures=[]),this.directSignatures.push(a[e]));break;case o.signature.key:this.directSignatures||(this.directSignatures=[]),this.directSignatures.push(a[e]);break;case o.signature.subkey_binding:if(!d){r.print_debug("Dropping subkey binding signature without preceding subkey packet");continue}d.bindingSignature=a[e];break;case o.signature.key_revocation:this.revocationSignature=a[e];break;case o.signature.subkey_revocation:if(!d){r.print_debug("Dropping subkey revocation signature without preceding subkey packet");continue}d.revocationSignature=a[e]}}},d.prototype.toPacketlist=function(){var a=new n.List;a.push(this.primaryKey),a.push(this.revocationSignature),a.concat(this.directSignatures);var b;for(b=0;b<this.users.length;b++)a.concat(this.users[b].toPacketlist());if(this.subKeys)for(b=0;b<this.subKeys.length;b++)a.concat(this.subKeys[b].toPacketlist());return a},d.prototype.getSubkeyPackets=function(){var a=[];if(this.subKeys)for(var b=0;b<this.subKeys.length;b++)a.push(this.subKeys[b].subKey);return a},d.prototype.getAllKeyPackets=function(){return[this.primaryKey].concat(this.getSubkeyPackets())},d.prototype.getKeyIds=function(){for(var a=[],b=this.getAllKeyPackets(),c=0;c<b.length;c++)a.push(b[c].getKeyId());return a},d.prototype.getKeyPacket=function(a){for(var b=this.getAllKeyPackets(),c=0;c<b.length;c++)for(var d=b[c].getKeyId(),e=0;e<a.length;e++)if(d.equals(a[e]))return b[c];return null},d.prototype.getUserIds=function(){for(var a=[],b=0;b<this.users.length;b++)this.users[b].userId&&a.push(this.users[b].userId.write());return a},d.prototype.isPublic=function(){return this.primaryKey.tag==o.packet.publicKey},d.prototype.isPrivate=function(){return this.primaryKey.tag==o.packet.secretKey},d.prototype.toPublic=function(){for(var a,b=new n.List,c=this.toPacketlist(),e=0;e<c.length;e++)switch(c[e].tag){case o.packet.secretKey:a=c[e].writePublicKey();var f=new n.PublicKey;f.read(a),b.push(f);break;case o.packet.secretSubkey:a=c[e].writePublicKey();var g=new n.PublicSubkey;g.read(a),b.push(g);break;default:b.push(c[e])}return new d(b)},d.prototype.armor=function(){var a=this.isPublic()?o.armor.public_key:o.armor.private_key;return p.encode(a,this.toPacketlist().write())},d.prototype.getSigningKeyPacket=function(a){var b=this.getPrimaryUser();if(b&&f(this.primaryKey,b.selfCertificate)&&(!a||this.primaryKey.getKeyId().equals(a)))return this.primaryKey;if(this.subKeys)for(var c=0;c<this.subKeys.length;c++)if(this.subKeys[c].isValidSigningKey(this.primaryKey)&&(!a||this.subKeys[c].subKey.getKeyId().equals(a)))return this.subKeys[c].subKey;return null},d.prototype.getPreferredHashAlgorithm=function(){var a=this.getPrimaryUser();return a&&a.selfCertificate.preferredHashAlgorithms?a.selfCertificate.preferredHashAlgorithms[0]:q.prefer_hash_algorithm},d.prototype.getEncryptionKeyPacket=function(){if(this.subKeys)for(var a=0;a<this.subKeys.length;a++)if(this.subKeys[a].isValidEncryptionKey(this.primaryKey))return this.subKeys[a].subKey;var b=this.getPrimaryUser();return b&&e(this.primaryKey,b.selfCertificate)?this.primaryKey:null},d.prototype.decrypt=function(a){if(!this.isPrivate())throw new Error("Nothing to decrypt in a public key");for(var b=this.getAllKeyPackets(),c=0;c<b.length;c++){var d=b[c].decrypt(a);if(!d)return!1}return!0},d.prototype.decryptKeyPacket=function(a,b){if(!this.isPrivate())throw new Error("Nothing to decrypt in a public key");for(var c=this.getAllKeyPackets(),d=0;d<c.length;d++)for(var e=c[d].getKeyId(),f=0;f<a.length;f++)if(e.equals(a[f])){var g=c[d].decrypt(b);if(!g)return!1}return!0},d.prototype.verifyPrimaryKey=function(){if(this.revocationSignature&&!this.revocationSignature.isExpired()&&(this.revocationSignature.verified||this.revocationSignature.verify(this.primaryKey,{key:this.primaryKey})))return o.keyStatus.revoked;if(3==this.primaryKey.version&&0!==this.primaryKey.expirationTimeV3&&Date.now()>this.primaryKey.created.getTime()+24*this.primaryKey.expirationTimeV3*3600*1e3)return o.keyStatus.expired;for(var a=!1,b=0;b<this.users.length;b++)this.users[b].userId&&this.users[b].selfCertifications&&(a=!0);if(!a)return o.keyStatus.no_self_cert;var c=this.getPrimaryUser();return c?4==this.primaryKey.version&&c.selfCertificate.keyNeverExpires===!1&&Date.now()>this.primaryKey.created.getTime()+1e3*c.selfCertificate.keyExpirationTime?o.keyStatus.expired:o.keyStatus.valid:o.keyStatus.invalid},d.prototype.getExpirationTime=function(){if(3==this.primaryKey.version)return g(this.primaryKey);if(4==this.primaryKey.version){var a=this.getPrimaryUser();return a?g(this.primaryKey,a.selfCertificate):null}},d.prototype.getPrimaryUser=function(){for(var a=[],b=0;b<this.users.length;b++)if(this.users[b].userId&&this.users[b].selfCertifications)for(var c=0;c<this.users[b].selfCertifications.length;c++)a.push({user:this.users[b],selfCertificate:this.users[b].selfCertifications[c]});a=a.sort(function(a,b){return a.selfCertificate.isPrimaryUserID>b.selfCertificate.isPrimaryUserID?-1:a.selfCertificate.isPrimaryUserID<b.selfCertificate.isPrimaryUserID?1:a.selfCertificate.created>b.selfCertificate.created?-1:a.selfCertificate.created<b.selfCertificate.created?1:0});for(var b=0;b<a.length;b++)if(a[b].user.isValidSelfCertificate(this.primaryKey,a[b].selfCertificate))return a[b];return null},d.prototype.update=function(a){var b=this;if(a.verifyPrimaryKey()!==o.keyStatus.invalid){if(this.primaryKey.getFingerprint()!==a.primaryKey.getFingerprint())throw new Error("Key update method: fingerprints of keys not equal");if(this.isPublic()&&a.isPrivate()){var c=(this.subKeys&&this.subKeys.length)===(a.subKeys&&a.subKeys.length)&&(!this.subKeys||this.subKeys.every(function(b){return a.subKeys.some(function(a){return b.subKey.getFingerprint()===a.subKey.getFingerprint()})}));if(!c)throw new Error("Cannot update public key with private key if subkey mismatch");this.primaryKey=a.primaryKey}this.revocationSignature||!a.revocationSignature||a.revocationSignature.isExpired()||!a.revocationSignature.verified&&!a.revocationSignature.verify(a.primaryKey,{key:a.primaryKey})||(this.revocationSignature=a.revocationSignature),h(a,this,"directSignatures"),a.users.forEach(function(a){for(var c=!1,d=0;d<b.users.length;d++)if(a.userId&&a.userId.userid===b.users[d].userId.userid||a.userAttribute&&a.userAttribute.equals(b.users[d].userAttribute)){b.users[d].update(a,b.primaryKey),c=!0;break}c||b.users.push(a)}),a.subKeys&&a.subKeys.forEach(function(a){for(var c=!1,d=0;d<b.subKeys.length;d++)if(a.subKey.getFingerprint()===b.subKeys[d].subKey.getFingerprint()){b.subKeys[d].update(a,b.primaryKey),c=!0;break}c||b.subKeys.push(a)})}},d.prototype.revoke=function(){},i.prototype.toPacketlist=function(){var a=new n.List;return a.push(this.userId||this.userAttribute),a.concat(this.revocationCertifications),a.concat(this.selfCertifications),a.concat(this.otherCertifications),a},i.prototype.isRevoked=function(a,b){if(this.revocationCertifications){var c=this;return this.revocationCertifications.some(function(d){return d.issuerKeyId.equals(a.issuerKeyId)&&!d.isExpired()&&(d.verified||d.verify(b,{userid:c.userId||c.userAttribute,key:b}))})}return!1},i.prototype.getValidSelfCertificate=function(a){if(!this.selfCertifications)return null;for(var b=this.selfCertifications.sort(function(a,b){return a=a.created,b=b.created,a>b?-1:b>a?1:0}),c=0;c<b.length;c++)if(this.isValidSelfCertificate(a,b[c]))return b[c];return null},i.prototype.isValidSelfCertificate=function(a,b){return this.isRevoked(b,a)?!1:b.isExpired()||!b.verified&&!b.verify(a,{userid:this.userId||this.userAttribute,key:a})?!1:!0},i.prototype.verify=function(a){if(!this.selfCertifications)return o.keyStatus.no_self_cert;for(var b,c=0;c<this.selfCertifications.length;c++)if(this.isRevoked(this.selfCertifications[c],a))b=o.keyStatus.revoked;else if(this.selfCertifications[c].verified||this.selfCertifications[c].verify(a,{userid:this.userId||this.userAttribute,key:a})){if(!this.selfCertifications[c].isExpired()){b=o.keyStatus.valid;break}b=o.keyStatus.expired}else b=o.keyStatus.invalid;return b},i.prototype.update=function(a,b){var c=this;h(a,this,"selfCertifications",function(a){return a.verified||a.verify(b,{userid:c.userId||c.userAttribute,key:b})}),h(a,this,"otherCertifications"),h(a,this,"revocationCertifications")},j.prototype.toPacketlist=function(){
 var a=new n.List;return a.push(this.subKey),a.push(this.revocationSignature),a.push(this.bindingSignature),a},j.prototype.isValidEncryptionKey=function(a){return this.verify(a)==o.keyStatus.valid&&e(this.subKey,this.bindingSignature)},j.prototype.isValidSigningKey=function(a){return this.verify(a)==o.keyStatus.valid&&f(this.subKey,this.bindingSignature)},j.prototype.verify=function(a){return this.revocationSignature&&!this.revocationSignature.isExpired()&&(this.revocationSignature.verified||this.revocationSignature.verify(a,{key:a,bind:this.subKey}))?o.keyStatus.revoked:3==this.subKey.version&&0!==this.subKey.expirationTimeV3&&Date.now()>this.subKey.created.getTime()+24*this.subKey.expirationTimeV3*3600*1e3?o.keyStatus.expired:this.bindingSignature?this.bindingSignature.isExpired()?o.keyStatus.expired:this.bindingSignature.verified||this.bindingSignature.verify(a,{key:a,bind:this.subKey})?4==this.subKey.version&&this.bindingSignature.keyNeverExpires===!1&&Date.now()>this.subKey.created.getTime()+1e3*this.bindingSignature.keyExpirationTime?o.keyStatus.expired:o.keyStatus.valid:o.keyStatus.invalid:o.keyStatus.invalid},j.prototype.getExpirationTime=function(){return g(this.subKey,this.bindingSignature)},j.prototype.update=function(a,b){if(a.verify(b)!==o.keyStatus.invalid){if(this.subKey.getFingerprint()!==a.subKey.getFingerprint())throw new Error("SubKey update method: fingerprints of subkeys not equal");this.subKey.tag===o.packet.publicSubkey&&a.subKey.tag===o.packet.secretSubkey&&(this.subKey=a.subKey),!this.bindingSignature&&a.bindingSignature&&(a.bindingSignature.verified||a.bindingSignature.verify(b,{key:b,bind:this.subKey}))&&(this.bindingSignature=a.bindingSignature),this.revocationSignature||!a.revocationSignature||a.revocationSignature.isExpired()||!a.revocationSignature.verified&&!a.revocationSignature.verify(b,{key:b,bind:this.subKey})||(this.revocationSignature=a.revocationSignature)}},c.Key=d,c.readArmored=k,c.generate=l,c.getPreferredSymAlgo=m},{"./config":17,"./encoding/armor.js":41,"./enums.js":43,"./packet":53,"./util":74}],46:[function(a,b,c){b.exports=a("./keyring.js"),b.exports.localstore=a("./localstore.js")},{"./keyring.js":47,"./localstore.js":48}],47:[function(a,b,c){function d(b){this.storeHandler=b||new(a("./localstore.js")),this.publicKeys=new e(this.storeHandler.loadPublic()),this.privateKeys=new e(this.storeHandler.loadPrivate())}function e(a){this.keys=a}function f(a,b){a=a.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&");for(var c=new RegExp("<"+a+">"),d=b.getUserIds(),e=0;e<d.length;e++)if(c.test(d[e].toLowerCase()))return!0;return!1}function g(a,b){return 16===a.length?a===b.getKeyId().toHex():a===b.getFingerprint()}var h=(a("../enums.js"),a("../key.js"));a("../util.js");b.exports=d,d.prototype.store=function(){this.storeHandler.storePublic(this.publicKeys.keys),this.storeHandler.storePrivate(this.privateKeys.keys)},d.prototype.clear=function(){this.publicKeys.keys=[],this.privateKeys.keys=[]},d.prototype.getKeysForId=function(a,b){var c=[];return c=c.concat(this.publicKeys.getForId(a,b)||[]),c=c.concat(this.privateKeys.getForId(a,b)||[]),c.length?c:null},d.prototype.removeKeysForId=function(a){var b=[];return b=b.concat(this.publicKeys.removeForId(a)||[]),b=b.concat(this.privateKeys.removeForId(a)||[]),b.length?b:null},d.prototype.getAllKeys=function(){return this.publicKeys.keys.concat(this.privateKeys.keys)},e.prototype.getForAddress=function(a){for(var b=[],c=0;c<this.keys.length;c++)f(a,this.keys[c])&&b.push(this.keys[c]);return b},e.prototype.getForId=function(a,b){for(var c=0;c<this.keys.length;c++){if(g(a,this.keys[c].primaryKey))return this.keys[c];if(b&&this.keys[c].subKeys)for(var d=0;d<this.keys[c].subKeys.length;d++)if(g(a,this.keys[c].subKeys[d].subKey))return this.keys[c]}return null},e.prototype.importKey=function(a){var b=h.readArmored(a),c=this;return b.keys.forEach(function(a){var b=a.primaryKey.getKeyId().toHex(),d=c.getForId(b);d?d.update(a):c.push(a)}),b.err?b.err:null},e.prototype.push=function(a){return this.keys.push(a)},e.prototype.removeForId=function(a){for(var b=0;b<this.keys.length;b++)if(g(a,this.keys[b].primaryKey))return this.keys.splice(b,1)[0];return null}},{"../enums.js":43,"../key.js":45,"../util.js":74,"./localstore.js":48}],48:[function(a,b,c){function d(b){b=b||"openpgp-",this.publicKeysItem=b+this.publicKeysItem,this.privateKeysItem=b+this.privateKeysItem,"undefined"!=typeof window&&window.localStorage?this.storage=window.localStorage:this.storage=new(a("node-localstorage").LocalStorage)(g.node_store)}function e(a,b){var c=JSON.parse(a.getItem(b)),d=[];if(null!==c&&0!==c.length)for(var e,f=0;f<c.length;f++)e=h.readArmored(c[f]),e.err?i.print_debug("Error reading armored key from keyring index: "+f):d.push(e.keys[0]);return d}function f(a,b,c){for(var d=[],e=0;e<c.length;e++)d.push(c[e].armor());a.setItem(b,JSON.stringify(d))}b.exports=d;var g=a("../config"),h=a("../key.js"),i=a("../util.js");d.prototype.publicKeysItem="public-keys",d.prototype.privateKeysItem="private-keys",d.prototype.loadPublic=function(){return e(this.storage,this.publicKeysItem)},d.prototype.loadPrivate=function(){return e(this.storage,this.privateKeysItem)},d.prototype.storePublic=function(a){f(this.storage,this.publicKeysItem,a)},d.prototype.storePrivate=function(a){f(this.storage,this.privateKeysItem,a)}},{"../config":17,"../key.js":45,"../util.js":74,"node-localstorage":!1}],49:[function(a,b,c){"use strict";function d(a){return this instanceof d?void(this.packets=a||new i.List):new d(a)}function e(a){var b=k.decode(a).data,c=new i.List;c.read(b);var e=new d(c);return e}function f(a,b){var c=new i.Literal;c.setBytes(a,j.read(j.literal,j.literal.binary));var e=new i.List;e.push(c);var f=k.decode(b).data;e.read(f);var g=new d(e);return g}function g(a){var b=new i.Literal;b.setText(a);var c=new i.List;c.push(b);var e=new d(c);return e}function h(a){var b=new i.Literal;b.setBytes(a,j.read(j.literal,j.literal.binary));var c=new i.List;c.push(b);var e=new d(c);return e}var i=a("./packet"),j=a("./enums.js"),k=a("./encoding/armor.js"),l=a("./config"),m=a("./crypto"),n=a("./key.js");d.prototype.getEncryptionKeyIds=function(){var a=[],b=this.packets.filterByTag(j.packet.publicKeyEncryptedSessionKey);return b.forEach(function(b){a.push(b.publicKeyId)}),a},d.prototype.getSigningKeyIds=function(){var a=[],b=this.unwrapCompressed(),c=b.packets.filterByTag(j.packet.onePassSignature);if(c.forEach(function(b){a.push(b.signingKeyId)}),!a.length){var d=b.packets.filterByTag(j.packet.signature);d.forEach(function(b){a.push(b.issuerKeyId)})}return a},d.prototype.decrypt=function(a){var b=this.getEncryptionKeyIds();if(!b.length)return this;var c=a.getKeyPacket(b);if(!c.isDecrypted)throw new Error("Private key is not decrypted.");for(var e,f=this.packets.filterByTag(j.packet.publicKeyEncryptedSessionKey),g=0;g<f.length;g++)if(f[g].publicKeyId.equals(c.getKeyId())){e=f[g],e.decrypt(c);break}if(e){var h=this.packets.filterByTag(j.packet.symmetricallyEncrypted,j.packet.symEncryptedIntegrityProtected);if(0!==h.length){var k=h[0];k.decrypt(e.sessionKeyAlgorithm,e.sessionKey);var l=new d(k.packets);return k.packets=new i.List,l}}},d.prototype.getLiteralData=function(){var a=this.packets.findPacket(j.packet.literal);return a&&a.data||null},d.prototype.getText=function(){var a=this.packets.findPacket(j.packet.literal);return a?a.getText():null},d.prototype.encrypt=function(a){var b=new i.List,c=n.getPreferredSymAlgo(a),e=m.generateSessionKey(j.read(j.symmetric,c));a.forEach(function(a){var d=a.getEncryptionKeyPacket();if(!d)throw new Error("Could not find valid key packet for encryption in key "+a.primaryKey.getKeyId().toHex());var f=new i.PublicKeyEncryptedSessionKey;f.publicKeyId=d.getKeyId(),f.publicKeyAlgorithm=d.algorithm,f.sessionKey=e,f.sessionKeyAlgorithm=j.read(j.symmetric,c),f.encrypt(d),b.push(f)});var f;return f=l.integrity_protect?new i.SymEncryptedIntegrityProtected:new i.SymmetricallyEncrypted,f.packets=this.packets,f.encrypt(j.read(j.symmetric,c),e),b.push(f),f.packets=new i.List,new d(b)},d.prototype.symEncrypt=function(a){if(!a)throw new Error("The passphrase cannot be empty!");var b=j.read(j.symmetric,l.encryption_cipher),c=new i.List,e=new i.SymEncryptedSessionKey;e.sessionKeyAlgorithm=b,e.decrypt(a),c.push(e);var f=new i.SymEncryptedIntegrityProtected;return f.packets=this.packets,f.encrypt(b,e.sessionKey),c.push(f),f.packets=new i.List,new d(c)},d.prototype.symDecrypt=function(a){var b=this.packets.filterByTag(j.packet.symEncryptedSessionKey,j.packet.symEncryptedIntegrityProtected),c=b[0];c.decrypt(a);var e=b[1];e.decrypt(c.sessionKeyAlgorithm,c.sessionKey);var f=new d(e.packets);return e.packets=new i.List,f},d.prototype.sign=function(a){var b=new i.List,c=this.packets.findPacket(j.packet.literal);if(!c)throw new Error("No literal data packet to sign.");var e,f=j.write(j.literal,c.format),g=f==j.literal.binary?j.signature.binary:j.signature.text;for(e=0;e<a.length;e++){if(a[e].isPublic())throw new Error("Need private key for signing");var h=new i.OnePassSignature;h.type=g,h.hashAlgorithm=l.prefer_hash_algorithm;var k=a[e].getSigningKeyPacket();if(!k)throw new Error("Could not find valid key packet for signing in key "+a[e].primaryKey.getKeyId().toHex());h.publicKeyAlgorithm=k.algorithm,h.signingKeyId=k.getKeyId(),b.push(h)}for(b.push(c),e=a.length-1;e>=0;e--){var m=new i.Signature;if(m.signatureType=g,m.hashAlgorithm=l.prefer_hash_algorithm,m.publicKeyAlgorithm=k.algorithm,!k.isDecrypted)throw new Error("Private key is not decrypted.");m.sign(k,c),b.push(m)}return new d(b)},d.prototype.verify=function(a){var b=[],c=this.unwrapCompressed(),d=c.packets.filterByTag(j.packet.literal);if(1!==d.length)throw new Error("Can only verify message with one literal data packet.");for(var e=c.packets.filterByTag(j.packet.signature),f=0;f<e.length;f++){for(var g=null,h=0;h<a.length&&!(g=a[h].getSigningKeyPacket(e[f].issuerKeyId));h++);var i={};g?(i.keyid=e[f].issuerKeyId,i.valid=e[f].verify(g,d[0])):(i.keyid=e[f].issuerKeyId,i.valid=null),b.push(i)}return b},d.prototype.unwrapCompressed=function(){var a=this.packets.filterByTag(j.packet.compressed);return a.length?new d(a[0].packets):this},d.prototype.armor=function(){return k.encode(j.armor.message,this.packets.write())},c.Message=d,c.readArmored=e,c.readSignedContent=f,c.fromText=g,c.fromBinary=h},{"./config":17,"./crypto":32,"./encoding/armor.js":41,"./enums.js":43,"./key.js":45,"./packet":53}],50:[function(a,b,c){"use strict";function d(a,b){return b&&b.worker||"undefined"!=typeof window&&window.Worker?(b=b||{},b.config=this.config,v=new u(a,b),!0):!1}function e(){return v}function f(a,b){return a.length||(a=[a]),v?v.encryptMessage(a,b):m(function(){var c,d;return c=q.fromText(b),c=c.encrypt(a),d=o.encode(p.armor.message,c.packets.write())},"Error encrypting message!")}function g(a,b,c){return a.length||(a=[a]),v?v.signAndEncryptMessage(a,b,c):m(function(){var d,e;return d=q.fromText(c),d=d.sign([b]),d=d.encrypt(a),e=o.encode(p.armor.message,d.packets.write())},"Error signing and encrypting message!")}function h(a,b){return v?v.decryptMessage(a,b):m(function(){return b=b.decrypt(a),b.getText()},"Error decrypting message!")}function i(a,b,c){return b.length||(b=[b]),v?v.decryptAndVerifyMessage(a,b,c):m(function(){var d={};return c=c.decrypt(a),d.text=c.getText(),d.text?(d.signatures=c.verify(b),d):null},"Error decrypting and verifying message!")}function j(a,b){return a.length||(a=[a]),v?v.signClearMessage(a,b):m(function(){var c=new r.CleartextMessage(b);return c.sign(a),c.armor()},"Error signing cleartext message!")}function k(a,b){return a.length||(a=[a]),v?v.verifyClearSignedMessage(a,b):m(function(){var c={};if(!(b instanceof r.CleartextMessage))throw new Error("Parameter [message] needs to be of type CleartextMessage.");return c.text=b.getText(),c.signatures=b.verify(a),c},"Error verifying cleartext signed message!")}function l(a){return!t.getWebCrypto()&&v?v.generateKeyPair(a):s.generate(a).then(function(a){var b={};return b.key=a,b.privateKeyArmored=a.armor(),b.publicKeyArmored=a.toPublic().armor(),b})["catch"](function(b){if(console.error(b),!t.getWebCrypto())throw new Error("Error generating keypair using js fallback!");return console.log("Error generating keypair using native WebCrypto... falling back back to js!"),v.generateKeyPair(a)})["catch"](n.bind(null,"Error generating keypair!"))}function m(a,b){var c=new Promise(function(b){var c=a();b(c)});return c["catch"](n.bind(null,b))}function n(a,b){throw console.error(b.stack),new Error(a)}var o=a("./encoding/armor.js"),p=a("./enums.js"),q=a("./message.js"),r=a("./cleartext.js"),s=a("./key.js"),t=a("./util"),u=a("./worker/async_proxy.js");"undefined"==typeof Promise&&a("es6-promise").polyfill();var v=null;c.initWorker=d,c.getWorker=e,c.encryptMessage=f,c.signAndEncryptMessage=g,c.decryptMessage=h,c.decryptAndVerifyMessage=i,c.signClearMessage=j,c.verifyClearSignedMessage=k,c.generateKeyPair=l},{"./cleartext.js":12,"./encoding/armor.js":41,"./enums.js":43,"./key.js":45,"./message.js":49,"./util":74,"./worker/async_proxy.js":75,"es6-promise":2}],51:[function(a,b,c){function d(a){return a.substr(0,1).toUpperCase()+a.substr(1)}var e=a("../enums.js");b.exports={Compressed:a("./compressed.js"),SymEncryptedIntegrityProtected:a("./sym_encrypted_integrity_protected.js"),PublicKeyEncryptedSessionKey:a("./public_key_encrypted_session_key.js"),SymEncryptedSessionKey:a("./sym_encrypted_session_key.js"),Literal:a("./literal.js"),PublicKey:a("./public_key.js"),SymmetricallyEncrypted:a("./symmetrically_encrypted.js"),Marker:a("./marker.js"),PublicSubkey:a("./public_subkey.js"),UserAttribute:a("./user_attribute.js"),OnePassSignature:a("./one_pass_signature.js"),SecretKey:a("./secret_key.js"),Userid:a("./userid.js"),SecretSubkey:a("./secret_subkey.js"),Signature:a("./signature.js"),Trust:a("./trust.js"),newPacketFromTag:function(a){return new(this[d(a)])},fromStructuredClone:function(a){var b=e.read(e.packet,a.tag),c=this.newPacketFromTag(b);for(var d in a)a.hasOwnProperty(d)&&(c[d]=a[d]);return c.postCloneTypeFix&&c.postCloneTypeFix(),c}}},{"../enums.js":43,"./compressed.js":52,"./literal.js":54,"./marker.js":55,"./one_pass_signature.js":56,"./public_key.js":59,"./public_key_encrypted_session_key.js":60,"./public_subkey.js":61,"./secret_key.js":62,"./secret_subkey.js":63,"./signature.js":64,"./sym_encrypted_integrity_protected.js":65,"./sym_encrypted_session_key.js":66,"./symmetrically_encrypted.js":67,"./trust.js":68,"./user_attribute.js":69,"./userid.js":70}],52:[function(a,b,c){function d(){this.tag=e.packet.compressed,this.packets=null,this.algorithm="zip",this.compressed=null}b.exports=d;var e=a("../enums.js"),f=a("../util.js"),g=a("../compression/zlib.min.js"),h=a("../compression/rawinflate.min.js"),i=a("../compression/rawdeflate.min.js");d.prototype.read=function(a){this.algorithm=e.read(e.compression,a.charCodeAt(0)),this.compressed=a.substr(1),this.decompress()},d.prototype.write=function(){return null===this.compressed&&this.compress(),String.fromCharCode(e.write(e.compression,this.algorithm))+this.compressed},d.prototype.decompress=function(){var a;switch(this.algorithm){case"uncompressed":a=this.compressed;break;case"zip":var b=new h.Zlib.RawInflate(f.str2Uint8Array(this.compressed));a=f.Uint8Array2str(b.decompress());break;case"zlib":var b=new g.Zlib.Inflate(f.str2Uint8Array(this.compressed));a=f.Uint8Array2str(b.decompress());break;case"bzip2":throw new Error("Compression algorithm BZip2 [BZ2] is not implemented.");default:throw new Error("Compression algorithm unknown :"+this.alogrithm)}this.packets.read(a)},d.prototype.compress=function(){var a,b;switch(a=this.packets.write(),this.algorithm){case"uncompressed":this.compressed=a;break;case"zip":b=new i.Zlib.RawDeflate(f.str2Uint8Array(a)),this.compressed=f.Uint8Array2str(b.compress());break;case"zlib":b=new g.Zlib.Deflate(f.str2Uint8Array(a)),this.compressed=f.Uint8Array2str(b.compress());break;case"bzip2":throw new Error("Compression algorithm BZip2 [BZ2] is not implemented.");default:throw new Error("Compression algorithm unknown :"+this.type)}}},{"../compression/rawdeflate.min.js":13,"../compression/rawinflate.min.js":14,"../compression/zlib.min.js":15,"../enums.js":43,"../util.js":74}],53:[function(a,b,c){a("../enums.js");b.exports={List:a("./packetlist.js")};var d=a("./all_packets.js");for(var e in d)b.exports[e]=d[e]},{"../enums.js":43,"./all_packets.js":51,"./packetlist.js":58}],54:[function(a,b,c){function d(){this.tag=f.packet.literal,this.format="utf8",this.data="",this.date=new Date,this.filename="msg.txt"}b.exports=d;var e=a("../util.js"),f=a("../enums.js");d.prototype.setText=function(a){a=a.replace(/\r/g,"").replace(/\n/g,"\r\n"),this.data="utf8"==this.format?e.encode_utf8(a):a},d.prototype.getText=function(){var a=e.decode_utf8(this.data);return a.replace(/\r\n/g,"\n")},d.prototype.setBytes=function(a,b){this.format=b,this.data=a},d.prototype.getBytes=function(){return this.data},d.prototype.setFilename=function(a){this.filename=a},d.prototype.getFilename=function(){return this.filename},d.prototype.read=function(a){var b=f.read(f.literal,a.charCodeAt(0)),c=a.charCodeAt(1);this.filename=e.decode_utf8(a.substr(2,c)),this.date=e.readDate(a.substr(2+c,4));var d=a.substring(6+c);this.setBytes(d,b)},d.prototype.write=function(){var a=e.encode_utf8(this.filename),b=this.getBytes(),c="";return c+=String.fromCharCode(f.write(f.literal,this.format)),c+=String.fromCharCode(a.length),c+=a,c+=e.writeDate(this.date),c+=b}},{"../enums.js":43,"../util.js":74}],55:[function(a,b,c){function d(){this.tag=e.packet.marker}b.exports=d;var e=a("../enums.js");d.prototype.read=function(a){return 80==a.charCodeAt(0)&&71==a.charCodeAt(1)&&80==a.charCodeAt(2)?!0:!1}},{"../enums.js":43}],56:[function(a,b,c){function d(){this.tag=e.packet.onePassSignature,this.version=null,this.type=null,this.hashAlgorithm=null,this.publicKeyAlgorithm=null,this.signingKeyId=null,this.flags=null}b.exports=d;var e=a("../enums.js"),f=a("../type/keyid.js");d.prototype.read=function(a){var b=0;return this.version=a.charCodeAt(b++),this.type=e.read(e.signature,a.charCodeAt(b++)),this.hashAlgorithm=e.read(e.hash,a.charCodeAt(b++)),this.publicKeyAlgorithm=e.read(e.publicKey,a.charCodeAt(b++)),this.signingKeyId=new f,this.signingKeyId.read(a.substr(b)),b+=8,this.flags=a.charCodeAt(b++),this},d.prototype.write=function(){var a="";return a+=String.fromCharCode(3),a+=String.fromCharCode(e.write(e.signature,this.type)),a+=String.fromCharCode(e.write(e.hash,this.hashAlgorithm)),a+=String.fromCharCode(e.write(e.publicKey,this.publicKeyAlgorithm)),a+=this.signingKeyId.write(),a+=String.fromCharCode(this.flags)},d.prototype.postCloneTypeFix=function(){this.signingKeyId=f.fromClone(this.signingKeyId)}},{"../enums.js":43,"../type/keyid.js":71}],57:[function(a,b,c){var d=(a("../enums.js"),a("../util.js"));b.exports={readSimpleLength:function(a){var b,c=0,e=a.charCodeAt(0);return 192>e?(c=a.charCodeAt(0),b=1):255>e?(c=(a.charCodeAt(0)-192<<8)+a.charCodeAt(1)+192,b=2):255==e&&(c=d.readNumber(a.substr(1,4)),b=5),{len:c,offset:b}},writeSimpleLength:function(a){var b="";return 192>a?b+=String.fromCharCode(a):a>191&&8384>a?(b+=String.fromCharCode((a-192>>8)+192),b+=String.fromCharCode(a-192&255)):(b+=String.fromCharCode(255),b+=d.writeNumber(a,4)),b},writeHeader:function(a,b){var c="";return c+=String.fromCharCode(192|a),c+=this.writeSimpleLength(b)},writeOldHeader:function(a,b){var c="";return 256>b?(c+=String.fromCharCode(128|a<<2),c+=String.fromCharCode(b)):65536>b?(c+=String.fromCharCode(128|a<<2|1),c+=d.writeNumber(b,2)):(c+=String.fromCharCode(128|a<<2|2),c+=d.writeNumber(b,4)),c},read:function(a,b,c){if(null===a||a.length<=b||a.substring(b).length<2||0===(128&a.charCodeAt(b)))throw new Error("Error during parsing. This message / key is probably not containing a valid OpenPGP format.");var e,f=b,g=-1,h=-1;h=0,0!==(64&a.charCodeAt(f))&&(h=1);var i;h?g=63&a.charCodeAt(f):(g=(63&a.charCodeAt(f))>>2,i=3&a.charCodeAt(f)),f++;var j=null,k=-1;if(h)if(a.charCodeAt(f)<192)e=a.charCodeAt(f++),d.print_debug("1 byte length:"+e);else if(a.charCodeAt(f)>=192&&a.charCodeAt(f)<224)e=(a.charCodeAt(f++)-192<<8)+a.charCodeAt(f++)+192,d.print_debug("2 byte length:"+e);else if(a.charCodeAt(f)>223&&a.charCodeAt(f)<255){e=1<<(31&a.charCodeAt(f++)),d.print_debug("4 byte length:"+e);var l=f+e;j=a.substring(f,f+e);for(var m;;){if(a.charCodeAt(l)<192){m=a.charCodeAt(l++),e+=m,j+=a.substring(l,l+m),l+=m;break}if(a.charCodeAt(l)>=192&&a.charCodeAt(l)<224){m=(a.charCodeAt(l++)-192<<8)+a.charCodeAt(l++)+192,e+=m,j+=a.substring(l,l+m),l+=m;break}if(!(a.charCodeAt(l)>223&&a.charCodeAt(l)<255)){l++,m=a.charCodeAt(l++)<<24|a.charCodeAt(l++)<<16|a.charCodeAt(l++)<<8|a.charCodeAt(l++),j+=a.substring(l,l+m),e+=m,l+=m;break}m=1<<(31&a.charCodeAt(l++)),e+=m,j+=a.substring(l,l+m),l+=m}k=l-f}else f++,e=a.charCodeAt(f++)<<24|a.charCodeAt(f++)<<16|a.charCodeAt(f++)<<8|a.charCodeAt(f++);else switch(i){case 0:e=a.charCodeAt(f++);break;case 1:e=a.charCodeAt(f++)<<8|a.charCodeAt(f++);break;case 2:e=a.charCodeAt(f++)<<24|a.charCodeAt(f++)<<16|a.charCodeAt(f++)<<8|a.charCodeAt(f++);break;default:e=c}return-1==k&&(k=e),null===j&&(j=a.substring(f,f+k)),{tag:g,packet:j,offset:f+k}}}},{"../enums.js":43,"../util.js":74}],58:[function(a,b,c){function d(){this.length=0}b.exports=d;var e=a("./packet.js"),f=a("./all_packets.js"),g=a("../enums.js");d.prototype.read=function(a){for(var b=0;b<a.length;){var c=e.read(a,b,a.length-b);b=c.offset;var d=g.read(g.packet,c.tag),h=f.newPacketFromTag(d);this.push(h),h.read(c.packet)}},d.prototype.write=function(){for(var a="",b=0;b<this.length;b++){var c=this[b].write();a+=e.writeHeader(this[b].tag,c.length),a+=c}return a},d.prototype.push=function(a){a&&(a.packets=a.packets||new d,this[this.length]=a,this.length++)},d.prototype.filter=function(a){for(var b=new d,c=0;c<this.length;c++)a(this[c],c,this)&&b.push(this[c]);return b},d.prototype.filterByTag=function(){for(var a=Array.prototype.slice.call(arguments),b=new d,c=this,e=0;e<this.length;e++)a.some(function(a){return c[e].tag==a})&&b.push(this[e]);return b},d.prototype.forEach=function(a){for(var b=0;b<this.length;b++)a(this[b])},d.prototype.findPacket=function(a){var b=this.filterByTag(a);if(b.length)return b[0];for(var c=null,d=0;d<this.length;d++)if(this[d].packets.length&&(c=this[d].packets.findPacket(a)))return c;return null},d.prototype.indexOfTag=function(){for(var a=Array.prototype.slice.call(arguments),b=[],c=this,d=0;d<this.length;d++)a.some(function(a){return c[d].tag==a})&&b.push(d);return b},d.prototype.slice=function(a,b){b||(b=this.length);for(var c=new d,e=a;b>e;e++)c.push(this[e]);return c},d.prototype.concat=function(a){if(a)for(var b=0;b<a.length;b++)this.push(a[b])},b.exports.fromStructuredClone=function(a){for(var b=new d,c=0;c<a.length;c++)b.push(f.fromStructuredClone(a[c])),0!==b[c].packets.length?b[c].packets=this.fromStructuredClone(b[c].packets):b[c].packets=new d;return b}},{"../enums.js":43,"./all_packets.js":51,"./packet.js":57}],59:[function(a,b,c){function d(){this.tag=h.packet.publicKey,this.version=4,this.created=new Date,this.mpi=[],this.algorithm="rsa_sign",this.expirationTimeV3=0,this.fingerprint=null,this.keyid=null}b.exports=d;var e=a("../util.js"),f=a("../type/mpi.js"),g=a("../type/keyid.js"),h=a("../enums.js"),i=a("../crypto");d.prototype.read=function(a){var b=0;if(this.version=a.charCodeAt(b++),3==this.version||4==this.version){this.created=e.readDate(a.substr(b,4)),b+=4,3==this.version&&(this.expirationTimeV3=e.readNumber(a.substr(b,2)),b+=2),this.algorithm=h.read(h.publicKey,a.charCodeAt(b++));var c=i.getPublicMpiCount(this.algorithm);this.mpi=[];for(var d=a.substr(b),g=0,j=0;c>j&&g<d.length;j++)if(this.mpi[j]=new f,g+=this.mpi[j].read(d.substr(g)),g>d.length)throw new Error("Error reading MPI @:"+g);return g+6}throw new Error("Version "+this.version+" of the key packet is unsupported.")},d.prototype.readPublicKey=d.prototype.read,d.prototype.write=function(){var a=String.fromCharCode(this.version);a+=e.writeDate(this.created),3==this.version&&(a+=e.writeNumber(this.expirationTimeV3,2)),a+=String.fromCharCode(h.write(h.publicKey,this.algorithm));for(var b=i.getPublicMpiCount(this.algorithm),c=0;b>c;c++)a+=this.mpi[c].write();return a},d.prototype.writePublicKey=d.prototype.write,d.prototype.writeOld=function(){var a=this.writePublicKey();return String.fromCharCode(153)+e.writeNumber(a.length,2)+a},d.prototype.getKeyId=function(){return this.keyid?this.keyid:(this.keyid=new g,4==this.version?this.keyid.read(e.hex2bin(this.getFingerprint()).substr(12,8)):3==this.version&&this.keyid.read(this.mpi[0].write().substr(-8)),this.keyid)},d.prototype.getFingerprint=function(){if(this.fingerprint)return this.fingerprint;var a="";if(4==this.version)a=this.writeOld(),this.fingerprint=i.hash.sha1(a);else if(3==this.version){for(var b=i.getPublicMpiCount(this.algorithm),c=0;b>c;c++)a+=this.mpi[c].toBytes();this.fingerprint=i.hash.md5(a)}return this.fingerprint=e.hexstrdump(this.fingerprint),this.fingerprint},d.prototype.getBitSize=function(){return 8*this.mpi[0].byteLength()},d.prototype.postCloneTypeFix=function(){for(var a=0;a<this.mpi.length;a++)this.mpi[a]=f.fromClone(this.mpi[a]);this.keyid&&(this.keyid=g.fromClone(this.keyid))}},{"../crypto":32,"../enums.js":43,"../type/keyid.js":71,"../type/mpi.js":72,"../util.js":74}],60:[function(a,b,c){function d(){this.tag=h.packet.publicKeyEncryptedSessionKey,this.version=3,this.publicKeyId=new e,this.publicKeyAlgorithm="rsa_encrypt",this.sessionKey=null,this.sessionKeyAlgorithm="aes256",this.encrypted=[]}b.exports=d;var e=a("../type/keyid.js"),f=a("../util.js"),g=a("../type/mpi.js"),h=a("../enums.js"),i=a("../crypto");d.prototype.read=function(a){this.version=a.charCodeAt(0),this.publicKeyId.read(a.substr(1)),this.publicKeyAlgorithm=h.read(h.publicKey,a.charCodeAt(9));var b=10,c=function(a){switch(a){case"rsa_encrypt":case"rsa_encrypt_sign":return 1;case"elgamal":return 2;default:throw new Error("Invalid algorithm.")}}(this.publicKeyAlgorithm);this.encrypted=[];for(var d=0;c>d;d++){var e=new g;b+=e.read(a.substr(b)),this.encrypted.push(e)}},d.prototype.write=function(){var a=String.fromCharCode(this.version);a+=this.publicKeyId.write(),a+=String.fromCharCode(h.write(h.publicKey,this.publicKeyAlgorithm));for(var b=0;b<this.encrypted.length;b++)a+=this.encrypted[b].write();return a},d.prototype.encrypt=function(a){var b=String.fromCharCode(h.write(h.symmetric,this.sessionKeyAlgorithm));b+=this.sessionKey;var c=f.calc_checksum(this.sessionKey);b+=f.writeNumber(c,2);var d=new g;d.fromBytes(i.pkcs1.eme.encode(b,a.mpi[0].byteLength())),this.encrypted=i.publicKeyEncrypt(this.publicKeyAlgorithm,a.mpi,d)},d.prototype.decrypt=function(a){var b=i.publicKeyDecrypt(this.publicKeyAlgorithm,a.mpi,this.encrypted).toBytes(),c=f.readNumber(b.substr(b.length-2)),d=i.pkcs1.eme.decode(b);if(a=d.substring(1,d.length-2),c!=f.calc_checksum(a))throw new Error("Checksum mismatch");this.sessionKey=a,this.sessionKeyAlgorithm=h.read(h.symmetric,d.charCodeAt(0))},d.prototype.postCloneTypeFix=function(){this.publicKeyId=e.fromClone(this.publicKeyId);for(var a=0;a<this.encrypted.length;a++)this.encrypted[a]=g.fromClone(this.encrypted[a])}},{"../crypto":32,"../enums.js":43,"../type/keyid.js":71,"../type/mpi.js":72,"../util.js":74}],61:[function(a,b,c){function d(){e.call(this),this.tag=f.packet.publicSubkey}b.exports=d;var e=a("./public_key.js"),f=a("../enums.js");d.prototype=new e,d.prototype.constructor=d},{"../enums.js":43,"./public_key.js":59}],62:[function(a,b,c){function d(){j.call(this),this.tag=k.packet.secretKey,this.encrypted=null,this.isDecrypted=!1}function e(a){return"sha1"==a?20:2}function f(a){return"sha1"==a?m.hash.sha1:function(a){return l.writeNumber(l.calc_checksum(a),2)}}function g(a,b,c){var d=e(a),g=f(a),h=b.substr(b.length-d);b=b.substr(0,b.length-d);var i=g(b);if(i!=h)return new Error("Hash mismatch.");for(var j=m.getPrivateMpiCount(c),k=0,l=[],o=0;j>o&&k<b.length;o++)l[o]=new n,k+=l[o].read(b.substr(k));return l}function h(a,b,c){for(var d="",e=m.getPublicMpiCount(b),g=e;g<c.length;g++)d+=c[g].write();return d+=f(a)(d)}function i(a,b,c){return a.produce_key(b,m.cipher[c].keySize)}b.exports=d;var j=a("./public_key.js"),k=a("../enums.js"),l=a("../util.js"),m=a("../crypto"),n=a("../type/mpi.js"),o=a("../type/s2k.js");d.prototype=new j,d.prototype.constructor=d,d.prototype.read=function(a){var b=this.readPublicKey(a);a=a.substr(b);var c=a.charCodeAt(0);if(c)this.encrypted=a;else{var d=g("mod",a.substr(1),this.algorithm);if(d instanceof Error)throw d;this.mpi=this.mpi.concat(d),this.isDecrypted=!0}},d.prototype.write=function(){var a=this.writePublicKey();return this.encrypted?a+=this.encrypted:(a+=String.fromCharCode(0),a+=h("mod",this.algorithm,this.mpi)),a},d.prototype.encrypt=function(a){if(this.isDecrypted&&!a)return void(this.encrypted=null);if(!a)throw new Error("The key must be decrypted before removing passphrase protection.");var b=new o,c="aes256",d=h("sha1",this.algorithm,this.mpi),e=i(b,a,c),f=m.cipher[c].blockSize,g=m.random.getRandomBytes(f);this.encrypted="",this.encrypted+=String.fromCharCode(254),this.encrypted+=String.fromCharCode(k.write(k.symmetric,c)),this.encrypted+=b.write(),this.encrypted+=g,this.encrypted+=m.cfb.normalEncrypt(c,e,d,g)},d.prototype.decrypt=function(a){if(this.isDecrypted)return!0;var b,c,d=0,e=this.encrypted.charCodeAt(d++);if(255==e||254==e){b=this.encrypted.charCodeAt(d++),b=k.read(k.symmetric,b);var f=new o;d+=f.read(this.encrypted.substr(d)),c=i(f,a,b)}else b=e,b=k.read(k.symmetric,b),c=m.hash.md5(a);var h=this.encrypted.substr(d,m.cipher[b].blockSize);d+=h.length;var j,l=this.encrypted.substr(d);j=m.cfb.normalDecrypt(b,c,l,h);var n=254==e?"sha1":"mod",p=g(n,j,this.algorithm);return p instanceof Error?!1:(this.mpi=this.mpi.concat(p),this.isDecrypted=!0,!0)},d.prototype.generate=function(a){var b=this;return m.generateMpi(b.algorithm,a).then(function(a){b.mpi=a,b.isDecrypted=!0})},d.prototype.clearPrivateMPIs=function(){if(!this.encrypted)throw new Error("If secret key is not encrypted, clearing private MPIs is irreversible.");this.mpi=this.mpi.slice(0,m.getPublicMpiCount(this.algorithm)),this.isDecrypted=!1}},{"../crypto":32,"../enums.js":43,"../type/mpi.js":72,"../type/s2k.js":73,"../util.js":74,"./public_key.js":59}],63:[function(a,b,c){function d(){e.call(this),this.tag=f.packet.secretSubkey}b.exports=d;var e=a("./secret_key.js"),f=a("../enums.js");d.prototype=new e,d.prototype.constructor=d},{"../enums.js":43,"./secret_key.js":62}],64:[function(a,b,c){function d(){this.tag=h.packet.signature,this.version=4,this.signatureType=null,this.hashAlgorithm=null,this.publicKeyAlgorithm=null,this.signatureData=null,this.unhashedSubpackets=null,this.signedHashValue=null,this.created=new Date,this.signatureExpirationTime=null,this.signatureNeverExpires=!0,this.exportable=null,this.trustLevel=null,this.trustAmount=null,this.regularExpression=null,this.revocable=null,this.keyExpirationTime=null,this.keyNeverExpires=null,this.preferredSymmetricAlgorithms=null,this.revocationKeyClass=null,this.revocationKeyAlgorithm=null,this.revocationKeyFingerprint=null,this.issuerKeyId=new k,this.notation=null,this.preferredHashAlgorithms=null,this.preferredCompressionAlgorithms=null,this.keyServerPreferences=null,this.preferredKeyServer=null,this.isPrimaryUserID=null,this.policyURI=null,this.keyFlags=null,this.signersUserId=null,this.reasonForRevocationFlag=null,this.reasonForRevocationString=null,this.features=null,this.signatureTargetPublicKeyAlgorithm=null,this.signatureTargetHashAlgorithm=null,this.signatureTargetHash=null,this.embeddedSignature=null,this.verified=!1}function e(a,b){var c="";return c+=g.writeSimpleLength(b.length+1),c+=String.fromCharCode(a),c+=b}b.exports=d;var f=a("../util.js"),g=a("./packet.js"),h=a("../enums.js"),i=a("../crypto"),j=a("../type/mpi.js"),k=a("../type/keyid.js");d.prototype.read=function(a){
 function b(a){for(var b=f.readNumber(a.substr(0,2)),c=2;2+b>c;){var d=g.readSimpleLength(a.substr(c));c+=d.offset,this.read_sub_packet(a.substr(c,d.len)),c+=d.len}return c}var c=0;switch(this.version=a.charCodeAt(c++),this.version){case 3:5!=a.charCodeAt(c++)&&f.print_debug("packet/signature.js\ninvalid One-octet length of following hashed material.MUST be 5. @:"+(c-1));var d=c;this.signatureType=a.charCodeAt(c++),this.created=f.readDate(a.substr(c,4)),c+=4,this.signatureData=a.substring(d,c),this.issuerKeyId.read(a.substring(c,c+8)),c+=8,this.publicKeyAlgorithm=a.charCodeAt(c++),this.hashAlgorithm=a.charCodeAt(c++);break;case 4:this.signatureType=a.charCodeAt(c++),this.publicKeyAlgorithm=a.charCodeAt(c++),this.hashAlgorithm=a.charCodeAt(c++),c+=b.call(this,a.substr(c),!0),this.signatureData=a.substr(0,c);var e=c;c+=b.call(this,a.substr(c),!1),this.unhashedSubpackets=a.substr(e,c-e);break;default:throw new Error("Version "+this.version+" of the signature is unsupported.")}this.signedHashValue=a.substr(c,2),c+=2,this.signature=a.substr(c)},d.prototype.write=function(){var a="";switch(this.version){case 3:a+=String.fromCharCode(3),a+=String.fromCharCode(5),a+=this.signatureData,a+=this.issuerKeyId.write(),a+=String.fromCharCode(this.publicKeyAlgorithm),a+=String.fromCharCode(this.hashAlgorithm);break;case 4:a+=this.signatureData,a+=this.unhashedSubpackets?this.unhashedSubpackets:f.writeNumber(0,2)}return a+=this.signedHashValue+this.signature},d.prototype.sign=function(a,b){var c=h.write(h.signature,this.signatureType),d=h.write(h.publicKey,this.publicKeyAlgorithm),e=h.write(h.hash,this.hashAlgorithm),f=String.fromCharCode(4);f+=String.fromCharCode(c),f+=String.fromCharCode(d),f+=String.fromCharCode(e),this.issuerKeyId=a.getKeyId(),f+=this.write_all_sub_packets(),this.signatureData=f;var g=this.calculateTrailer(),j=this.toSign(c,b)+this.signatureData+g,k=i.hash.digest(e,j);this.signedHashValue=k.substr(0,2),this.signature=i.signature.sign(e,d,a.mpi,j)},d.prototype.write_all_sub_packets=function(){var a=h.signatureSubpacket,b="",c="";if(null!==this.created&&(b+=e(a.signature_creation_time,f.writeDate(this.created))),null!==this.signatureExpirationTime&&(b+=e(a.signature_expiration_time,f.writeNumber(this.signatureExpirationTime,4))),null!==this.exportable&&(b+=e(a.exportable_certification,String.fromCharCode(this.exportable?1:0))),null!==this.trustLevel&&(c=String.fromCharCode(this.trustLevel)+String.fromCharCode(this.trustAmount),b+=e(a.trust_signature,c)),null!==this.regularExpression&&(b+=e(a.regular_expression,this.regularExpression)),null!==this.revocable&&(b+=e(a.revocable,String.fromCharCode(this.revocable?1:0))),null!==this.keyExpirationTime&&(b+=e(a.key_expiration_time,f.writeNumber(this.keyExpirationTime,4))),null!==this.preferredSymmetricAlgorithms&&(c=f.bin2str(this.preferredSymmetricAlgorithms),b+=e(a.preferred_symmetric_algorithms,c)),null!==this.revocationKeyClass&&(c=String.fromCharCode(this.revocationKeyClass),c+=String.fromCharCode(this.revocationKeyAlgorithm),c+=this.revocationKeyFingerprint,b+=e(a.revocation_key,c)),this.issuerKeyId.isNull()||(b+=e(a.issuer,this.issuerKeyId.write())),null!==this.notation)for(var d in this.notation)if(this.notation.hasOwnProperty(d)){var g=this.notation[d];c=String.fromCharCode(128),c+=String.fromCharCode(0),c+=String.fromCharCode(0),c+=String.fromCharCode(0),c+=f.writeNumber(d.length,2),c+=f.writeNumber(g.length,2),c+=d+g,b+=e(a.notation_data,c)}return null!==this.preferredHashAlgorithms&&(c=f.bin2str(this.preferredHashAlgorithms),b+=e(a.preferred_hash_algorithms,c)),null!==this.preferredCompressionAlgorithms&&(c=f.bin2str(this.preferredCompressionAlgorithms),b+=e(a.preferred_compression_algorithms,c)),null!==this.keyServerPreferences&&(c=f.bin2str(this.keyServerPreferences),b+=e(a.key_server_preferences,c)),null!==this.preferredKeyServer&&(b+=e(a.preferred_key_server,this.preferredKeyServer)),null!==this.isPrimaryUserID&&(b+=e(a.primary_user_id,String.fromCharCode(this.isPrimaryUserID?1:0))),null!==this.policyURI&&(b+=e(a.policy_uri,this.policyURI)),null!==this.keyFlags&&(c=f.bin2str(this.keyFlags),b+=e(a.key_flags,c)),null!==this.signersUserId&&(b+=e(a.signers_user_id,this.signersUserId)),null!==this.reasonForRevocationFlag&&(c=String.fromCharCode(this.reasonForRevocationFlag),c+=this.reasonForRevocationString,b+=e(a.reason_for_revocation,c)),null!==this.features&&(c=f.bin2str(this.features),b+=e(a.features,c)),null!==this.signatureTargetPublicKeyAlgorithm&&(c=String.fromCharCode(this.signatureTargetPublicKeyAlgorithm),c+=String.fromCharCode(this.signatureTargetHashAlgorithm),c+=this.signatureTargetHash,b+=e(a.signature_target,c)),null!==this.embeddedSignature&&(b+=e(a.embedded_signature,this.embeddedSignature.write())),b=f.writeNumber(b.length,2)+b},d.prototype.read_sub_packet=function(a){function b(a,b){this[a]=[];for(var c=0;c<b.length;c++)this[a].push(b.charCodeAt(c))}var c,e=0,g=127&a.charCodeAt(e++);switch(g){case 2:this.created=f.readDate(a.substr(e));break;case 3:c=f.readNumber(a.substr(e)),this.signatureNeverExpires=0===c,this.signatureExpirationTime=c;break;case 4:this.exportable=1==a.charCodeAt(e++);break;case 5:this.trustLevel=a.charCodeAt(e++),this.trustAmount=a.charCodeAt(e++);break;case 6:this.regularExpression=a.substr(e);break;case 7:this.revocable=1==a.charCodeAt(e++);break;case 9:c=f.readNumber(a.substr(e)),this.keyExpirationTime=c,this.keyNeverExpires=0===c;break;case 11:b.call(this,"preferredSymmetricAlgorithms",a.substr(e));break;case 12:this.revocationKeyClass=a.charCodeAt(e++),this.revocationKeyAlgorithm=a.charCodeAt(e++),this.revocationKeyFingerprint=a.substr(e,20);break;case 16:this.issuerKeyId.read(a.substr(e));break;case 20:if(128==a.charCodeAt(e)){e+=4;var h=f.readNumber(a.substr(e,2));e+=2;var j=f.readNumber(a.substr(e,2));e+=2;var k=a.substr(e,h),l=a.substr(e+h,j);this.notation=this.notation||{},this.notation[k]=l}else f.print_debug("Unsupported notation flag "+a.charCodeAt(e));break;case 21:b.call(this,"preferredHashAlgorithms",a.substr(e));break;case 22:b.call(this,"preferredCompressionAlgorithms",a.substr(e));break;case 23:b.call(this,"keyServerPreferencess",a.substr(e));break;case 24:this.preferredKeyServer=a.substr(e);break;case 25:this.isPrimaryUserID=0!==a[e++];break;case 26:this.policyURI=a.substr(e);break;case 27:b.call(this,"keyFlags",a.substr(e));break;case 28:this.signersUserId+=a.substr(e);break;case 29:this.reasonForRevocationFlag=a.charCodeAt(e++),this.reasonForRevocationString=a.substr(e);break;case 30:b.call(this,"features",a.substr(e));break;case 31:this.signatureTargetPublicKeyAlgorithm=a.charCodeAt(e++),this.signatureTargetHashAlgorithm=a.charCodeAt(e++);var m=i.getHashByteLength(this.signatureTargetHashAlgorithm);this.signatureTargetHash=a.substr(e,m);break;case 32:this.embeddedSignature=new d,this.embeddedSignature.read(a.substr(e));break;default:f.print_debug("Unknown signature subpacket type "+g+" @:"+e)}},d.prototype.toSign=function(a,b){var c=h.signature;switch(a){case c.binary:case c.text:return b.getBytes();case c.standalone:return"";case c.cert_generic:case c.cert_persona:case c.cert_casual:case c.cert_positive:case c.cert_revocation:var d,e;if(void 0!==b.userid)e=180,d=b.userid;else{if(void 0===b.userattribute)throw new Error("Either a userid or userattribute packet needs to be supplied for certification.");e=209,d=b.userattribute}var g=d.write();if(4==this.version)return this.toSign(c.key,b)+String.fromCharCode(e)+f.writeNumber(g.length,4)+g;if(3==this.version)return this.toSign(c.key,b)+g;break;case c.subkey_binding:case c.subkey_revocation:case c.key_binding:return this.toSign(c.key,b)+this.toSign(c.key,{key:b.bind});case c.key:if(void 0===b.key)throw new Error("Key packet is required for this signature.");return b.key.writeOld();case c.key_revocation:return this.toSign(c.key,b);case c.timestamp:return"";case c.third_party:throw new Error("Not implemented");default:throw new Error("Unknown signature type.")}},d.prototype.calculateTrailer=function(){var a="";return 3==this.version?a:(a+=String.fromCharCode(4),a+=String.fromCharCode(255),a+=f.writeNumber(this.signatureData.length,4))},d.prototype.verify=function(a,b){var c=h.write(h.signature,this.signatureType),d=h.write(h.publicKey,this.publicKeyAlgorithm),e=h.write(h.hash,this.hashAlgorithm),f=this.toSign(c,b),g=this.calculateTrailer(),k=0;d>0&&4>d?k=1:17==d&&(k=2);for(var l=[],m=0,n=0;k>n;n++)l[n]=new j,m+=l[n].read(this.signature.substr(m));return this.verified=i.signature.verify(d,e,l,a.mpi,f+this.signatureData+g),this.verified},d.prototype.isExpired=function(){return this.signatureNeverExpires?!1:Date.now()>this.created.getTime()+1e3*this.signatureExpirationTime},d.prototype.postCloneTypeFix=function(){this.issuerKeyId=k.fromClone(this.issuerKeyId)}},{"../crypto":32,"../enums.js":43,"../type/keyid.js":71,"../type/mpi.js":72,"../util.js":74,"./packet.js":57}],65:[function(a,b,c){function d(){this.tag=f.packet.symEncryptedIntegrityProtected,this.encrypted=null,this.modification=!1,this.packets=null}b.exports=d;var e=(a("../util.js"),a("../crypto")),f=a("../enums.js");d.prototype.read=function(a){var b=a.charCodeAt(0);if(1!=b)throw new Error("Invalid packet version.");this.encrypted=a.substr(1)},d.prototype.write=function(){return String.fromCharCode(1)+this.encrypted},d.prototype.encrypt=function(a,b){var c=this.packets.write(),d=e.getPrefixRandom(a),f=d+d.charAt(d.length-2)+d.charAt(d.length-1),g=c;g+=String.fromCharCode(211),g+=String.fromCharCode(20),g+=e.hash.sha1(f+g),this.encrypted=e.cfb.encrypt(d,a,g,b,!1),f.length+g.length!=this.encrypted.length&&(this.encrypted=this.encrypted.substring(0,f.length+g.length))},d.prototype.decrypt=function(a,b){var c=e.cfb.decrypt(a,b,this.encrypted,!1),d=c.slice(c.length-20,c.length).join("");if(c.splice(c.length-20),this.hash=e.hash.sha1(e.cfb.mdc(a,b,this.encrypted)+c.join("")),this.hash!=d)throw new Error("Modification detected.");c.splice(c.length-2),this.packets.read(c.join(""))}},{"../crypto":32,"../enums.js":43,"../util.js":74}],66:[function(a,b,c){function d(){this.tag=f.packet.symEncryptedSessionKey,this.version=4,this.sessionKeyEncryptionAlgorithm=null,this.sessionKeyAlgorithm="aes256",this.encrypted=null,this.s2k=new e}var e=a("../type/s2k.js"),f=a("../enums.js"),g=a("../crypto");b.exports=d,d.prototype.read=function(a){this.version=a.charCodeAt(0);var b=f.read(f.symmetric,a.charCodeAt(1)),c=this.s2k.read(a.substr(2)),d=c+2;d<a.length?(this.encrypted=a.substr(d),this.sessionKeyEncryptionAlgorithm=b):this.sessionKeyAlgorithm=b},d.prototype.write=function(){var a=null===this.encrypted?this.sessionKeyAlgorithm:this.sessionKeyEncryptionAlgorithm,b=String.fromCharCode(this.version)+String.fromCharCode(f.write(f.symmetric,a))+this.s2k.write();return null!==this.encrypted&&(b+=this.encrypted),b},d.prototype.decrypt=function(a){var b=null!==this.sessionKeyEncryptionAlgorithm?this.sessionKeyEncryptionAlgorithm:this.sessionKeyAlgorithm,c=g.cipher[b].keySize,d=this.s2k.produce_key(a,c);if(null===this.encrypted)this.sessionKey=d;else{var e=g.cfb.decrypt(this.sessionKeyEncryptionAlgorithm,d,this.encrypted,!0);e=e.join(""),this.sessionKeyAlgorithm=f.read(f.symmetric,e[0].keyCodeAt()),this.sessionKey=e.substr(1)}},d.prototype.encrypt=function(a){var b=g.getKeyLength(this.sessionKeyEncryptionAlgorithm),c=this.s2k.produce_key(a,b),d=String.fromCharCode(f.write(f.symmetric,this.sessionKeyAlgorithm))+g.getRandomBytes(g.getKeyLength(this.sessionKeyAlgorithm));this.encrypted=g.cfb.encrypt(g.getPrefixRandom(this.sessionKeyEncryptionAlgorithm),this.sessionKeyEncryptionAlgorithm,c,d,!0)},d.prototype.postCloneTypeFix=function(){this.s2k=e.fromClone(this.s2k)}},{"../crypto":32,"../enums.js":43,"../type/s2k.js":73}],67:[function(a,b,c){function d(){this.tag=f.packet.symmetricallyEncrypted,this.encrypted=null,this.packets=null}b.exports=d;var e=a("../crypto"),f=a("../enums.js");d.prototype.read=function(a){this.encrypted=a},d.prototype.write=function(){return this.encrypted},d.prototype.decrypt=function(a,b){var c=e.cfb.decrypt(a,b,this.encrypted,!0);this.packets.read(c.join(""))},d.prototype.encrypt=function(a,b){var c=this.packets.write();this.encrypted=e.cfb.encrypt(e.getPrefixRandom(a),a,c,b,!0)}},{"../crypto":32,"../enums.js":43}],68:[function(a,b,c){function d(){this.tag=e.packet.trust}b.exports=d;var e=a("../enums.js");d.prototype.read=function(a){}},{"../enums.js":43}],69:[function(a,b,c){function d(){this.tag=f.packet.userAttribute,this.attributes=[]}var e=(a("../util.js"),a("./packet.js")),f=a("../enums.js");b.exports=d,d.prototype.read=function(a){for(var b=0;b<a.length;){var c=e.readSimpleLength(a.substr(b));b+=c.offset,this.attributes.push(a.substr(b,c.len)),b+=c.len}},d.prototype.write=function(){for(var a="",b=0;b<this.attributes.length;b++)a+=e.writeSimpleLength(this.attributes[b].length),a+=this.attributes[b];return a},d.prototype.equals=function(a){return a&&a instanceof d?this.attributes.every(function(b,c){return b===a.attributes[c]}):!1}},{"../enums.js":43,"../util.js":74,"./packet.js":57}],70:[function(a,b,c){function d(){this.tag=f.packet.userid,this.userid=""}b.exports=d;var e=a("../util.js"),f=a("../enums.js");d.prototype.read=function(a){this.userid=e.decode_utf8(a)},d.prototype.write=function(){return e.encode_utf8(this.userid)}},{"../enums.js":43,"../util.js":74}],71:[function(a,b,c){function d(){this.bytes=""}b.exports=d;var e=a("../util.js");d.prototype.read=function(a){this.bytes=a.substr(0,8)},d.prototype.write=function(){return this.bytes},d.prototype.toHex=function(){return e.hexstrdump(this.bytes)},d.prototype.equals=function(a){return this.bytes==a.bytes},d.prototype.isNull=function(){return""===this.bytes},b.exports.mapToHex=function(a){return a.toHex()},b.exports.fromClone=function(a){var b=new d;return b.bytes=a.bytes,b},b.exports.fromId=function(a){var b=new d;return b.read(e.hex2bin(a)),b}},{"../util.js":74}],72:[function(a,b,c){function d(){this.data=null}b.exports=d;var e=a("../crypto/public_key/jsbn.js"),f=a("../util.js");d.prototype.read=function(a){var b=a.charCodeAt(0)<<8|a.charCodeAt(1),c=Math.ceil(b/8),d=a.substr(2,c);return this.fromBytes(d),2+c},d.prototype.fromBytes=function(a){this.data=new e(f.hexstrdump(a),16)},d.prototype.toBytes=function(){return this.write().substr(2)},d.prototype.byteLength=function(){return this.toBytes().length},d.prototype.write=function(){return this.data.toMPI()},d.prototype.toBigInteger=function(){return this.data.clone()},d.prototype.fromBigInteger=function(a){this.data=a.clone()},b.exports.fromClone=function(a){a.data.copyTo=e.prototype.copyTo;var b=new e;a.data.copyTo(b);var c=new d;return c.data=b,c}},{"../crypto/public_key/jsbn.js":37,"../util.js":74}],73:[function(a,b,c){function d(){this.algorithm="sha256",this.type="iterated",this.c=96,this.salt=g.random.getRandomBytes(8)}b.exports=d;var e=a("../enums.js"),f=a("../util.js"),g=a("../crypto");d.prototype.get_count=function(){var a=6;return 16+(15&this.c)<<(this.c>>4)+a},d.prototype.read=function(a){var b=0;switch(this.type=e.read(e.s2k,a.charCodeAt(b++)),this.algorithm=e.read(e.hash,a.charCodeAt(b++)),this.type){case"simple":break;case"salted":this.salt=a.substr(b,8),b+=8;break;case"iterated":this.salt=a.substr(b,8),b+=8,this.c=a.charCodeAt(b++);break;case"gnu":if("GNU"!=a.substr(b,3))throw new Error("Unknown s2k type.");b+=3;var c=1e3+a.charCodeAt(b++);if(1001!=c)throw new Error("Unknown s2k gnu protection mode.");this.type=c;break;default:throw new Error("Unknown s2k type.")}return b},d.prototype.write=function(){var a=String.fromCharCode(e.write(e.s2k,this.type));switch(a+=String.fromCharCode(e.write(e.hash,this.algorithm)),this.type){case"simple":break;case"salted":a+=this.salt;break;case"iterated":a+=this.salt,a+=String.fromCharCode(this.c)}return a},d.prototype.produce_key=function(a,b){function c(b,c){var d=e.write(e.hash,c.algorithm);switch(c.type){case"simple":return g.hash.digest(d,b+a);case"salted":return g.hash.digest(d,b+c.salt+a);case"iterated":var f=[],h=c.get_count();for(data=c.salt+a;f.length*data.length<h;)f.push(data);return f=f.join(""),f.length>h&&(f=f.substr(0,h)),g.hash.digest(d,b+f)}}a=f.encode_utf8(a);for(var d="",h="";d.length<=b;)d+=c(h,this),h+=String.fromCharCode(0);return d.substr(0,b)},b.exports.fromClone=function(a){var b=new d;return this.algorithm=a.algorithm,this.type=a.type,this.c=a.c,this.salt=a.salt,b}},{"../crypto":32,"../enums.js":43,"../util.js":74}],74:[function(a,b,c){"use strict";var d=a("./config");b.exports={readNumber:function(a){for(var b=0,c=0;c<a.length;c++)b<<=8,b+=a.charCodeAt(c);return b},writeNumber:function(a,b){for(var c="",d=0;b>d;d++)c+=String.fromCharCode(a>>8*(b-d-1)&255);return c},readDate:function(a){var b=this.readNumber(a),c=new Date;return c.setTime(1e3*b),c},writeDate:function(a){var b=Math.round(a.getTime()/1e3);return this.writeNumber(b,4)},emailRegEx:/^[+a-zA-Z0-9_.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,6}$/,hexdump:function(a){for(var b,c=[],d=a.length,e=0,f=0;d>e;){for(b=a.charCodeAt(e++).toString(16);b.length<2;)b="0"+b;c.push(" "+b),f++,f%32===0&&c.push("\n           ")}return c.join("")},hexstrdump:function(a){if(null===a)return"";for(var b,c=[],d=a.length,e=0;d>e;){for(b=a.charCodeAt(e++).toString(16);b.length<2;)b="0"+b;c.push(""+b)}return c.join("")},hex2bin:function(a){for(var b="",c=0;c<a.length;c+=2)b+=String.fromCharCode(parseInt(a.substr(c,2),16));return b},hexidump:function(a){for(var b,c=[],d=a.length,e=0;d>e;){for(b=a[e++].toString(16);b.length<2;)b="0"+b;c.push(""+b)}return c.join("")},encode_utf8:function(a){return unescape(encodeURIComponent(a))},decode_utf8:function(a){if("string"!=typeof a)throw new Error('Parameter "utf8" is not of type string');try{return decodeURIComponent(escape(a))}catch(b){return a}},bin2str:function(a){for(var b=[],c=0;c<a.length;c++)b[c]=String.fromCharCode(a[c]);return b.join("")},str2bin:function(a){for(var b=[],c=0;c<a.length;c++)b[c]=a.charCodeAt(c);return b},str2Uint8Array:function(a){for(var b=new Uint8Array(a.length),c=0;c<a.length;c++)b[c]=a.charCodeAt(c);return b},Uint8Array2str:function(a){for(var b=[],c=0;c<a.length;c++)b[c]=String.fromCharCode(a[c]);return b.join("")},calc_checksum:function(a){for(var b={s:0,add:function(a){this.s=(this.s+a)%65536}},c=0;c<a.length;c++)b.add(a.charCodeAt(c));return b.s},print_debug:function(a){d.debug&&console.log(a)},print_debug_hexstr_dump:function(a,b){d.debug&&(a+=this.hexstrdump(b),console.log(a))},getLeftNBits:function(a,b){var c=b%8;if(0===c)return a.substring(0,b/8);var d=(b-c)/8+1,e=a.substring(0,d);return this.shiftRight(e,8-c)},shiftRight:function(a,b){var c=util.str2bin(a);if(b%8===0)return a;for(var d=c.length-1;d>=0;d--)c[d]>>=b%8,d>0&&(c[d]|=c[d-1]<<8-b%8&255);return util.bin2str(c)},get_hashAlgorithmString:function(a){switch(a){case 1:return"MD5";case 2:return"SHA1";case 3:return"RIPEMD160";case 8:return"SHA256";case 9:return"SHA384";case 10:return"SHA512";case 11:return"SHA224"}return"unknown"},getWebCrypto:function(){if(d.useWebCrypto!==!1&&"undefined"!=typeof window){if(window.crypto)return window.crypto.subtle||window.crypto.webkitSubtle;if(window.msCrypto)return window.msCrypto.subtle}}}},{"./config":17}],75:[function(a,b,c){"use strict";function d(a,b){b&&b.worker?this.worker=b.worker:this.worker=new Worker(a||"openpgp.worker.js"),this.worker.onmessage=this.onMessage.bind(this),this.worker.onerror=function(a){throw new Error("Unhandled error in openpgp worker: "+a.message+" ("+a.filename+":"+a.lineno+")")},this.seedRandom(i),this.tasks=[],b&&b.config&&this.worker.postMessage({event:"configure",config:b.config})}var e=a("../crypto"),f=a("../packet"),g=a("../key.js"),h=a("../type/keyid.js"),i=5e4,j=2e4;d.prototype.execute=function(a){var b=this,c=new Promise(function(c,d){a(),b.tasks.push({resolve:c,reject:d})});return c},d.prototype.onMessage=function(a){var b=a.data;switch(b.event){case"method-return":b.err?this.tasks.shift().reject(new Error(b.err)):this.tasks.shift().resolve(b.data);break;case"request-seed":this.seedRandom(j);break;default:throw new Error("Unknown Worker Event.")}},d.prototype.seedRandom=function(a){var b=this.getRandomBuffer(a);this.worker.postMessage({event:"seed-random",buf:b})},d.prototype.getRandomBuffer=function(a){if(!a)return null;var b=new Uint8Array(a);return e.random.getRandomValues(b),b},d.prototype.terminate=function(){this.worker.terminate()},d.prototype.encryptMessage=function(a,b){var c=this;return c.execute(function(){a.length||(a=[a]),a=a.map(function(a){return a.toPacketlist()}),c.worker.postMessage({event:"encrypt-message",keys:a,text:b})})},d.prototype.signAndEncryptMessage=function(a,b,c){var d=this;return d.execute(function(){a.length||(a=[a]),a=a.map(function(a){return a.toPacketlist()}),b=b.toPacketlist(),d.worker.postMessage({event:"sign-and-encrypt-message",publicKeys:a,privateKey:b,text:c})})},d.prototype.decryptMessage=function(a,b){var c=this;return c.execute(function(){a=a.toPacketlist(),c.worker.postMessage({event:"decrypt-message",privateKey:a,message:b})})},d.prototype.decryptAndVerifyMessage=function(a,b,c){var d=this,e=new Promise(function(e,f){a=a.toPacketlist(),b.length||(b=[b]),b=b.map(function(a){return a.toPacketlist()}),d.worker.postMessage({event:"decrypt-and-verify-message",privateKey:a,publicKeys:b,message:c}),d.tasks.push({resolve:function(a){a.signatures=a.signatures.map(function(a){return a.keyid=h.fromClone(a.keyid),a}),e(a)},reject:f})});return e},d.prototype.signClearMessage=function(a,b){var c=this;return c.execute(function(){a.length||(a=[a]),a=a.map(function(a){return a.toPacketlist()}),c.worker.postMessage({event:"sign-clear-message",privateKeys:a,text:b})})},d.prototype.verifyClearSignedMessage=function(a,b){var c=this,d=new Promise(function(d,e){a.length||(a=[a]),a=a.map(function(a){return a.toPacketlist()}),c.worker.postMessage({event:"verify-clear-signed-message",publicKeys:a,message:b}),c.tasks.push({resolve:function(a){a.signatures=a.signatures.map(function(a){return a.keyid=h.fromClone(a.keyid),a}),d(a)},reject:e})});return d},d.prototype.generateKeyPair=function(a){var b=this,c=new Promise(function(c,d){b.worker.postMessage({event:"generate-key-pair",options:a}),b.tasks.push({resolve:function(a){var b=f.List.fromStructuredClone(a.key);a.key=new g.Key(b),c(a)},reject:d})});return c},d.prototype.decryptKey=function(a,b){var c=this,d=new Promise(function(d,e){a=a.toPacketlist(),c.worker.postMessage({event:"decrypt-key",privateKey:a,password:b}),c.tasks.push({resolve:function(a){var b=f.List.fromStructuredClone(a);a=new g.Key(b),d(a)},reject:e})});return d},d.prototype.decryptKeyPacket=function(a,b,c){var d=this,e=new Promise(function(e,h){a=a.toPacketlist(),d.worker.postMessage({event:"decrypt-key-packet",privateKey:a,keyIds:b,password:c}),d.tasks.push({resolve:function(a){var b=f.List.fromStructuredClone(a);a=new g.Key(b),e(a)},reject:h})});return e},b.exports=d},{"../crypto":32,"../key.js":45,"../packet":53,"../type/keyid.js":71}]},{},[44])(44)});
-define('Utils',[],function(){
+define('Utils',[],function() {
 
-	var instance = null;
+    var instance = null;
 
-	function Utils(){
-		if(instance !== null)
-			throw new Error("Utils instance already exists");
-	}
-
-	/* 
-	 * adds an event listener to every element with X class
-	 * @param className {string}	the name of the classes the listener should be added to
-	 * @param listener  {string} 	the event to be listened for 
-	 * @param callback  {function} the function to be executed when event is fired
-	 */
-	Utils.prototype.addListenerToClass = function(className, listener, callback){
-
-		var elements = document.getElementsByClassName(className);
-
-		if(elements.length === 0){
-			return false;
-		}
-
-		for(var i=0; i < elements.length; i++){
-			elements[i].addEventListener(listener, callback, false);
-		}
-		return true;
-	}
+    function Utils() {
+        if (instance !== null)
+            throw new Error("Utils instance already exists");
+    }
 
 
-	Utils.getInstance = function(){
-		if(instance === null)
-			instance = new Utils();
-		return instance;
-	}
+    /* 
+     * adds an event listener to every element with X class
+     * @param className {string}	the name of the classes the listener should be added to
+     * @param listener  {string} 	the event to be listened for 
+     * @param callback  {function}  the function to be executed when event is fired
+     */
+    Utils.prototype.addListenerToClass = function(className, listener, callback) {
 
-	return Utils.getInstance();
+        var elements = document.getElementsByClassName(className);
+
+        if (elements.length === 0) {
+            return false;
+        }
+
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].addEventListener(listener, callback, false);
+        }
+        return true;
+    }
+
+    // return singleton instance
+    Utils.getInstance = function() {
+        if (instance === null)
+            instance = new Utils();
+        return instance;
+    }
+
+    return Utils.getInstance();
 });
-define("EventManager", [],function(){
+
+define("EventManager", [],function() {
 
     var instance = null;
     var events = {};
 
 
-    function EventManager(){
-        if(instance !== null)
+    function EventManager() {
+        if (instance !== null)
             throw new Error("EventManager instance already exists");
     }
 
 
     /* pushes an event and calls function(s) of any listeners
      * @param event {string} the name of the event being triggered
-     * @param data  {any}	 data associated with an event trigger
+     * @param data  {any}    data associated with an event trigger
      */
-    EventManager.prototype.publish = function(event, data){
-    	if(!events[event])
-    		return false;
+    EventManager.prototype.publish = function(event, data) {
+        if (!events[event])
+            return false;
 
-    	events[event].forEach(function(listener){
-    		listener(data);
-    	});
+        events[event].forEach(function(listener) {
+            listener(data);
+        });
     }
 
 
@@ -517,25 +519,24 @@ define("EventManager", [],function(){
      * adds functions to listen for events
      * @param listener {function} the function called when an event is pushed to
      */
-    EventManager.prototype.subscribe = function(event, listener){
-    	if(!events[event])
-    		events[event] = [];
+    EventManager.prototype.subscribe = function(event, listener) {
+        if (!events[event])
+            events[event] = [];
 
-    	events[event].push(listener);
+        events[event].push(listener);
     }
 
 
-    /*
-     * return singleton instance
-     */
-    EventManager.getInstance = function(){
-        if(instance === null)
+    // return singleton instance
+    EventManager.getInstance = function() {
+        if (instance === null)
             instance = new EventManager();
         return instance;
     }
 
     return EventManager.getInstance();
 });
+
 define('Key',['openpgp'], function(openpgp) {
 
     /*
@@ -598,6 +599,7 @@ define('Key',['openpgp'], function(openpgp) {
 
     return Key;
 });
+
 define("StoreController", ['Key'], function(Key) {
 
     var instance = null;
@@ -614,7 +616,18 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} the function to execute when storing is complete
      */
     StoreController.prototype.getKey = function(key, callback) {
-        chrome.storage.local.get(key, callback);
+        chrome.storage.local.get(key, function(result){
+        	// TODO: Should probably convert to keys here instead of in hasFriends()
+        	if (key === null){
+        		callback(result);
+        	}
+            else if (result[key] === undefined){
+            	callback(false);
+            }
+            else{
+            	callback(new Key(result[key]));
+            }
+        });
     }
 
 
@@ -647,6 +660,26 @@ define("StoreController", ['Key'], function(Key) {
 
 
     /* 
+     * removes a key from local storage
+     * @param key_id {string} the key used in localstorage 
+     * @param callback {function} runs upon deletion/failure
+     */
+    StoreController.prototype.delKey = function(key_id, callback) {
+    	console.log("KEYID", key_id);
+   		this.getKey(key_id, function(key){
+   			console.log(':::', key);
+   			if (!key){
+   				console.log('not key');
+   				callback(false);
+   			}
+   			else{
+   				chrome.storage.local.remove(key_id, callback(true));
+   			}
+   		})
+    };
+
+
+    /* 
      * Find out if user has any friends/public keys in storages
      * @param callback {function} executed when retreival from ls is complete
      */
@@ -657,7 +690,7 @@ define("StoreController", ['Key'], function(Key) {
             var friends = false;
             // since user only has one key pair, we can assume the remaining 
             // items in the dict are their friends' public keys
-            if (Object.keys(results).length > 1) {
+            if (Object.keys(results).length > 0) {
                 delete results['whisper_key'];
                 friends = [];
                 for (key in results) {
@@ -672,6 +705,7 @@ define("StoreController", ['Key'], function(Key) {
     }
 
 
+    // return singleton instance
     StoreController.getInstance = function() {
         if (instance === null)
             instance = new StoreController();
@@ -680,6 +714,7 @@ define("StoreController", ['Key'], function(Key) {
 
     return StoreController.getInstance();
 });
+
 define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
     function(StoreController, Key, openpgp, EventManager) {
 
@@ -702,15 +737,15 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             EventManager.subscribe('pubKeyInsert', this.insertPubKey);
 
             // check if the user has a key
-            StoreController.getKey('whisper_key', function(result) {
-                if (result['whisper_key'] === undefined)
+            StoreController.getKey('whisper_key', function(key) {
+                if (!key)
                     EventManager.publish('noPrivKey', {
                         visible: false
-                    })
+                    });
                 else
                     EventManager.publish('newPrivKey', {
                         visible: true,
-                        keys: [new Key(result['whisper_key'])]
+                        keys: key
                     });
             });
 
@@ -749,11 +784,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
                         visible: true,
-                        keys: [new Key({
+                        keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': pubKey,
                             'privKey': privKey
-                        })]
+                        })
                     });
                 });
             });
@@ -768,6 +803,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             var result = self.checkKeyIntegrity(data.privKey);
 
+            // malformed key check
             if (result['err']) {
                 EventManager.publish('error', {
                     error: 'Invalid Key'
@@ -775,6 +811,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
+            // key is not private
             if (!result['key'].isPrivate()) {
                 EventManager.publish('error', {
                     error: 'Please Insert a Private Key'
@@ -782,6 +819,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
+            // wrong password
             if (!self.validateKeyPassword(result['key'], data.password)) {
                 EventManager.publish('error', {
                     error: 'Wrong password'
@@ -789,16 +827,27 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            var pubKey = result['key'].toPublic().armor();
+            // key associated with an existing fb_id
+            StoreController.getKey(null, function(keys) {
+                if(keys[data.fb_id] !== undefined){
+                    EventManager.publish('error', {
+                        error: 'Key Already Exists For: ' + data.fb_id
+                    });
+                    return;                    
+                }
 
-            StoreController.setKey(data.fb_id, pubKey, result['privKey'], function() {
-                EventManager.publish('newPrivKey', {
-                    visible: true,
-                    keys: [new Key({
-                        'fb_id': data.fb_id,
-                        'pubKey': pubKey,
-                        'privKey': data.privKey
-                    })]
+                var pubKey = result['key'].toPublic().armor();
+
+                // everything ok, store the key
+                StoreController.setKey(data.fb_id, pubKey, data.privKey, function() {
+                    EventManager.publish('newPrivKey', {
+                        visible: true,
+                        keys: new Key({
+                            'fb_id': data.fb_id,
+                            'pubKey': pubKey,
+                            'privKey': data.privKey
+                        })
+                    });
                 });
             });
         }
@@ -826,22 +875,34 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            StoreController.getKey(null, function(result) {
+            StoreController.getKey(null, function(keys) {
 
-                if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
+                // key associated with an existing fb_id
+                if(keys[data.fb_id] !== undefined){
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;
+                    return;                    
                 }
 
+                // if for some weird reason their facebook id is 'whisper_key'...
+                if (keys['whisper_key'] !== undefined ) {
+                    if (keys['whisper_key'].fb_id === data.fb_id){
+                        EventManager.publish('error', {
+                            error: 'Public key cannot have same ID as private key'
+                        });
+                        return;
+                    }
+                }
+
+                // Everything is ok, so store the key and publish the newly stored key
                 StoreController.setKey(data.fb_id, data.pubKey, null, function() {
                     EventManager.publish('newPubKey', {
                         visible: true,
-                        keys: [new Key({
+                        keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': data.pubKey
-                        })]
+                        })
                     });
                 });
             });
@@ -882,6 +943,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
         }
 
 
+        // return singleton instance
         KeyController.getInstance = function() {
             if (instance === null)
                 instance = new KeyController();
@@ -890,28 +952,30 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         return KeyController.getInstance();
     });
-define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
+
+// TODO: Could split this up into more modular parts to make it easier to read
+// TODO: Remove StoreController and publish events instead
+
+define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
 
     function bindEvent() {
     	// form events
         document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
         document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
         document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
+        document.forms["delForm"].addEventListener('submit', doDelete);
+
         // click events
         document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
         document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-        Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', requestDelete);
+        Utils.addListenerToClass('close', 'click', function(){this.parentNode.close()});
+
         // events emitted from EventManager (stuff from the controllers)
         EventManager.subscribe('newPubKey', renderFriendTable);
         EventManager.subscribe('newPrivKey', renderUserKey);
         EventManager.subscribe('noPrivKey', renderUserKey);
         EventManager.subscribe('noPubKeys', renderFriendTable);
         EventManager.subscribe('error', renderError);
-    }
-
-
-    function showKeyDetails() {
-        console.log('clicked');
     }
 
 
@@ -953,6 +1017,8 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
         // display the table and hide creation form
         keyTable.style.display = "block";
         document.getElementById('keyGenProgress').style.display = "none";
+        document.forms["keyGenForm"].reset();
+        document.forms["keyInsForm"].reset();
         keyFormWrapper.style.display = "none";
     }
 
@@ -990,6 +1056,8 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
      */
     function updateTableRows(keys, table) {
 
+    	keys = Array.isArray(keys) ? keys : [keys];
+
         keys.forEach(function(key, index) {
             var row = table.insertRow(index + 1);
             row.insertCell(0).innerHTML = key.fb_id;
@@ -1005,7 +1073,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
             deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-            deleteBtn.addEventListener('click', requestDelete);
+            deleteBtn.addEventListener('click', promptDelete);
 
             /* 
              * TODO: User may have multiple private keys in future, so this would
@@ -1031,7 +1099,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
         // grab all the form data
         e.preventDefault();
         var form = document.forms["keyGenForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var name = form.name.value.trim();
         var email = form.email.value.trim();
         var password = form.password.value;
@@ -1055,7 +1123,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     function handlePrivInsert(e) {
         e.preventDefault();
         var form = document.forms["keyInsForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var password = form.password.value;
         var privKey = form.privKey.value.trim();
 
@@ -1074,7 +1142,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     function handlePubInsert(e) {
         e.preventDefault();
         var form = document.forms["friendInsForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var pubKey = form.pubKey.value.trim();
 
         EventManager.publish('pubKeyInsert', {
@@ -1097,7 +1165,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     // Sets the visibility of the private key forms
     function toggleKeyGenType(e) {
 
-        if (e.target.value == 1) {
+        if (e.target.value == 0) {
             document.forms["keyGenForm"].style.display = "block";
             document.forms["keyInsForm"].style.display = "none";
         } else {
@@ -1107,16 +1175,98 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     }
 
 
-    // warn the user about deleting the element
-    function requestDelete(element) {
-        // get the id of the key to be deleted
-        console.log(element.target.id);
-        // confirm they want to delete the key
+    // displays a modal asking user to confirm deletion
+    function promptDelete(e) {
 
-        // remove the key from local storage
+    	// store a reference to the stuff needed for deletion 
+        var row = e.target.parentNode.parentElement;
+        var rowIndex = row.rowIndex;
+        var tableId = row.parentElement.parentElement.id;
+        var name = e.target.parentElement.parentElement.childNodes[1].innerHTML;
+        var keyId = e.target.getAttribute('data-uid');
 
-        // update the table
+        // store the references in hiden form and displays modal
+        updateModal();
+
+        function updateModal(){
+        	var modal = document.getElementById('delModal');
+        	modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
+        	document.forms["delForm"].keyId.value = keyId;
+        	document.forms["delForm"].rowIndex.value = rowIndex;
+        	document.forms["delForm"].tableId.value = tableId;			    
+        	modal.showModal();
+        }
     }
+
+
+    // grabs hidden form data and attempts to delete key from storage
+	function doDelete(e){
+
+		e.preventDefault();
+
+		var keyId = document.forms["delForm"].keyId.value;
+		var tableId = document.forms["delForm"].tableId.value;
+		var rowIndex = document.forms["delForm"].rowIndex.value;
+
+    	StoreController.delKey(keyId, function(success){
+
+    		if (!success){
+    			renderError({error: 'Could not find key'});
+    			return;
+    		}
+
+    		if (keyId === 'whisper_key'){
+                EventManager.publish('noPrivKey', {
+                    visible: false
+                });
+    		}
+
+    		document.getElementById(tableId).rows[rowIndex].remove();
+
+    		document.forms["delForm"].parentNode.close();
+    	});
+    };
+
+
+    // display key details to the user
+    function showKeyDetails(e) {
+
+    	getKeyFromTable(e, updateModal);
+
+	    // Helper function for getting key from table, checks if key exists.
+	    function getKeyFromTable(e, callback){
+	        var keyId = e.target.getAttribute('data-uid');
+
+	        StoreController.getKey(keyId, function(key){
+	        	if(!key){
+	        		renderError({error: 'Could not find key'});
+	        		return;
+	        	}
+	        	callback(key);
+	        });
+	    }
+
+        function updateModal(key){
+        	window.someKey = key;
+	        var modal = document.getElementById('keyModal');
+	        modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+
+	        if(key.privKey === null){
+	        	modal.children.namedItem('privKeyText').style.display = "none";
+	        	modal.children.namedItem('privateHeading').style.display = "none";
+	        }
+	        else{
+	        	modal.children.namedItem('privKeyText').style.display = "block";
+	        	modal.children.namedItem('privateHeading').style.display = "block";	        	
+	        }
+
+	        modal.children.namedItem('privKeyText').innerHTML = key.privKey;
+	        modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
+
+	        modal.showModal();
+	    }
+    }
+
 
     return {
         renderUserKey: renderUserKey,
@@ -1126,6 +1276,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     }
 
 });
+
 define('whisper-options',['KeyController', 'optionsView'], function (KeyController, optionsView) {
     KeyController.init();
     optionsView.bindEvents();

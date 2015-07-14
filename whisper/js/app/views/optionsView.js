@@ -1,15 +1,19 @@
-define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
+// TODO: Could split this up into more modular parts to make it easier to read
+// TODO: Remove StoreController and publish events instead
+
+define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
 
     function bindEvent() {
     	// form events
         document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
         document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
         document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
+        document.forms["delForm"].addEventListener('submit', doDelete);
 
         // click events
         document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
         document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-        Utils.addListenerToClass('ion-trash-b ion-medium ion-clickable', 'click', deleteKey);
+        Utils.addListenerToClass('close', 'click', function(){this.parentNode.close()});
 
         // events emitted from EventManager (stuff from the controllers)
         EventManager.subscribe('newPubKey', renderFriendTable);
@@ -58,6 +62,8 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
         // display the table and hide creation form
         keyTable.style.display = "block";
         document.getElementById('keyGenProgress').style.display = "none";
+        document.forms["keyGenForm"].reset();
+        document.forms["keyInsForm"].reset();
         keyFormWrapper.style.display = "none";
     }
 
@@ -95,6 +101,8 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
      */
     function updateTableRows(keys, table) {
 
+    	keys = Array.isArray(keys) ? keys : [keys];
+
         keys.forEach(function(key, index) {
             var row = table.insertRow(index + 1);
             row.insertCell(0).innerHTML = key.fb_id;
@@ -110,7 +118,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
             deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-            deleteBtn.addEventListener('click', requestDelete);
+            deleteBtn.addEventListener('click', promptDelete);
 
             /* 
              * TODO: User may have multiple private keys in future, so this would
@@ -136,7 +144,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
         // grab all the form data
         e.preventDefault();
         var form = document.forms["keyGenForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var name = form.name.value.trim();
         var email = form.email.value.trim();
         var password = form.password.value;
@@ -160,7 +168,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     function handlePrivInsert(e) {
         e.preventDefault();
         var form = document.forms["keyInsForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var password = form.password.value;
         var privKey = form.privKey.value.trim();
 
@@ -179,7 +187,7 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     function handlePubInsert(e) {
         e.preventDefault();
         var form = document.forms["friendInsForm"];
-        var fb_id = form.fb_id.value.trim();
+        var fb_id = form.fb_id.value.trim().toLowerCase();
         var pubKey = form.pubKey.value.trim();
 
         EventManager.publish('pubKeyInsert', {
@@ -212,20 +220,98 @@ define("optionsView", ['Utils', 'EventManager'], function(Utils, EventManager) {
     }
 
 
-    // warn the user about deleting the element
-    function deleteKey(e) {
-        // get the id of the key to be deleted
-        console.log(e.target);
-        // confirm they want to delete the key
+    // displays a modal asking user to confirm deletion
+    function promptDelete(e) {
 
-        // remove the key from local storage
+    	// store a reference to the stuff needed for deletion 
+        var row = e.target.parentNode.parentElement;
+        var rowIndex = row.rowIndex;
+        var tableId = row.parentElement.parentElement.id;
+        var name = e.target.parentElement.parentElement.childNodes[1].innerHTML;
+        var keyId = e.target.getAttribute('data-uid');
 
-        // update the table
+        // store the references in hiden form and displays modal
+        updateModal();
+
+        function updateModal(){
+        	var modal = document.getElementById('delModal');
+        	modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
+        	document.forms["delForm"].keyId.value = keyId;
+        	document.forms["delForm"].rowIndex.value = rowIndex;
+        	document.forms["delForm"].tableId.value = tableId;			    
+        	modal.showModal();
+        }
     }
 
+
+    // grabs hidden form data and attempts to delete key from storage
+	function doDelete(e){
+
+		e.preventDefault();
+
+		var keyId = document.forms["delForm"].keyId.value;
+		var tableId = document.forms["delForm"].tableId.value;
+		var rowIndex = document.forms["delForm"].rowIndex.value;
+
+    	StoreController.delKey(keyId, function(success){
+
+    		if (!success){
+    			renderError({error: 'Could not find key'});
+    			return;
+    		}
+
+    		if (keyId === 'whisper_key'){
+                EventManager.publish('noPrivKey', {
+                    visible: false
+                });
+    		}
+
+    		document.getElementById(tableId).rows[rowIndex].remove();
+
+    		document.forms["delForm"].parentNode.close();
+    	});
+    };
+
+
+    // display key details to the user
     function showKeyDetails(e) {
-        console.log('clicked');
+
+    	getKeyFromTable(e, updateModal);
+
+	    // Helper function for getting key from table, checks if key exists.
+	    function getKeyFromTable(e, callback){
+	        var keyId = e.target.getAttribute('data-uid');
+
+	        StoreController.getKey(keyId, function(key){
+	        	if(!key){
+	        		renderError({error: 'Could not find key'});
+	        		return;
+	        	}
+	        	callback(key);
+	        });
+	    }
+
+        function updateModal(key){
+        	window.someKey = key;
+	        var modal = document.getElementById('keyModal');
+	        modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+
+	        if(key.privKey === null){
+	        	modal.children.namedItem('privKeyText').style.display = "none";
+	        	modal.children.namedItem('privateHeading').style.display = "none";
+	        }
+	        else{
+	        	modal.children.namedItem('privKeyText').style.display = "block";
+	        	modal.children.namedItem('privateHeading').style.display = "block";	        	
+	        }
+
+	        modal.children.namedItem('privKeyText').innerHTML = key.privKey;
+	        modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
+
+	        modal.showModal();
+	    }
     }
+
 
     return {
         renderUserKey: renderUserKey,

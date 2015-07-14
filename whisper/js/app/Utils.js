@@ -12,7 +12,7 @@ define(function() {
      * adds an event listener to every element with X class
      * @param className {string}	the name of the classes the listener should be added to
      * @param listener  {string} 	the event to be listened for 
-     * @param callback  {function} the function to be executed when event is fired
+     * @param callback  {function}  the function to be executed when event is fired
      */
     Utils.prototype.addListenerToClass = function(className, listener, callback) {
 

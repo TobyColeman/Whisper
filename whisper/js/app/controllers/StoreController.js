@@ -14,7 +14,18 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} the function to execute when storing is complete
      */
     StoreController.prototype.getKey = function(key, callback) {
-        chrome.storage.local.get(key, callback);
+        chrome.storage.local.get(key, function(result){
+        	// TODO: Should probably convert to keys here instead of in hasFriends()
+        	if (key === null){
+        		callback(result);
+        	}
+            else if (result[key] === undefined){
+            	callback(false);
+            }
+            else{
+            	callback(new Key(result[key]));
+            }
+        });
     }
 
 
@@ -47,6 +58,26 @@ define("StoreController", ['Key'], function(Key) {
 
 
     /* 
+     * removes a key from local storage
+     * @param key_id {string} the key used in localstorage 
+     * @param callback {function} runs upon deletion/failure
+     */
+    StoreController.prototype.delKey = function(key_id, callback) {
+    	console.log("KEYID", key_id);
+   		this.getKey(key_id, function(key){
+   			console.log(':::', key);
+   			if (!key){
+   				console.log('not key');
+   				callback(false);
+   			}
+   			else{
+   				chrome.storage.local.remove(key_id, callback(true));
+   			}
+   		})
+    };
+
+
+    /* 
      * Find out if user has any friends/public keys in storages
      * @param callback {function} executed when retreival from ls is complete
      */
@@ -57,7 +88,7 @@ define("StoreController", ['Key'], function(Key) {
             var friends = false;
             // since user only has one key pair, we can assume the remaining 
             // items in the dict are their friends' public keys
-            if (Object.keys(results).length > 1) {
+            if (Object.keys(results).length > 0) {
                 delete results['whisper_key'];
                 friends = [];
                 for (key in results) {

@@ -20,15 +20,15 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             EventManager.subscribe('pubKeyInsert', this.insertPubKey);
 
             // check if the user has a key
-            StoreController.getKey('whisper_key', function(result) {
-                if (result['whisper_key'] === undefined)
+            StoreController.getKey('whisper_key', function(key) {
+                if (!key)
                     EventManager.publish('noPrivKey', {
                         visible: false
-                    })
+                    });
                 else
                     EventManager.publish('newPrivKey', {
                         visible: true,
-                        keys: [new Key(result['whisper_key'])]
+                        keys: key
                     });
             });
 
@@ -67,11 +67,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
                         visible: true,
-                        keys: [new Key({
+                        keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': pubKey,
                             'privKey': privKey
-                        })]
+                        })
                     });
                 });
             });
@@ -86,6 +86,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             var result = self.checkKeyIntegrity(data.privKey);
 
+            // malformed key check
             if (result['err']) {
                 EventManager.publish('error', {
                     error: 'Invalid Key'
@@ -93,6 +94,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
+            // key is not private
             if (!result['key'].isPrivate()) {
                 EventManager.publish('error', {
                     error: 'Please Insert a Private Key'
@@ -100,6 +102,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
+            // wrong password
             if (!self.validateKeyPassword(result['key'], data.password)) {
                 EventManager.publish('error', {
                     error: 'Wrong password'
@@ -107,16 +110,27 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            var pubKey = result['key'].toPublic().armor();
+            // key associated with an existing fb_id
+            StoreController.getKey(null, function(keys) {
+                if(keys[data.fb_id] !== undefined){
+                    EventManager.publish('error', {
+                        error: 'Key Already Exists For: ' + data.fb_id
+                    });
+                    return;                    
+                }
 
-            StoreController.setKey(data.fb_id, pubKey, result['privKey'], function() {
-                EventManager.publish('newPrivKey', {
-                    visible: true,
-                    keys: [new Key({
-                        'fb_id': data.fb_id,
-                        'pubKey': pubKey,
-                        'privKey': data.privKey
-                    })]
+                var pubKey = result['key'].toPublic().armor();
+
+                // everything ok, store the key
+                StoreController.setKey(data.fb_id, pubKey, data.privKey, function() {
+                    EventManager.publish('newPrivKey', {
+                        visible: true,
+                        keys: new Key({
+                            'fb_id': data.fb_id,
+                            'pubKey': pubKey,
+                            'privKey': data.privKey
+                        })
+                    });
                 });
             });
         }
@@ -144,22 +158,34 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            StoreController.getKey(null, function(result) {
+            StoreController.getKey(null, function(keys) {
 
-                if (result[data.fb_id] !== undefined || result['whisper_key'].fb_id == data.fb_id) {
+                // key associated with an existing fb_id
+                if(keys[data.fb_id] !== undefined){
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;
+                    return;                    
                 }
 
+                // if for some weird reason their facebook id is 'whisper_key'...
+                if (keys['whisper_key'] !== undefined ) {
+                    if (keys['whisper_key'].fb_id === data.fb_id){
+                        EventManager.publish('error', {
+                            error: 'Public key cannot have same ID as private key'
+                        });
+                        return;
+                    }
+                }
+
+                // Everything is ok, so store the key and publish the newly stored key
                 StoreController.setKey(data.fb_id, data.pubKey, null, function() {
                     EventManager.publish('newPubKey', {
                         visible: true,
-                        keys: [new Key({
+                        keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': data.pubKey
-                        })]
+                        })
                     });
                 });
             });

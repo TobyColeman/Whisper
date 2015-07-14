@@ -86,10 +86,24 @@
 		<h2 id="friend_header">Friends' Keys</h2>
 		<p id="no_friends" class="invis">No keys to display.</p>
 
+		<div id="friendFormWrapper">
+			<h2><a href="#" id="friendFormToggle">Insert Friends' Key</a></h2>
+			<br>
+			<form id="friendInsForm" style="display:none;">
+				<input class="text-input" type="text" name="fb_id" placeholder="Friend's Facebook ID" required>
+				<button type="submit" value="submit">Submit</button>
+				<br>
+				<textarea class="textarea-medium" name="pubKey" spellcheck="false" 
+						  placeholder="paste your friend's public key here..." required>
+			    </textarea>
+				<br>
+			</form>
+		</div>
+
 		<!-- FRIENDS' KEY TABLE -->
 		<div class="wrapper">
 
-			<table id="friend_table" class="col-left invis">
+			<table id="friend_table" class="invis">
 				<thead>
 					<tr>
 						<th>Facebook Id</th>
@@ -104,26 +118,35 @@
 				</tbody>
 			</table>
 
-			<div id="friendFormWrapper" class="col-left">
-				<h2><a href="#" id="friendFormToggle">Insert Friends' Key</a></h2>
-				<br>
-				<form id="friendInsForm" >
-					<input class="text-input" type="text" name="fb_id" placeholder="Friend's Facebook ID" required>
-					<button type="submit" value="submit">Submit</button>
-					<br>
-					<textarea class="textarea-medium" name="pubKey" spellcheck="false" 
-							  placeholder="paste your friend's public key here..." required>
-				    </textarea>
-					<br>
-				</form>
 
-			</div>
 
 		</div>
 
-		<dialog id="keyModal">
-		  <h3 name="modalHeading"></h3>
-		  <button class="close">Okay</button>
+		<dialog id="keyModal" class="modal-prompt">
+		  <h2 name="modalHeading" class="text-center"></h2>
+
+		  <h3 name="privateHeading" class="invis">Private Key</h3>
+		  <textarea name="privKeyText" class="textarea-medium invis"></textarea>
+		  <br>
+
+		  <h3 name="publicHeading">Public Key</h3>
+		  <textarea name="pubKeyText" class="textarea-medium"></textarea>
+		  <br>
+
+		  <button id="modalClose" class="close">Close</button>
+		</dialog>
+
+		<dialog id="delModal" class="modal-prompt">
+			<h2 class="text-center">Delete Key</h2>
+			<p name="delMsg" class="text-center">Delete key for: <strong name="delName"></strong></p>
+			<form id="delForm" class="col-left">
+				<input type="hidden" name="keyId">
+				<input type="hidden" name="rowIndex">
+				<input type="hidden" name="tableId"> 
+				<button type="submit" id="delModalBtn">Yes</button>
+			</form>
+			<button class="close">No</button>
+
 		</dialog>
 
 		<script type="text/javascript" src="js/whisper-options.js"></script>		
