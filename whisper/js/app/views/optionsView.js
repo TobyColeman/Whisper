@@ -18,9 +18,9 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         // events emitted from EventManager (stuff from the controllers)
         EventManager.subscribe('newPubKey', renderFriendTable);
+        EventManager.subscribe('noPubKeys', renderFriendTable);
         EventManager.subscribe('newPrivKey', renderUserKey);
         EventManager.subscribe('noPrivKey', renderUserKey);
-        EventManager.subscribe('noPubKeys', renderFriendTable);
         EventManager.subscribe('error', renderError);
     }
 
@@ -37,7 +37,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         setTimeout(function() {
             errorBlock.style.display = "none";
-        }, 5000);
+        }, 2000);
     }
 
 
@@ -51,7 +51,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var keyFormWrapper = document.getElementById('keyFormWrapper');
         var keyTable = document.getElementById('key_table');
 
-        if (!data.visible) {
+        if (!data.keys) {
             keyFormWrapper.style.display = "block";
             keyTable.style.display = "none";
             return;
@@ -79,7 +79,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var friendTable = document.getElementById('friend_table');
         var noFriendMsg = document.getElementById('no_friends');
 
-        if (!data.visible) {
+        if (!data.keys) {
             noFriendMsg.style.display = "block";
             friendTable.style.display = "none";
             return;
@@ -265,8 +265,14 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
             if (keyId === 'whisper_key') {
                 EventManager.publish('noPrivKey', {
-                    visible: false
+                    keys: false
                 });
+            }
+
+            if (document.getElementById(tableId).rows.length === 2){
+                 EventManager.publish('noPubKeys', {
+                    keys: false
+                });               
             }
 
             document.getElementById(tableId).rows[rowIndex].remove();
@@ -297,7 +303,6 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         }
 
         function updateModal(key) {
-            window.someKey = key;
             var modal = document.getElementById('keyModal');
             modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
 

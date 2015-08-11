@@ -14,7 +14,7 @@ var requirejs = require('./r.js');
 var baseConfig = {
     baseUrl: "../js",
     locale: "en-us",
-//  optimize: "uglify",
+ // optimize: "uglify",
     optimize: "none", // For debugging built versions
 
 
@@ -22,14 +22,19 @@ var baseConfig = {
         app: 'app',
 
         // Controllers
-        'KeyController': 'app/controllers/KeyController',
+        'KeyController' : 'app/controllers/KeyController',
         'StoreController': 'app/controllers/StoreController',
+        'MessageController' : 'app/controllers/MessageController',
 
         // Models
         'Key': 'app/models/Key',
+        'Thread': 'app/models/Thread',
+        'Person': 'app/models/Person',
 
         // Views
         'optionsView': 'app/views/optionsView',
+        'facebookView': 'app/views/facebookView',
+        'messengerView': 'app/views/messengerView',
 
         // libraries
         'openpgp': 'lib/openpgp',
@@ -40,15 +45,11 @@ var baseConfig = {
         'EventManager': 'app/EventManager',
 
         // 'main' files / entry point for the app
-        'whisper-messenger': 'app/whisper-messenger',
-        'whisper-options': 'app/whisper-options'
+        'fb-messenger': 'app/fb-messenger',
+        'messenger': 'app/messenger',
+        'options': 'app/options'
 
-    },
-    wrap: {
-        startFile: '../js/frags/start.js',
-        // true = load synchronously. This is a feature of almond.js
-        endFile: '../js/frags/end.js',
-    },
+    }
  };
 
 //Create an array of build configs, the baseConfig will
@@ -56,19 +57,46 @@ var baseConfig = {
 //stand on their own, they all include jquery and the noConflict.js file
 
 var configs = [
+    /*
     {
         include: ['almond', 'openpgp', 'Utils','EventManager', 'KeyController',
-                  'StoreController', 'whisper-options', 'Key', 'optionsView'],
-        out: '../../whisper-built/js/whisper-options.js',
+                  'StoreController', 'Key', 'optionsView', 'options'],
+        out: '../../whisper-built/js/options.js',
         skipModuleInsertion: true,
+        wrap: {
+            startFile: '../js/frags/start.js',
+            // true = load synchronously. This is a feature of almond.js
+            endFile: '../js/frags/end-opts.js',
+        }
     },
 
-    // {
-    //     include: ['almond', 'jquery', 'lib', 'BaseController', 'c2', 'm2', 'main2'],
-    //     // insertRequire: ['main2'],
-    //     out: '../build/c2-main.js',
-    //     skipModuleInsertion: true,
-    // }
+    {
+        include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
+                  'StoreController', 'MessageController', 'Key', 
+                  'facebookView', 'fb-messenger'],
+        out: '../../whisper-built/js/fb-main.js',
+        skipModuleInsertion: true,
+        wrap: {
+            startFile: '../js/frags/start.js',
+            // true = load synchronously. This is a feature of almond.js
+            endFile: '../js/frags/end-fb.js',
+        }
+    },
+    */
+
+    {
+        include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
+                  'StoreController', 'MessageController', 'Key', 'Thread', 'Person', 
+                  'messengerView', 'messenger'],
+        out: '../../whisper-built/js/messenger-main.js',
+        skipModuleInsertion: true,
+        wrap: {
+            startFile: '../js/frags/start.js',
+            // true = load synchronously. This is a feature of almond.js
+            endFile: '../js/frags/end-messenger.js',
+        }
+    }
+
 ]; 
 
 

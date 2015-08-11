@@ -1,0 +1,58 @@
+#pwDialog{
+	-webkit-animation-duration: .15s;
+    -webkit-animation-name: popIn;
+    background: #fff;
+    border: 0;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, .20);
+}
+
+#pwDialog::backdrop{
+    background-color: rgba(0, 0, 0, .4);
+}
+
+#pwDialog p{
+	text-align: center;
+	color: #f03d25;
+	display: none;
+}
+
+#pwDialog form input[type="text"]{
+	border: 1px solid rgba(0, 0, 0, .20);
+    border-radius: 4px;
+    color: rgba(0, 0, 0, 1);
+    display: block;
+    font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    height: 29px;
+    margin-bottom: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 16px;
+    width: 131px;
+    -webkit-text-security: disc;
+    outline:none;
+    font-weight: 200;
+}
+
+#pwDialog form div{
+	float: right;
+}
+
+#pwDialog form input[type="text"]:focus{
+	border: 1px solid #0084ff;
+	border-radius: 4px;
+}
+
+#pwDialog button{
+	color: #0084ff;
+	border: 0px;
+	background-color: #fff;
+	cursor: pointer;
+	cursor: hand;
+	font-size: 16px;
+}
+
+#pwDialog button:focus{
+	outline: none;
+};

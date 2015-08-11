@@ -23,24 +23,27 @@
 	"options_page": "options.html",
 
 	"permissions": [
+		"webRequest",
 		"tabs",
 		"storage",
 		"unlimitedStorage",
-		"https://*.facebook.com/messages*"
+		"https://*.facebook.com/messages*",
+		"https://*.messenger.com/*",
+		"https://www.messenger.com/ajax/mercury/threadlist_info.php"
 	],
 
 	"content_scripts": [
 		{
-			"matches": ["https://*.facebook.com/messages/*"],
+			"matches": ["https://*.messenger.com/*"],
 			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/whisper-options.js"],
-			"run_at": "document_idle"
+			"js" : ["js/messenger-main.js"],
+			"run_at": "document_start"
 		}
 	],
 
 	"background": {
 		"scripts": ["js/background.js"],
-		"persistent": false
+		"persistent": true
 	},
 
 	"web_accessible_resources": [

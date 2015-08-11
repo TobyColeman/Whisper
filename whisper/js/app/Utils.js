@@ -28,6 +28,35 @@ define(function() {
         return true;
     }
 
+
+    /*
+     * little helper function to check if page has element with X class name
+     * @param className {string} the name of the class
+     */
+    Utils.prototype.classExists = function(className){
+
+        if(document.getElementsByClassName(className)[0])
+            return true;
+        
+        return false;
+    }
+
+
+    /* removes x attribute from a node & its' subtree
+     * @param attribute {string} the name of the attribute to be remove
+     * @param node {string} the root of the subtree
+     */ 
+    Utils.prototype.removeNestedAttributes = function(attribute, node) {
+
+        node.removeAttribute(attribute);
+
+        if (node.children !== undefined)
+            for (var i = 0; i < node.children.length; i++) {
+                this.removeNestedAttributes(attribute, node.children[i]);
+            }
+    }
+
+
     // return singleton instance
     Utils.getInstance = function() {
         if (instance === null)

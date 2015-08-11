@@ -4,8 +4,8 @@ define(['openpgp'], function(openpgp) {
      * @param pgpKey {dict} contains a public key, optional private key and a facebook id
      */
     function Key(pgpKey) {
-        this.pubKey = pgpKey['pubKey'];
-        this.privKey = pgpKey['privKey'] === undefined ? null : pgpKey['privKey'];
+        this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
+        this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
         this.fb_id = pgpKey['fb_id'];
     }
 
@@ -14,8 +14,16 @@ define(['openpgp'], function(openpgp) {
      * @returns {string} the id of the key, format: FirstName LastName <email@domain.com>
      */
     Key.prototype.getId = function() {
-        return openpgp.key.readArmored(this.pubKey).keys[0].users[0].userId.userid;
+        return this.pubKey.users[0].userId.userid;
     }
+
+
+    /* 
+     * @returns {boolean} whether the private key has been decrypted or not
+     */
+    Key.prototype.isUnlocked = function() {
+        return this.privKey.primaryKey.isDecrypted;
+    };
 
 
     /*
@@ -42,7 +50,7 @@ define(['openpgp'], function(openpgp) {
      * @returns {integer} the length of the key
      */
     Key.prototype.getPubKeyLength = function() {
-        var publicKeyPacket = openpgp.key.readArmored(this.pubKey).keys[0].primaryKey;
+        var publicKeyPacket = this.pubKey.primaryKey;
 
         if (publicKeyPacket !== null) {
             strength = getBitLength(publicKeyPacket);

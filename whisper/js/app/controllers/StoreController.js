@@ -16,6 +16,10 @@ define("StoreController", ['Key'], function(Key) {
     StoreController.prototype.getKey = function(key, callback) {
         chrome.storage.local.get(key, function(result) {
             // TODO: Should probably convert to keys here instead of in hasFriends()
+
+            // remove the settings object, don't need it here
+            delete result['settings'];
+
             if (key === null) {
                 callback(result);
             } else if (result[key] === undefined) {
@@ -71,6 +75,12 @@ define("StoreController", ['Key'], function(Key) {
     };
 
 
+    // tiny wrapper function to check if user has private key
+    StoreController.prototype.hasPrivKey = function(callback) {
+        this.getKey('whisper_key', callback);
+    };
+
+
     /* 
      * Find out if user has any friends/public keys in storages
      * @param callback {function} executed when retreival from ls is complete
@@ -80,10 +90,11 @@ define("StoreController", ['Key'], function(Key) {
         this.getKey(null, function(results) {
 
             var friends = false;
+            delete results['whisper_key'];
+
             // since user only has one key pair, we can assume the remaining 
             // items in the dict are their friends' public keys
             if (Object.keys(results).length > 0) {
-                delete results['whisper_key'];
                 friends = [];
                 for (key in results) {
                     friends.push(new Key({
@@ -95,6 +106,38 @@ define("StoreController", ['Key'], function(Key) {
             callback(friends);
         });
     }
+
+
+    // Returns the settings for a conversation (if encryption is on/off)
+    StoreController.prototype.getSettings = function(key, callback) {
+        chrome.storage.local.get({settings: {}}, function(result){
+
+            var settings = result.settings;
+
+            if(settings[key] === undefined){
+                callback(false);
+            } else {
+                callback(settings[key]);
+            }
+        })
+    };
+
+
+    // Sets whether encryption is enabled/disabled for a conversation
+    StoreController.prototype.setSettings = function(key, callback) {
+
+        chrome.storage.local.get({settings: {}}, function(result){
+
+            var settings = result.settings;
+
+            if (settings[key] === false || settings[key] === undefined)
+                settings[key] = true;
+            else
+                settings[key] = false;
+
+            chrome.storage.local.set({settings:settings}, callback);
+        });
+    };
 
 
     // return singleton instance

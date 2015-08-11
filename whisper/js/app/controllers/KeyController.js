@@ -11,7 +11,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         /*
          * runs initially when the options page loads, checks if the user has a key / friends
-         * and sets the view accordingly
+         * and publishes the results to EventManager
          */
         KeyController.prototype.init = function() {
 
@@ -19,29 +19,27 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             EventManager.subscribe('privKeyInsert', this.insertPrivKey);
             EventManager.subscribe('pubKeyInsert', this.insertPubKey);
 
-            // check if the user has a key
-            StoreController.getKey('whisper_key', function(key) {
+            // check if the user has a key 
+            StoreController.hasPrivKey(function(key) {
                 if (!key)
                     EventManager.publish('noPrivKey', {
-                        visible: false
+                        keys: false
                     });
                 else
                     EventManager.publish('newPrivKey', {
-                        visible: true,
                         keys: key
                     });
             });
 
             // check if the user has any friends
-            StoreController.hasFriends(function(friends) {
-                if (friends)
-                    EventManager.publish('newPubKey', {
-                        visible: true,
-                        keys: friends
-                    });
-                else
+            StoreController.hasFriends(function(keys) {
+                if (!keys)
                     EventManager.publish('noPubKeys', {
-                        visible: false
+                        keys: false
+                    });  
+                else
+                    EventManager.publish('newPubKey', {
+                        keys: keys
                     });
             })
         }

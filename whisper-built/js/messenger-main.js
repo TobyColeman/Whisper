@@ -479,6 +479,35 @@ define('Utils',[],function() {
         return true;
     }
 
+
+    /*
+     * little helper function to check if page has element with X class name
+     * @param className {string} the name of the class
+     */
+    Utils.prototype.classExists = function(className){
+
+        if(document.getElementsByClassName(className)[0])
+            return true;
+        
+        return false;
+    }
+
+
+    /* removes x attribute from a node & its' subtree
+     * @param attribute {string} the name of the attribute to be remove
+     * @param node {string} the root of the subtree
+     */ 
+    Utils.prototype.removeNestedAttributes = function(attribute, node) {
+
+        node.removeAttribute(attribute);
+
+        if (node.children !== undefined)
+            for (var i = 0; i < node.children.length; i++) {
+                this.removeNestedAttributes(attribute, node.children[i]);
+            }
+    }
+
+
     // return singleton instance
     Utils.getInstance = function() {
         if (instance === null)
@@ -510,7 +539,10 @@ define("EventManager", [],function() {
             return false;
 
         events[event].forEach(function(listener) {
-            listener(data);
+            if (data)
+                listener(data);
+            else
+                listener();
         });
     }
 
@@ -519,12 +551,29 @@ define("EventManager", [],function() {
      * adds functions to listen for events
      * @param listener {function} the function called when an event is pushed to
      */
-    EventManager.prototype.subscribe = function(event, listener) {
+    EventManager.prototype.subscribe = function(event, listeners) {
         if (!events[event])
             events[event] = [];
 
-        events[event].push(listener);
+        if (!Array.isArray(listeners)) listeners = [listeners];
+
+        for (var i = 0; i < listeners.length; i++) {
+            events[event].push(listeners[i])
+        };
     }
+
+
+    /* 
+     * TODO: removing by index is horrible...
+     * removes a listener function from an event
+     * @param listenerIndex {int} the position of the event in the event array
+     */
+    EventManager.prototype.removeListener = function(event, listenerIndex) {
+        if (!events[event])
+            return false;
+
+        events[event].splice(listenerIndex, 1);
+    };
 
 
     // return singleton instance
@@ -543,8 +592,8 @@ define('Key',['openpgp'], function(openpgp) {
      * @param pgpKey {dict} contains a public key, optional private key and a facebook id
      */
     function Key(pgpKey) {
-        this.pubKey = pgpKey['pubKey'];
-        this.privKey = pgpKey['privKey'] === undefined ? null : pgpKey['privKey'];
+        this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
+        this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
         this.fb_id = pgpKey['fb_id'];
     }
 
@@ -553,8 +602,20 @@ define('Key',['openpgp'], function(openpgp) {
      * @returns {string} the id of the key, format: FirstName LastName <email@domain.com>
      */
     Key.prototype.getId = function() {
-        return openpgp.key.readArmored(this.pubKey).keys[0].users[0].userId.userid;
+        return this.pubKey.users[0].userId.userid;
     }
+
+
+    /* 
+     * @returns {boolean} whether the private key has been decrypted or not
+     */
+    Key.prototype.isUnlocked = function() {
+
+        if (this.privKey === null)
+            throw new Error("No Private Key");
+
+        return this.privKey.primaryKey.isDecrypted;
+    };
 
 
     /*
@@ -581,7 +642,7 @@ define('Key',['openpgp'], function(openpgp) {
      * @returns {integer} the length of the key
      */
     Key.prototype.getPubKeyLength = function() {
-        var publicKeyPacket = openpgp.key.readArmored(this.pubKey).keys[0].primaryKey;
+        var publicKeyPacket = this.pubKey.primaryKey;
 
         if (publicKeyPacket !== null) {
             strength = getBitLength(publicKeyPacket);
@@ -616,16 +677,18 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} the function to execute when storing is complete
      */
     StoreController.prototype.getKey = function(key, callback) {
-        chrome.storage.local.get(key, function(result){
-        	// TODO: Should probably convert to keys here instead of in hasFriends()
-        	if (key === null){
-        		callback(result);
-        	}
-            else if (result[key] === undefined){
-            	callback(false);
-            }
-            else{
-            	callback(new Key(result[key]));
+        chrome.storage.local.get(key, function(result) {
+            // TODO: Should probably convert to keys here instead of in hasFriends()
+
+            // remove the settings object, don't need it here
+            delete result['settings'];
+
+            if (key === null) {
+                callback(result);
+            } else if (result[key] === undefined) {
+                callback(false);
+            } else {
+                callback(new Key(result[key]));
             }
         });
     }
@@ -665,17 +728,19 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} runs upon deletion/failure
      */
     StoreController.prototype.delKey = function(key_id, callback) {
-    	console.log("KEYID", key_id);
-   		this.getKey(key_id, function(key){
-   			console.log(':::', key);
-   			if (!key){
-   				console.log('not key');
-   				callback(false);
-   			}
-   			else{
-   				chrome.storage.local.remove(key_id, callback(true));
-   			}
-   		})
+        this.getKey(key_id, function(key) {
+            if (!key) {
+                callback(false);
+            } else {
+                chrome.storage.local.remove(key_id, callback(true));
+            }
+        })
+    };
+
+
+    // tiny wrapper function to check if user has private key
+    StoreController.prototype.hasPrivKey = function(callback) {
+        this.getKey('whisper_key', callback);
     };
 
 
@@ -688,10 +753,11 @@ define("StoreController", ['Key'], function(Key) {
         this.getKey(null, function(results) {
 
             var friends = false;
+            delete results['whisper_key'];
+
             // since user only has one key pair, we can assume the remaining 
             // items in the dict are their friends' public keys
             if (Object.keys(results).length > 0) {
-                delete results['whisper_key'];
                 friends = [];
                 for (key in results) {
                     friends.push(new Key({
@@ -705,6 +771,38 @@ define("StoreController", ['Key'], function(Key) {
     }
 
 
+    // Returns the settings for a conversation (if encryption is on/off)
+    StoreController.prototype.getSettings = function(key, callback) {
+        chrome.storage.local.get({settings: {}}, function(result){
+
+            var settings = result.settings;
+
+            if(settings[key] === undefined){
+                callback(false);
+            } else {
+                callback(settings[key]);
+            }
+        })
+    };
+
+
+    // Sets whether encryption is enabled/disabled for a conversation
+    StoreController.prototype.setSettings = function(key, callback) {
+
+        chrome.storage.local.get({settings: {}}, function(result){
+
+            var settings = result.settings;
+
+            if (settings[key] === false || settings[key] === undefined)
+                settings[key] = true;
+            else
+                settings[key] = false;
+
+            chrome.storage.local.set({settings:settings}, callback);
+        });
+    };
+
+
     // return singleton instance
     StoreController.getInstance = function() {
         if (instance === null)
@@ -714,7 +812,6 @@ define("StoreController", ['Key'], function(Key) {
 
     return StoreController.getInstance();
 });
-
 define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
     function(StoreController, Key, openpgp, EventManager) {
 
@@ -728,7 +825,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         /*
          * runs initially when the options page loads, checks if the user has a key / friends
-         * and sets the view accordingly
+         * and publishes the results to EventManager
          */
         KeyController.prototype.init = function() {
 
@@ -736,29 +833,27 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             EventManager.subscribe('privKeyInsert', this.insertPrivKey);
             EventManager.subscribe('pubKeyInsert', this.insertPubKey);
 
-            // check if the user has a key
-            StoreController.getKey('whisper_key', function(key) {
+            // check if the user has a key 
+            StoreController.hasPrivKey(function(key) {
                 if (!key)
                     EventManager.publish('noPrivKey', {
-                        visible: false
+                        keys: false
                     });
                 else
                     EventManager.publish('newPrivKey', {
-                        visible: true,
                         keys: key
                     });
             });
 
             // check if the user has any friends
-            StoreController.hasFriends(function(friends) {
-                if (friends)
-                    EventManager.publish('newPubKey', {
-                        visible: true,
-                        keys: friends
-                    });
-                else
+            StoreController.hasFriends(function(keys) {
+                if (!keys)
                     EventManager.publish('noPubKeys', {
-                        visible: false
+                        keys: false
+                    });  
+                else
+                    EventManager.publish('newPubKey', {
+                        keys: keys
                     });
             })
         }
@@ -829,11 +924,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             // key associated with an existing fb_id
             StoreController.getKey(null, function(keys) {
-                if(keys[data.fb_id] !== undefined){
+                if (keys[data.fb_id] !== undefined) {
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;                    
+                    return;
                 }
 
                 var pubKey = result['key'].toPublic().armor();
@@ -878,16 +973,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             StoreController.getKey(null, function(keys) {
 
                 // key associated with an existing fb_id
-                if(keys[data.fb_id] !== undefined){
+                if (keys[data.fb_id] !== undefined) {
                     EventManager.publish('error', {
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
-                    return;                    
+                    return;
                 }
 
                 // if for some weird reason their facebook id is 'whisper_key'...
-                if (keys['whisper_key'] !== undefined ) {
-                    if (keys['whisper_key'].fb_id === data.fb_id){
+                if (keys['whisper_key'] !== undefined) {
+                    if (keys['whisper_key'].fb_id === data.fb_id) {
                         EventManager.publish('error', {
                             error: 'Public key cannot have same ID as private key'
                         });
@@ -952,339 +1047,419 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         return KeyController.getInstance();
     });
+define('Thread',[],function() {
 
-// TODO: Could split this up into more modular parts to make it easier to read
-// TODO: Remove StoreController and publish events instead
-
-define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
-
-    function bindEvent() {
-    	// form events
-        document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
-        document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
-        document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
-        document.forms["delForm"].addEventListener('submit', doDelete);
-
-        // click events
-        document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
-        document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-        Utils.addListenerToClass('close', 'click', function(){this.parentNode.close()});
-
-        // events emitted from EventManager (stuff from the controllers)
-        EventManager.subscribe('newPubKey', renderFriendTable);
-        EventManager.subscribe('newPrivKey', renderUserKey);
-        EventManager.subscribe('noPrivKey', renderUserKey);
-        EventManager.subscribe('noPubKeys', renderFriendTable);
-        EventManager.subscribe('error', renderError);
-    }
+	function Thread(id){
+		this.id = id;
+		this.isEncrypted = false;
+		this.people = [];
+	}
 
 
-    /*
-     * Displays error messages passed down from the controller
-     * @param data.error {string} error message displayed to the user
-     */
-    function renderError(data) {
-        var errorBlock = document.getElementById('errorBlock');
-        errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
-        document.getElementById('keyGenProgress').style.display = "none";
-        errorBlock.style.display = "block";
-
-        setTimeout(function() {
-            errorBlock.style.display = "none";
-        }, 5000);
-    }
+	Thread.prototype.setEncrypted = function(encrypted) {
+		if (encrypted)
+			this.isEncrypted = true;
+		else
+			this.isEncrypted = false;
+	};
 
 
-    /* 
-     * sets the visibility of the key table / creation form
-     * @param data.visible {boolean}	if true should show table
-     * @param data.keys    {array} 	    contains Key objects
-     */
-    function renderUserKey(data) {
+	Thread.prototype.isEncrypted = function() {
+		return this.isEncrypted();
+	};
 
-        var keyFormWrapper = document.getElementById('keyFormWrapper');
-        var keyTable = document.getElementById('key_table');
 
-        if (!data.visible) {
-            keyFormWrapper.style.display = "block";
-            keyTable.style.display = "none";
+	Thread.prototype.addPerson = function(person) {
+		this.people.push(person);
+	};
+
+
+	Thread.prototype.removePerson = function(person) {
+
+		var index = this.people.indexOf(person);
+
+		if (index > -1)
+			this.people.splice(index, 1);
+	};
+
+	return Thread;
+});
+define('Person',["Key"], function(Key) {
+
+	function Person(vanity, fbid){
+		this.vanity = vanity;
+		this.fbid = fbid;
+		this.key = false;
+	}
+
+
+	Person.prototype.setKey = function(key) {
+		this.key = new Key(key);
+	};
+
+	return Person;
+});
+define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Person"], function(e, Store, Key, Thread, Person){
+
+	var instance = null;
+	var thread, myKey;
+
+	function MessageController() {
+		self = this;
+		if (instance !== null)
+			throw new Error("MessageController instance already exists");
+	}
+
+
+	MessageController.prototype.init = function() {
+
+        Store.hasPrivKey(function(key) {
+            if (!key)
+                return false;
+            else
+                myKey = key;
+            return true;
+        });
+
+		e.subscribe('changeThread', this.getThreadInfo);
+		e.subscribe('setEncryption', this.setEncryption);
+		e.subscribe('decryptKey', this.decryptKey);
+	};				
+
+
+	// 
+	MessageController.prototype.getThreadInfo = function(data) {
+
+		// get the id of the thread
+		chrome.runtime.sendMessage({type: 'getThreadInfo', site: data.site}, function(response){
+			user = response.user;
+            self.makeRequest("/ajax/mercury/threadlist_info.php", 
+                        {type  : 'POST',
+                         params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + user.id + '&__a=1b&__req=1&fb_dtsg=' + user.fb_dtsg}, 
+                         self.setActiveThread)
+		});
+	};
+
+	MessageController.prototype.decryptKey = function(data) {
+
+        if (!myKey.privKey.decrypt(data.password)){
+            e.publish('wrongPassword');
             return;
         }
-
-        // update the rows in the table where user's key is displayed
-        updateTableRows(data.keys, keyTable);
-
-        // display the table and hide creation form
-        keyTable.style.display = "block";
-        document.getElementById('keyGenProgress').style.display = "none";
-        document.forms["keyGenForm"].reset();
-        document.forms["keyInsForm"].reset();
-        keyFormWrapper.style.display = "none";
-    }
+        e.publish('correctPassword');
+	};
 
 
-    /* 
-     * sets the visibility of the table displaying the user's friends' keys
-     * @param data.visible {boolean}	if true should show table
-     * @param data.keys    {array} 	    contains Key objects
-     */
-    function renderFriendTable(data) {
+    MessageController.prototype.setActiveThread = function(data){
 
-        var friendTable = document.getElementById('friend_table');
-        var noFriendMsg = document.getElementById('no_friends');
+    	var threadInfo, threadId, people;
 
-        if (!data.visible) {
-            noFriendMsg.style.display = "block";
-            friendTable.style.display = "none";
-            return;
+    	// parse respons from threadlist_info.php
+        threadInfo = JSON.parse(data);
+        // array of participants in the active thread
+        people = threadInfo.payload.participants;
+        // id of the active thread (group-convo)
+        threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
+        // id of the active thread (solo-convo)
+        if (threadId === undefined)
+        	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
+
+        // make a new thread, store its' id & participants
+        thread = new Thread(threadId);
+
+        for (var i = 0; i < people.length; i++) {
+        	thread.addPerson(new Person(people[i].vanity, people[i].fbid));
         }
 
-        // update the rows in the table where public keys are displayed
-        updateTableRows(data.keys, friendTable);
+        // get the settings for the current thread, check what public
+        // keys are in storage then notify the view
+        Store.getSettings(thread.id, function(encrypted){
 
-        // display the table and reset public key insertion form
-        friendTable.style.display = "block";
-        document.forms["friendInsForm"].reset();
-        noFriendMsg.style.display = "none";
-    }
+        	thread.setEncrypted(encrypted);
 
+        	if(encrypted && !myKey.isUnlocked())
+        		e.publish('getPassword');
 
-    /* 
-     * Updates the key table with the user's details
-     * @param keys {array} an array of Key objects
-     * @param table {element} the table to append rows to
-     */
-    function updateTableRows(keys, table) {
+    		(function(){
+    			var i = 0;
 
-    	keys = Array.isArray(keys) ? keys : [keys];
-
-        keys.forEach(function(key, index) {
-            var row = table.insertRow(index + 1);
-            row.insertCell(0).innerHTML = key.fb_id;
-            row.insertCell(1).innerHTML = key.getName();
-            row.insertCell(2).innerHTML = key.getEmail();
-
-            // used for showing details of a key
-            var showBtn = document.createElement("A");
-            showBtn.innerHTML = "show key";
-            showBtn.href = "#";
-            showBtn.addEventListener('click', showKeyDetails);
-
-            // used for deleting a key
-            var deleteBtn = document.createElement("SPAN");
-            deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-            deleteBtn.addEventListener('click', promptDelete);
-
-            /* 
-             * TODO: User may have multiple private keys in future, so this would
-             * only need to be slightly modified 
-             */
-            if (key.privKey != null) {
-                showBtn.setAttribute('data-uid', 'whisper_key');
-                deleteBtn.setAttribute('data-uid', 'whisper_key');
-            } else {
-                showBtn.setAttribute('data-uid', key.fb_id);
-                deleteBtn.setAttribute('data-uid', key.fb_id);
-            }
-
-            row.insertCell(3).appendChild(showBtn);
-            row.insertCell(4).innerHTML = key.getPubKeyLength();
-            row.insertCell(5).appendChild(deleteBtn);
+    			function forloop(){
+        			if (i < thread.people.length){
+        				Store.getKey(thread.people[i].vanity, function(result){
+        					if(result)
+        						thread.people[i].setKey(result.pubKey)
+        					i++;
+        					forloop();
+        				});
+        			}
+        			else{
+        				e.publish('renderThreadSettings', {isEncrypted: encrypted,
+        										   		   people: thread.people});
+        			}
+        		}
+        		forloop();
+    		})();       		        		
         });
     }
 
 
-    // Grabs the form data needed to create a key & requests its' creation
-    function handleKeyForm(e) {
-        // grab all the form data
-        e.preventDefault();
-        var form = document.forms["keyGenForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
-        var name = form.name.value.trim();
-        var email = form.email.value.trim();
-        var password = form.password.value;
-        var numBits = form.numBits[form.numBits.selectedIndex].value;
+    MessageController.prototype.setEncryption = function(data) {
+    	thread.setEncrypted(data.encrypted);
 
-        // notify the user a key is being generated
-        document.getElementById('keyGenProgress').style.display = "block";
+    	if(data.encrypted && !myKey.isUnlocked())
+    		e.publish('getPassword');
 
-        // push an event to let the controller know a new key has been requested
-        EventManager.publish('newKey', {
-            'fb_id': fb_id,
-            'name': name,
-            'email': email,
-            'password': password,
-            'numBits': numBits
-        });
-    }
-
-
-    // Grabs already generated private key & requests its' insertion
-    function handlePrivInsert(e) {
-        e.preventDefault();
-        var form = document.forms["keyInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
-        var password = form.password.value;
-        var privKey = form.privKey.value.trim();
-
-        // notify the user a key is being generated
-        document.getElementById('keyGenProgress').style.display = "block";
-
-        EventManager.publish('privKeyInsert', {
-            'fb_id': fb_id,
-            'password': password,
-            'privKey': privKey
-        });
-    }
-
-
-    // Grabs form data and requests public key to be stored
-    function handlePubInsert(e) {
-        e.preventDefault();
-        var form = document.forms["friendInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
-        var pubKey = form.pubKey.value.trim();
-
-        EventManager.publish('pubKeyInsert', {
-            'fb_id': fb_id,
-            'pubKey': pubKey
-        });
-    }
-
-
-    // Sets the visibility of the public key form
-    function toggleFriendForm(e) {
-        if (document.forms["friendInsForm"].style.display == "none") {
-            document.forms["friendInsForm"].style.display = "block";
-        } else {
-            document.forms["friendInsForm"].style.display = "none";
-        }
-    }
-
-
-    // Sets the visibility of the private key forms
-    function toggleKeyGenType(e) {
-
-        if (e.target.value == 0) {
-            document.forms["keyGenForm"].style.display = "block";
-            document.forms["keyInsForm"].style.display = "none";
-        } else {
-            document.forms["keyGenForm"].style.display = "none";
-            document.forms["keyInsForm"].style.display = "block";
-        }
-    }
-
-
-    // displays a modal asking user to confirm deletion
-    function promptDelete(e) {
-
-    	// store a reference to the stuff needed for deletion 
-        var row = e.target.parentNode.parentElement;
-        var rowIndex = row.rowIndex;
-        var tableId = row.parentElement.parentElement.id;
-        var name = e.target.parentElement.parentElement.childNodes[1].innerHTML;
-        var keyId = e.target.getAttribute('data-uid');
-
-        // store the references in hiden form and displays modal
-        updateModal();
-
-        function updateModal(){
-        	var modal = document.getElementById('delModal');
-        	modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
-        	document.forms["delForm"].keyId.value = keyId;
-        	document.forms["delForm"].rowIndex.value = rowIndex;
-        	document.forms["delForm"].tableId.value = tableId;			    
-        	modal.showModal();
-        }
-    }
-
-
-    // grabs hidden form data and attempts to delete key from storage
-	function doDelete(e){
-
-		e.preventDefault();
-
-		var keyId = document.forms["delForm"].keyId.value;
-		var tableId = document.forms["delForm"].tableId.value;
-		var rowIndex = document.forms["delForm"].rowIndex.value;
-
-    	StoreController.delKey(keyId, function(success){
-
-    		if (!success){
-    			renderError({error: 'Could not find key'});
-    			return;
-    		}
-
-    		if (keyId === 'whisper_key'){
-                EventManager.publish('noPrivKey', {
-                    visible: false
-                });
-    		}
-
-    		document.getElementById(tableId).rows[rowIndex].remove();
-
-    		document.forms["delForm"].parentNode.close();
+    	Store.setSettings(thread.id, function(){
+    		// don't need anything in this callback yet
     	});
     };
 
 
-    // display key details to the user
-    function showKeyDetails(e) {
+	// ajax helper function
+	MessageController.prototype.makeRequest = function(url, options, callback) {
+        var xhr = new XMLHttpRequest();
 
-    	getKeyFromTable(e, updateModal);
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState == 4 && xhr.status == 200)
+                callback(xhr.responseText.replace('for (;;);', ''));
+        }
 
-	    // Helper function for getting key from table, checks if key exists.
-	    function getKeyFromTable(e, callback){
-	        var keyId = e.target.getAttribute('data-uid');
+        xhr.open(options.type, url, true);
 
-	        StoreController.getKey(keyId, function(key){
-	        	if(!key){
-	        		renderError({error: 'Could not find key'});
-	        		return;
-	        	}
-	        	callback(key);
-	        });
-	    }
+        if(options.type === 'POST')
+            xhr.send(options.params);
+        else
+            xhr.send();
+	};
 
-        function updateModal(key){
-        	window.someKey = key;
-	        var modal = document.getElementById('keyModal');
-	        modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+	MessageController.getInstance = function() {
+		if (instance === null)
+			instance = new MessageController();
+		return instance;
+	}
 
-	        if(key.privKey === null){
-	        	modal.children.namedItem('privKeyText').style.display = "none";
-	        	modal.children.namedItem('privateHeading').style.display = "none";
-	        }
-	        else{
-	        	modal.children.namedItem('privKeyText').style.display = "block";
-	        	modal.children.namedItem('privateHeading').style.display = "block";	        	
-	        }
-
-	        modal.children.namedItem('privKeyText').innerHTML = key.privKey;
-	        modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
-
-	        modal.showModal();
-	    }
-    }
-
-
-    return {
-        renderUserKey: renderUserKey,
-        renderFriendTable: renderFriendTable,
-        renderError: renderError,
-        bindEvents: bindEvent
-    }
-
+	return MessageController.getInstance();
 });
 
-define('whisper-options',['KeyController', 'optionsView'], function (KeyController, optionsView) {
-    KeyController.init();
-    optionsView.bindEvents();
+// View for messenger.com
+
+define("messengerView", ["Utils", "EventManager"], function (Utils, em){
+
+	// Styles used when injecting plugin elements into messenger.com
+	var STYLES = {
+		// heading of the current chat window
+		heading : '_3oh-',
+		// currently selected thread
+		activeThread: '_1ht2',
+		// right column 
+		threadInfoPane: '_3tkv',
+		// wrapper that toggles visibility of right col
+		threadInfoPaneWrapper: '_4_j5',
+		// span tag in column row
+		colSpan: '_3x6u',
+		// information button in active state
+		infoBtn: '_fl3 _30yy',
+	}
+
+	// ignore checking these styles as they are not always used in the page
+	var exceptions = ['rightCol', 'colSpan'];
+
+
+	function init(){
+		
+		if (!validateDom()){
+			alert('Could not initialise Whisper. Please refresh the page. If this issue persists please check for an updated version of the plugin.');
+			return;
+		}
+		
+		// initialise the GUI
+		injectGui();
+
+		// add event listeners
+		bindDomEvents();
+
+		// listen to controller events
+		subscribeEvents();
+
+		changeThread();
+
+	}
+
+	// subscribes to events emitted by the event manager
+	function subscribeEvents(){
+		em.subscribe('renderThreadSettings', renderThreadSettings);
+
+		em.subscribe('getPassword', function(){
+			document.getElementById('pwDialog').showModal();
+		});
+
+		em.subscribe('wrongPassword', function(){
+			console.log('wrong password');
+			document.getElementById('pwDialog').children[0].style.display = 'block';
+		});
+
+		em.subscribe('correctPassword', function(){
+			console.log('correct password');
+			document.getElementById('pwDialog').children[0].style.display = 'none';
+			document.getElementById('pwDialog').close();
+		});
+	}
+
+
+	// adds all the event listeners
+	function bindDomEvents(){
+
+		// watches for changes between threads
+		var threadTitle = document.getElementsByClassName(STYLES.heading)[0];
+		var config = { attributes: true, childList: true, characterData: true, subtree: true };
+		var titleObserver = new MutationObserver(function() {
+			changeThread();
+		});
+		titleObserver.observe(threadTitle, config);
+
+		// watches for change in the right colum / where thread interactions are
+		var threadInfoWrapper = document.getElementsByClassName(STYLES.threadInfoPaneWrapper)[0];
+		var config = { attributes: true, subtree: false };
+		var threadInfoPaneObserver = new MutationObserver(function(mutations) {
+			injectGui();  	
+		});
+		threadInfoPaneObserver.observe(threadInfoWrapper, config);
+
+		// enable / disable encryption for current conversation
+		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
+
+		checkBox.addEventListener('click', function(){
+			em.publish('setEncryption', {encrypted: checkBox.checked});
+		});
+
+		// listen for dialog close event when entering password, will turn off encryption
+		document.getElementById('closeDialog').addEventListener('click', function(e){
+			e.preventDefault();
+			checkBox.checked = false;
+			document.getElementById('keyPw').value = '';
+			em.publish('setEncryption', {encrypted: false});
+			document.getElementById('pwDialog').close();
+		});
+
+		// submitting password on enter press
+		document.getElementById('keyPw').onkeydown = function(e){
+			if(e.keyCode == 13){
+				e.preventDefault();
+				processForm(e);
+			}
+		};
+
+		// submitting password with ok button
+		document.getElementById('submitDialog').addEventListener('click', processForm);
+	}
+
+	function processForm(e){
+		e.preventDefault();
+		var password = document.getElementById('keyPw').value;
+		em.publish('decryptKey', {password: password});
+	}
+
+	function changeThread(){
+
+		// currently selected thread
+		var activeThread = document.getElementsByClassName(STYLES.activeThread)[0];
+		// get the list of threads
+		var threadList = Array.prototype.slice.call(activeThread.parentElement.children);
+		// index of the active thread needed for finding thread info 
+		activeThread = threadList.indexOf(activeThread);
+
+		checkBox.disabled = true;
+		checkBox.checked = false;
+		em.publish('changeThread', {site:'messenger', threadIndex: activeThread});
+	}
+
+
+
+	// checks that facebook's markup hasn't changed
+	function validateDom(){
+
+		for(var key in STYLES){
+			if ( !Utils.classExists(STYLES[key]) && exceptions.indexOf(key) === -1){
+				console.log('STYLE: ', key, ' was not found.');
+				return false;
+			}
+				
+		}
+		return true;
+	}
+
+
+	// inject the lock button into the page
+	function injectGui(){
+
+		var threadInfoPane = document.getElementsByClassName(STYLES.threadInfoPane)[0];
+
+		if (threadInfoPane === undefined || document.getElementById('encryption-toggle') !== null)
+			return;
+
+		var threadInfoRow = threadInfoPane.childNodes[1].cloneNode(true)
+		threadInfoRow.id = 'encryption-toggle';
+		threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerHTML = 'Encryption';
+
+		Utils.removeNestedAttributes('data-reactid', threadInfoRow);
+		threadInfoPane.childNodes[1].insertAdjacentElement('afterEnd', threadInfoRow);
+
+		var dialog = document.createElement("DIALOG");
+		var errorMsg = document.createElement("P");
+		var form = document.createElement("FORM");
+		var btnWrapper = document.createElement("DIV");
+		var passwordField = document.createElement("INPUT");
+		var submitBtn = document.createElement("BUTTON");
+		var closeBtn = document.createElement("BUTTON");
+
+		dialog.id = "pwDialog";
+
+		errorMsg.innerHTML = "Incorrect Password";
+
+		passwordField.type = "text";
+		passwordField.id = 'keyPw';
+		passwordField.placeholder = 'Private Key Password';
+
+		submitBtn.id = "submitDialog";
+		submitBtn.innerHTML = "OK";
+
+		closeBtn.id = "closeDialog";
+		closeBtn.innerHTML = "Close";
+		
+		form.appendChild(passwordField);
+		form.appendChild(btnWrapper);
+		btnWrapper.appendChild(closeBtn);
+		btnWrapper.appendChild(submitBtn);
+		dialog.appendChild(errorMsg);
+		dialog.appendChild(form);
+		document.body.appendChild(dialog);
+	}
+
+
+	function renderThreadSettings(data){
+		console.log('PEOPLE: ', data.people);
+		checkBox.checked = data.isEncrypted;
+		checkBox.disabled = false;
+	}
+
+	return{
+		init: init
+	}
+
 });
+define("messenger", ["KeyController", "messengerView", "MessageController"], function (KeyController, messengerView, MessageController) {
+	KeyController.init();
+	if (MessageController.init() === false){
+		return;
+	}
+	messengerView.init();
+});	
 
 	//The modules for your project will be inlined above
     //this snippet. Ask almond to synchronously require the
     //module value for 'main' here and return it as the
     //value to use for the public API for the built file.
-    return require('whisper-options');
+    window.addEventListener('load', function(){
+    	return require('messenger');
+    })
 }));

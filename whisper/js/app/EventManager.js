@@ -19,7 +19,10 @@ define("EventManager", function() {
             return false;
 
         events[event].forEach(function(listener) {
-            listener(data);
+            if (data)
+                listener(data);
+            else
+                listener();
         });
     }
 
@@ -28,12 +31,29 @@ define("EventManager", function() {
      * adds functions to listen for events
      * @param listener {function} the function called when an event is pushed to
      */
-    EventManager.prototype.subscribe = function(event, listener) {
+    EventManager.prototype.subscribe = function(event, listeners) {
         if (!events[event])
             events[event] = [];
 
-        events[event].push(listener);
+        if (!Array.isArray(listeners)) listeners = [listeners];
+
+        for (var i = 0; i < listeners.length; i++) {
+            events[event].push(listeners[i])
+        };
     }
+
+
+    /* 
+     * TODO: removing by index is horrible...
+     * removes a listener function from an event
+     * @param listenerIndex {int} the position of the event in the event array
+     */
+    EventManager.prototype.removeListener = function(event, listenerIndex) {
+        if (!events[event])
+            return false;
+
+        events[event].splice(listenerIndex, 1);
+    };
 
 
     // return singleton instance
