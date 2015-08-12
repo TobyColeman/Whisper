@@ -55,4 +55,17 @@
 
 #pwDialog button:focus{
 	outline: none;
-};
+}
+
+.ion-padded{
+    padding: 0px 5px;
+}
+
+.ion-blue{
+    color: #0084ff;
+}
+
+.ion-red{
+    color: #f03d25;
+}
+

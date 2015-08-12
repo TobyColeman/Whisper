@@ -57,6 +57,16 @@ define(function() {
     }
 
 
+    // find an object from an array by property value
+    Utils.prototype.findObjWithAttribute = function(array, attr, value) {
+        for(var i = 0; i < array.length; i += 1) {
+            if(array[i][attr] === value) {
+                return i;
+            }
+        }
+    };
+
+
     // return singleton instance
     Utils.getInstance = function() {
         if (instance === null)

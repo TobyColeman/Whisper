@@ -508,6 +508,16 @@ define('Utils',[],function() {
     }
 
 
+    // find an object from an array by property value
+    Utils.prototype.findObjWithAttribute = function(array, attr, value) {
+        for(var i = 0; i < array.length; i += 1) {
+            if(array[i][attr] === value) {
+                return i;
+            }
+        }
+    };
+
+
     // return singleton instance
     Utils.getInstance = function() {
         if (instance === null)
@@ -610,10 +620,6 @@ define('Key',['openpgp'], function(openpgp) {
      * @returns {boolean} whether the private key has been decrypted or not
      */
     Key.prototype.isUnlocked = function() {
-
-        if (this.privKey === null)
-            throw new Error("No Private Key");
-
         return this.privKey.primaryKey.isDecrypted;
     };
 
@@ -1052,15 +1058,19 @@ define('Thread',[],function() {
 	function Thread(id){
 		this.id = id;
 		this.isEncrypted = false;
-		this.people = [];
+		this.hasAllKeys = true;
+		this.numPeople = 0;
+		this.keys = [];
 	}
 
 
 	Thread.prototype.setEncrypted = function(encrypted) {
-		if (encrypted)
-			this.isEncrypted = true;
-		else
-			this.isEncrypted = false;
+		this.isEncrypted = encrypted;
+	};
+
+
+	Thread.prototype.setNumPeople = function() {
+		this.numPeople +=1;
 	};
 
 
@@ -1069,37 +1079,23 @@ define('Thread',[],function() {
 	};
 
 
-	Thread.prototype.addPerson = function(person) {
-		this.people.push(person);
+	Thread.prototype.addKey = function(key) {
+		this.keys.push(key);
+		this.setNumPeople();
 	};
 
 
-	Thread.prototype.removePerson = function(person) {
+	Thread.prototype.removeKey = function(key) {
 
-		var index = this.people.indexOf(person);
+		var index = this.keys.indexOf(key);
 
 		if (index > -1)
-			this.people.splice(index, 1);
+			this.keys.splice(index, 1);
 	};
 
 	return Thread;
 });
-define('Person',["Key"], function(Key) {
-
-	function Person(vanity, fbid){
-		this.vanity = vanity;
-		this.fbid = fbid;
-		this.key = false;
-	}
-
-
-	Person.prototype.setKey = function(key) {
-		this.key = new Key(key);
-	};
-
-	return Person;
-});
-define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Person"], function(e, Store, Key, Thread, Person){
+define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Utils"], function(e, Store, Key, Thread, Utils){
 
 	var instance = null;
 	var thread, myKey;
@@ -1121,13 +1117,16 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
             return true;
         });
 
-		e.subscribe('changeThread', this.getThreadInfo);
+		e.subscribe('setThread', this.getThreadInfo);
 		e.subscribe('setEncryption', this.setEncryption);
 		e.subscribe('decryptKey', this.decryptKey);
 	};				
 
 
-	// 
+	/*
+	 * Grabs thread id and participants for the current active thread, using fb's api
+	 * @param data {object} contains index of the current thread & the site
+	 */
 	MessageController.prototype.getThreadInfo = function(data) {
 
 		// get the id of the thread
@@ -1140,6 +1139,11 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		});
 	};
 
+
+	/*
+	 * decrypts the user's private key
+	 * @param data {object} contains password from dialog in the view
+	 */
 	MessageController.prototype.decryptKey = function(data) {
 
         if (!myKey.privKey.decrypt(data.password)){
@@ -1150,59 +1154,99 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	};
 
 
+	/* Constructs a new thread object & retrieves key's for every participant
+	 * Notifies the view as to whether encryption was on/off for the current thread
+	 * @param data {object} ajax response from facebook's api to threadlist_info
+	 */
     MessageController.prototype.setActiveThread = function(data){
 
-    	var threadInfo, threadId, people;
+    	var threadInfo, threadId, participants, keys = {};
 
     	// parse respons from threadlist_info.php
         threadInfo = JSON.parse(data);
+
         // array of participants in the active thread
-        people = threadInfo.payload.participants;
+        participants = threadInfo.payload.participants;
+
+        // get the index of our fbid as we don't want this in the thread
+        var myKeyIndex = Utils.findObjWithAttribute(participants, 'vanity', myKey.fb_id);
+
+        // store a refrence to our id in the keys obj as the view needs to know what locks to render
+        var fbid = participants[myKeyIndex].fbid;
+        keys[fbid] = true;
+        participants.splice(myKeyIndex, 1);
+
         // id of the active thread (group-convo)
         threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
+
         // id of the active thread (solo-convo)
         if (threadId === undefined)
         	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
 
-        // make a new thread, store its' id & participants
+        // make a new thread, store its' id
         thread = new Thread(threadId);
-
-        for (var i = 0; i < people.length; i++) {
-        	thread.addPerson(new Person(people[i].vanity, people[i].fbid));
-        }
 
         // get the settings for the current thread, check what public
         // keys are in storage then notify the view
         Store.getSettings(thread.id, function(encrypted){
 
-        	thread.setEncrypted(encrypted);
-
-        	if(encrypted && !myKey.isUnlocked())
-        		e.publish('getPassword');
-
     		(function(){
     			var i = 0;
 
     			function forloop(){
-        			if (i < thread.people.length){
-        				Store.getKey(thread.people[i].vanity, function(result){
-        					if(result)
-        						thread.people[i].setKey(result.pubKey)
+        			if (i < participants.length){
+
+        				Store.getKey(participants[i].vanity, function(result){
+
+        					var key = {};
+        					var fbid = participants[i].fbid;
+
+        					// if we found a key 
+        					if(result){
+        						key[fbid] = result
+        						keys[fbid] = true;
+        						thread.addKey(key);
+        					}
+        						
+        					else{
+        						key[fbid] = false
+        						keys[fbid] = false
+        						thread.addKey(key);
+        						thread.hasAllKeys = false;
+        					}
         					i++;
         					forloop();
         				});
         			}
         			else{
-        				e.publish('renderThreadSettings', {isEncrypted: encrypted,
-        										   		   people: thread.people});
+        				// if we're missing a key, we'll tell the view to disable
+        				// the encryption controls
+        				if(thread.hasAllKeys)
+	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
+	    										   		   	   keys: keys,
+	    										   		   	   hasAllKeys: true});
+	    				else
+	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
+	    										   		   	   keys: keys,
+	    										   		   	   hasAllKeys: false});
+
+	    				// if we have all the keys and the thread is tagged as encrypted
+	    				// ask for the user's password if needed
+			        	thread.setEncrypted(encrypted);
+
+			        	if(encrypted && !myKey.isUnlocked())
+			        		e.publish('getPassword');	    				
         			}
         		}
         		forloop();
-    		})();       		        		
+    		})();
         });
     }
 
 
+    /* Toggles encryption on/off for the current thread & stores settings
+     * @param data {object} contains a boolean for encrypted state
+     */ 
     MessageController.prototype.setEncryption = function(data) {
     	thread.setEncrypted(data.encrypted);
 
@@ -1232,6 +1276,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
             xhr.send();
 	};
 
+
 	MessageController.getInstance = function() {
 		if (instance === null)
 			instance = new MessageController();
@@ -1241,6 +1286,21 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	return MessageController.getInstance();
 });
 
+define('Person',["Key"], function(Key) {
+
+	function Person(vanity, fbid){
+		this.vanity = vanity;
+		this.fbid = fbid;
+		this.key = false;
+	}
+
+
+	Person.prototype.setKey = function(key) {
+		this.key = new Key(key);
+	};
+
+	return Person;
+});
 // View for messenger.com
 
 define("messengerView", ["Utils", "EventManager"], function (Utils, em){
@@ -1253,6 +1313,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		activeThread: '_1ht2',
 		// right column 
 		threadInfoPane: '_3tkv',
+		// name of person in 1-1 thread
+		threadPersonName: '_3eur',
+		// list of people in a group thread
+		threadPeopleList: '_4wc-',
 		// wrapper that toggles visibility of right col
 		threadInfoPaneWrapper: '_4_j5',
 		// span tag in column row
@@ -1262,7 +1326,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 	}
 
 	// ignore checking these styles as they are not always used in the page
-	var exceptions = ['rightCol', 'colSpan'];
+	// dom checking function is pretty bad really...
+	var exceptions = ['rightCol', 'colSpan', 'threadPeopleList', 'threadPersonName'];
 
 
 	function init(){
@@ -1272,8 +1337,11 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			return;
 		}
 		
-		// initialise the GUI
-		injectGui();
+		// inject the checkbox needed to toggle encryption on/off
+		injectToThread();
+
+		// makes the popup dialog for entering password
+		makeDialog();
 
 		// add event listeners
 		bindDomEvents();
@@ -1281,9 +1349,23 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		// listen to controller events
 		subscribeEvents();
 
-		changeThread();
-
+		setThread();
 	}
+
+
+	// checks that facebook's markup hasn't changed
+	function validateDom(){
+
+		for(var key in STYLES){
+			if ( !Utils.classExists(STYLES[key]) && exceptions.indexOf(key) === -1){
+				console.log('STYLE: ', key, ' was not found.');
+				return false;
+			}
+				
+		}
+		return true;
+	}
+
 
 	// subscribes to events emitted by the event manager
 	function subscribeEvents(){
@@ -1294,12 +1376,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		});
 
 		em.subscribe('wrongPassword', function(){
-			console.log('wrong password');
 			document.getElementById('pwDialog').children[0].style.display = 'block';
 		});
 
 		em.subscribe('correctPassword', function(){
-			console.log('correct password');
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('pwDialog').close();
 		});
@@ -1313,7 +1393,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		var threadTitle = document.getElementsByClassName(STYLES.heading)[0];
 		var config = { attributes: true, childList: true, characterData: true, subtree: true };
 		var titleObserver = new MutationObserver(function() {
-			changeThread();
+			setThread();
 		});
 		titleObserver.observe(threadTitle, config);
 
@@ -1321,13 +1401,14 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		var threadInfoWrapper = document.getElementsByClassName(STYLES.threadInfoPaneWrapper)[0];
 		var config = { attributes: true, subtree: false };
 		var threadInfoPaneObserver = new MutationObserver(function(mutations) {
-			injectGui();  	
+			injectToThread();  	
 		});
 		threadInfoPaneObserver.observe(threadInfoWrapper, config);
 
-		// enable / disable encryption for current conversation
+		
 		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
 
+		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
 			em.publish('setEncryption', {encrypted: checkBox.checked});
 		});
@@ -1336,6 +1417,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		document.getElementById('closeDialog').addEventListener('click', function(e){
 			e.preventDefault();
 			checkBox.checked = false;
+			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('keyPw').value = '';
 			em.publish('setEncryption', {encrypted: false});
 			document.getElementById('pwDialog').close();
@@ -1353,13 +1435,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		document.getElementById('submitDialog').addEventListener('click', processForm);
 	}
 
-	function processForm(e){
-		e.preventDefault();
-		var password = document.getElementById('keyPw').value;
-		em.publish('decryptKey', {password: password});
-	}
 
-	function changeThread(){
+	// gets the index of the selected thread and pushes an event to retrieve
+	// the participants and thread id
+	function setThread(){
 
 		// currently selected thread
 		var activeThread = document.getElementsByClassName(STYLES.activeThread)[0];
@@ -1370,27 +1449,73 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		checkBox.disabled = true;
 		checkBox.checked = false;
-		em.publish('changeThread', {site:'messenger', threadIndex: activeThread});
+		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
 	}
 
 
+	function processForm(e){
+		e.preventDefault();
+		var password = document.getElementById('keyPw').value;
+		em.publish('decryptKey', {password: password});
+	}
 
-	// checks that facebook's markup hasn't changed
-	function validateDom(){
 
-		for(var key in STYLES){
-			if ( !Utils.classExists(STYLES[key]) && exceptions.indexOf(key) === -1){
-				console.log('STYLE: ', key, ' was not found.');
-				return false;
-			}
-				
+	function renderThreadSettings(data){
+
+		var encryptionText = checkBox.parentNode.parentNode.children[1];
+
+		if(!data.hasAllKeys){
+			checkBox.disabled = true;
+			encryptionText.style.textDecoration = 'line-through';
+			encryptionText.style.color = '#F0F0F0';		
 		}
-		return true;
+		else{
+			checkBox.disabled = false;
+			encryptionText.style.textDecoration = 'none';	
+			encryptionText.style.color = '#141823';
+			checkBox.checked = data.isEncrypted;	
+		}
+
+		var parent = document.getElementsByClassName('_3eur')[0];
+
+		if(parent){	
+			parent = parent.children[0];
+			makeLock(data.hasAllKeys, parent)
+			return;
+		}
+
+		var peopleList = document.getElementsByClassName(STYLES.threadPeopleList)[0].getElementsByTagName('UL')[0].children;
+			
+		for (var i = 0; i < peopleList.length; i++) {
+
+			var lockIcon = document.createElement('SPAN');
+
+			var fbid = peopleList[i].getAttribute('data-reactid').split('$fbid=2')[1];
+
+			var parent = peopleList[i].getElementsByClassName('_364g')[0];
+
+			var hasKey = data.keys[fbid] == true ? true : false;
+
+			makeLock(hasKey, parent);
+		};	
+
+		function makeLock(hasKey, parent){
+			var lockIcon = document.createElement('SPAN');
+
+			if(hasKey){
+				lockIcon.className = 'ion-locked ion-padded ion-blue';
+			}
+			else{
+				lockIcon.className = 'ion-unlocked ion-padded';
+			}
+			if(parent.children.length < 1)
+				parent.appendChild(lockIcon);		
+		}
 	}
 
 
-	// inject the lock button into the page
-	function injectGui(){
+	// inject the checkbox toggle option into the current thread
+	function injectToThread(){
 
 		var threadInfoPane = document.getElementsByClassName(STYLES.threadInfoPane)[0];
 
@@ -1403,7 +1528,11 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		Utils.removeNestedAttributes('data-reactid', threadInfoRow);
 		threadInfoPane.childNodes[1].insertAdjacentElement('afterEnd', threadInfoRow);
+	}
 
+
+	// create a popup dialog for the user to enter their private key password
+	function makeDialog(){
 		var dialog = document.createElement("DIALOG");
 		var errorMsg = document.createElement("P");
 		var form = document.createElement("FORM");
@@ -1435,18 +1564,11 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		document.body.appendChild(dialog);
 	}
 
-
-	function renderThreadSettings(data){
-		console.log('PEOPLE: ', data.people);
-		checkBox.checked = data.isEncrypted;
-		checkBox.disabled = false;
-	}
-
 	return{
 		init: init
 	}
-
 });
+
 define("messenger", ["KeyController", "messengerView", "MessageController"], function (KeyController, messengerView, MessageController) {
 	KeyController.init();
 	if (MessageController.init() === false){

@@ -10,6 +10,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		activeThread: '_1ht2',
 		// right column 
 		threadInfoPane: '_3tkv',
+		// name of person in 1-1 thread
+		threadPersonName: '_3eur',
+		// list of people in a group thread
+		threadPeopleList: '_4wc-',
 		// wrapper that toggles visibility of right col
 		threadInfoPaneWrapper: '_4_j5',
 		// span tag in column row
@@ -19,7 +23,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 	}
 
 	// ignore checking these styles as they are not always used in the page
-	var exceptions = ['rightCol', 'colSpan'];
+	// dom checking function is pretty bad really...
+	var exceptions = ['rightCol', 'colSpan', 'threadPeopleList', 'threadPersonName'];
 
 
 	function init(){
@@ -99,7 +104,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		
 		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
-		
+
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
 			em.publish('setEncryption', {encrypted: checkBox.checked});
@@ -109,6 +114,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		document.getElementById('closeDialog').addEventListener('click', function(e){
 			e.preventDefault();
 			checkBox.checked = false;
+			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('keyPw').value = '';
 			em.publish('setEncryption', {encrypted: false});
 			document.getElementById('pwDialog').close();
@@ -152,9 +158,56 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 
 	function renderThreadSettings(data){
-		console.log('PEOPLE: ', data.people);
-		checkBox.checked = data.isEncrypted;
-		checkBox.disabled = false;
+
+		var encryptionText = checkBox.parentNode.parentNode.children[1];
+
+		if(!data.hasAllKeys){
+			checkBox.disabled = true;
+			encryptionText.style.textDecoration = 'line-through';
+			encryptionText.style.color = '#F0F0F0';		
+		}
+		else{
+			checkBox.disabled = false;
+			encryptionText.style.textDecoration = 'none';	
+			encryptionText.style.color = '#141823';
+			checkBox.checked = data.isEncrypted;	
+		}
+
+		var parent = document.getElementsByClassName('_3eur')[0];
+
+		if(parent){	
+			parent = parent.children[0];
+			makeLock(data.hasAllKeys, parent)
+			return;
+		}
+
+		var peopleList = document.getElementsByClassName(STYLES.threadPeopleList)[0].getElementsByTagName('UL')[0].children;
+			
+		for (var i = 0; i < peopleList.length; i++) {
+
+			var lockIcon = document.createElement('SPAN');
+
+			var fbid = peopleList[i].getAttribute('data-reactid').split('$fbid=2')[1];
+
+			var parent = peopleList[i].getElementsByClassName('_364g')[0];
+
+			var hasKey = data.keys[fbid] == true ? true : false;
+
+			makeLock(hasKey, parent);
+		};	
+
+		function makeLock(hasKey, parent){
+			var lockIcon = document.createElement('SPAN');
+
+			if(hasKey){
+				lockIcon.className = 'ion-locked ion-padded ion-blue';
+			}
+			else{
+				lockIcon.className = 'ion-unlocked ion-padded';
+			}
+			if(parent.children.length < 1)
+				parent.appendChild(lockIcon);		
+		}
 	}
 
 

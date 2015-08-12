@@ -3,15 +3,19 @@ define(function() {
 	function Thread(id){
 		this.id = id;
 		this.isEncrypted = false;
-		this.people = [];
+		this.hasAllKeys = true;
+		this.numPeople = 0;
+		this.keys = [];
 	}
 
 
 	Thread.prototype.setEncrypted = function(encrypted) {
-		if (encrypted)
-			this.isEncrypted = true;
-		else
-			this.isEncrypted = false;
+		this.isEncrypted = encrypted;
+	};
+
+
+	Thread.prototype.setNumPeople = function() {
+		this.numPeople +=1;
 	};
 
 
@@ -20,17 +24,18 @@ define(function() {
 	};
 
 
-	Thread.prototype.addPerson = function(person) {
-		this.people.push(person);
+	Thread.prototype.addKey = function(key) {
+		this.keys.push(key);
+		this.setNumPeople();
 	};
 
 
-	Thread.prototype.removePerson = function(person) {
+	Thread.prototype.removeKey = function(key) {
 
-		var index = this.people.indexOf(person);
+		var index = this.keys.indexOf(key);
 
 		if (index > -1)
-			this.people.splice(index, 1);
+			this.keys.splice(index, 1);
 	};
 
 	return Thread;
