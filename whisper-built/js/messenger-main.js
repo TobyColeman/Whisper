@@ -1480,6 +1480,13 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		if(parent){	
 			parent = parent.children[0];
+
+			if (parent.children.length > 0){
+				for (var i = 0; i < parent.children.length; i++) {
+					if ( parent.children[i].tagName == 'SPAN' )
+						parent.removeChild(parent.children[i]);
+				};
+			}
 			makeLock(data.hasAllKeys, parent)
 			return;
 		}
@@ -1495,8 +1502,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			var parent = peopleList[i].getElementsByClassName('_364g')[0];
 
 			var hasKey = data.keys[fbid] == true ? true : false;
-
-			makeLock(hasKey, parent);
+			if(parent.children.length < 1)
+				makeLock(hasKey, parent);
 		};	
 
 		function makeLock(hasKey, parent){
@@ -1508,8 +1515,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			else{
 				lockIcon.className = 'ion-unlocked ion-padded';
 			}
-			if(parent.children.length < 1)
-				parent.appendChild(lockIcon);		
+			parent.appendChild(lockIcon);		
 		}
 	}
 
