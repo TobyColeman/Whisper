@@ -1074,11 +1074,6 @@ define('Thread',[],function() {
 	};
 
 
-	Thread.prototype.isEncrypted = function() {
-		return this.isEncrypted();
-	};
-
-
 	Thread.prototype.addKey = function(key) {
 		this.keys.push(key);
 		this.setNumPeople();
@@ -1093,9 +1088,43 @@ define('Thread',[],function() {
 			this.keys.splice(index, 1);
 	};
 
+
+	Thread.prototype.makeMessage = function(message, sender) {
+
+		var payload = {
+			sender: sender,
+			messages: []
+		};
+
+		(function(){
+			var i = 0;
+
+			function encryptMessage(){
+				if (i < this.numPeople){
+					openpgp.encryptMessage(keys[i].pubKey.keys, message).then(function(pgpMessage){
+
+						var message = {
+							recipient: keys[i],
+							content: pgpMessage
+						};
+
+						payload.messages.push(message);
+
+						i++;
+						encryptMessage();
+					})
+				}
+				else{
+
+				}
+			}
+		});
+	};
+
+
 	return Thread;
 });
-define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Utils"], function(e, Store, Key, Thread, Utils){
+define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Utils", "openpgp"], function(e, Store, Key, Thread, Utils, openpgp){
 
 	var instance = null;
 	var thread, myKey;
@@ -1107,20 +1136,89 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	}
 
 
-	MessageController.prototype.init = function() {
+	MessageController.prototype.init = function(callback) {
 
         Store.hasPrivKey(function(key) {
-            if (!key)
-                return false;
-            else
+            if (!key){
+                myKey = false;
+            }
+            else{
                 myKey = key;
-            return true;
+				e.subscribe('setThread', self.getThreadInfo);
+				e.subscribe('setEncryption', self.setEncryption);
+				e.subscribe('decryptKey', self.decryptKey);   
+				self.listen();   
+            }
+            callback(myKey);
         });
+	};
 
-		e.subscribe('setThread', this.getThreadInfo);
-		e.subscribe('setEncryption', this.setEncryption);
-		e.subscribe('decryptKey', this.decryptKey);
-	};				
+
+	MessageController.prototype.listen = function() {
+
+		// send the content script the fields needed to make requests to facebook
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+
+			console.log('-->>: ', request.url);
+
+			self.parseMessage(request.data, sendResponse);
+
+			return true;
+       
+		});
+
+	};
+
+
+	MessageController.prototype.parseMessage = function(data, callback) {
+
+		var expr = /\[body\]=(.*?)&/;
+		var messageBody = data.match(expr)[1];
+
+		// can't find message for some reason
+		if(messageBody === undefined)
+			return false;
+
+		messageBody = decodeURIComponent(messageBody);
+		
+		if (thread.isEncrypted){
+			var payload = {
+				sender: myKey.fb_id,
+				messages: []
+			};
+
+			(function(){
+				var i = 0;
+				function encryptMessage(){
+					if (i < thread.numPeople){
+
+						openpgp.encryptMessage(thread.keys[i].key.pubKey, messageBody).then(function(pgpMessage){
+
+							var message = {
+								recipient: thread.keys[i].vanity,
+								content: pgpMessage
+							};
+
+							payload.messages.push(message);
+							console.log('-', payload);
+							i++;
+							encryptMessage();
+						});
+					}
+					else{
+						payload = '[body]=' + JSON.stringify(payload) + '&';
+						data = data.replace(expr, payload);
+						callback({message:data});
+					}
+				}
+				encryptMessage();
+			})();
+		}
+		else
+			callback({message:data});
+
+		// console.log(message);
+	};
 
 
 	/*
@@ -1200,16 +1298,22 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
         					var key = {};
         					var fbid = participants[i].fbid;
+        					var vanity = participants[i].vanity;
 
         					// if we found a key 
         					if(result){
-        						key[fbid] = result
+        						// need to store vanity -> key as this is 
+        						// how the key is stored in local storage
+        						key.vanity = vanity;
+        						key.key = result;
+        						// view needs numeric id for placement
+        						// of lock icons
         						keys[fbid] = true;
         						thread.addKey(key);
         					}
         						
         					else{
-        						key[fbid] = false
+        						key[vanity] = false
         						keys[fbid] = false
         						thread.addKey(key);
         						thread.hasAllKeys = false;
@@ -1575,12 +1679,24 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 	}
 });
 
-define("messenger", ["KeyController", "messengerView", "MessageController"], function (KeyController, messengerView, MessageController) {
-	KeyController.init();
-	if (MessageController.init() === false){
-		return;
-	}
-	messengerView.init();
+define("messenger", ["messengerView", "MessageController"], function (messengerView, MessageController) {
+		
+	MessageController.init(function(success){
+
+		if(!success){
+			return;
+		}
+
+		// injects script - credit: http://bit.ly/1JW19AK
+		var s = document.createElement('script');
+		s.src = chrome.extension.getURL('js/ajaxProxy.js');
+		s.onload = function() {
+		    this.parentNode.removeChild(this);
+		};
+		(document.head||document.documentElement).appendChild(s);
+
+		messengerView.init();		
+	});
 });	
 
 	//The modules for your project will be inlined above

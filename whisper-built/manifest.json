@@ -24,6 +24,7 @@
 
 	"permissions": [
 		"webRequest",
+		"webRequestBlocking",
 		"tabs",
 		"storage",
 		"unlimitedStorage",
@@ -32,9 +33,13 @@
 		"https://www.messenger.com/ajax/mercury/threadlist_info.php"
 	],
 
+	"externally_connectable": {
+		"matches": ["https://*.messenger.com/t/*"]
+	},
+
 	"content_scripts": [
 		{
-			"matches": ["https://*.messenger.com/*"],
+			"matches": ["https://*.messenger.com/t/*", "http://*.mmopricewatch.net/*" ],
 			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
 			"js" : ["js/messenger-main.js"],
 			"run_at": "document_start"
@@ -47,6 +52,7 @@
 	},
 
 	"web_accessible_resources": [
-		"fonts/*.*"
+		"fonts/*.*", 
+		 "js/ajaxProxy.js"
 	]	
 }

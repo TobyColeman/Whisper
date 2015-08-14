@@ -6,7 +6,6 @@
         fb_dtsg :null
     }
 
-
     // called when tab updated
     chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 
@@ -21,6 +20,35 @@
         else{
             chrome.pageAction.hide(tabId);
         }
+    });
+
+
+    // listen for messages from the webpage
+    chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
+
+        // get the active tab
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+
+            // pass the message to the content script
+            chrome.tabs.sendMessage(tabs[0].id, request, function(response) {
+                
+                // send the response back to ajaxProxy.js
+                sendResponse(response);              
+            });
+        });
+
+        return true;
+    });
+
+
+    function getEncryptedMessage(callback){
+
+    }
+
+
+    // send the content script the fields needed to make requests to facebook
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+        sendResponse({user: user});           
     });
 
 
@@ -50,6 +78,10 @@
                 
         }
 
+        if (details.url == 'https://www.messenger.com/ajax/mercury/send_messages.php'){
+
+        }
+
         console.log('URL: ', details.url, user);
     },
     {urls: ['*://*.messenger.com/ajax/bz', 
@@ -57,10 +89,10 @@
             '*://*.messenger.com/chat/user_info/']},
     ['requestBody']);
 
-    // send the content script the fields needed to make requests to facebook
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-            sendResponse({user: user});           
-    });
+
+    console.log('---', chrome.runtime);
+
+
 })();
 
 

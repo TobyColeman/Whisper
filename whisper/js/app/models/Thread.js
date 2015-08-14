@@ -19,11 +19,6 @@ define(function() {
 	};
 
 
-	Thread.prototype.isEncrypted = function() {
-		return this.isEncrypted();
-	};
-
-
 	Thread.prototype.addKey = function(key) {
 		this.keys.push(key);
 		this.setNumPeople();
@@ -37,6 +32,40 @@ define(function() {
 		if (index > -1)
 			this.keys.splice(index, 1);
 	};
+
+
+	Thread.prototype.makeMessage = function(message, sender) {
+
+		var payload = {
+			sender: sender,
+			messages: []
+		};
+
+		(function(){
+			var i = 0;
+
+			function encryptMessage(){
+				if (i < this.numPeople){
+					openpgp.encryptMessage(keys[i].pubKey.keys, message).then(function(pgpMessage){
+
+						var message = {
+							recipient: keys[i],
+							content: pgpMessage
+						};
+
+						payload.messages.push(message);
+
+						i++;
+						encryptMessage();
+					})
+				}
+				else{
+
+				}
+			}
+		});
+	};
+
 
 	return Thread;
 });
