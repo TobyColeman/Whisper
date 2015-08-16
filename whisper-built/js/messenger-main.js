@@ -1158,22 +1158,40 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 		// send the content script the fields needed to make requests to facebook
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-
-			console.log('-->>: ', request.url);
-
-			self.parseMessage(request.data, sendResponse);
-
+		
+			if (request.type == 'encrypt_message'){
+				self.encryptMessage(request.data, sendResponse);
+			}
+			else if (request.type == 'decrypt_message'){
+				self.decryptMessage(request.data, sendResponse);
+			}
 			return true;
-       
 		});
-
 	};
 
 
-	MessageController.prototype.parseMessage = function(data, callback) {
+	MessageController.prototype.decryptMessage = function(proxyResponse, callback) {
+
+
+		var proxyResponseText = JSON.parse(proxyResponse.responseText.split('for (;;);')[1]);
+
+		for (var i = 0; i < proxyResponseText.payload.actions.length; i++) {
+			proxyResponseText.payload.actions[i].body = 'REPLACED TEXT';
+		};
+
+		proxyResponse.responseText = 'for (;;);' + JSON.stringify(proxyResponseText);	
+		proxyResponse.response = 'for (;;);' + JSON.stringify(proxyResponseText);	
+
+		callback({proxyResponse: proxyResponse});
+
+	};
+
+	MessageController.prototype.encryptMessage = function(data, callback) {
 
 		var expr = /\[body\]=(.*?)&/;
 		var messageBody = data.match(expr)[1];
+
+		data['testAttribute'] = 5;
 
 		// can't find message for some reason
 		if(messageBody === undefined)
@@ -1188,8 +1206,11 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 			};
 
 			(function(){
+
 				var i = 0;
+
 				function encryptMessage(){
+					// for each person in the thread, encrypt your message 
 					if (i < thread.numPeople){
 
 						openpgp.encryptMessage(thread.keys[i].key.pubKey, messageBody).then(function(pgpMessage){
@@ -1200,12 +1221,13 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 							};
 
 							payload.messages.push(message);
-							console.log('-', payload);
+
 							i++;
 							encryptMessage();
 						});
 					}
 					else{
+						// replace the plaintext message with encrypted message
 						payload = '[body]=' + JSON.stringify(payload) + '&';
 						data = data.replace(expr, payload);
 						callback({message:data});
@@ -1214,10 +1236,10 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 				encryptMessage();
 			})();
 		}
-		else
+		else{
 			callback({message:data});
-
-		// console.log(message);
+		}
+			
 	};
 
 
@@ -1680,22 +1702,26 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 });
 
 define("messenger", ["messengerView", "MessageController"], function (messengerView, MessageController) {
-		
 	MessageController.init(function(success){
 
+		// user doesn't have a private key
 		if(!success){
 			return;
 		}
 
-		// injects script - credit: http://bit.ly/1JW19AK
-		var s = document.createElement('script');
-		s.src = chrome.extension.getURL('js/ajaxProxy.js');
-		s.onload = function() {
-		    this.parentNode.removeChild(this);
-		};
-		(document.head||document.documentElement).appendChild(s);
+		var viewInjected = false;
 
-		messengerView.init();		
+		// wait until the user is logged in to inject the view
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+			if (request.init == true && viewInjected == false){
+				viewInjected = true;
+
+			    window.addEventListener('load', function(){
+			    	console.log('injected');
+					messengerView.init();	
+			    })
+			}
+		});	
 	});
 });	
 
@@ -1703,7 +1729,5 @@ define("messenger", ["messengerView", "MessageController"], function (messengerV
     //this snippet. Ask almond to synchronously require the
     //module value for 'main' here and return it as the
     //value to use for the public API for the built file.
-    window.addEventListener('load', function(){
-    	return require('messenger');
-    })
+    return require('messenger');
 }));

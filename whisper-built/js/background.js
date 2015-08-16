@@ -10,16 +10,22 @@
     chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 
         //  check if the user is currently viewing facebook messages
-        var facebook_url = 'https\:\/\/[^ ]*facebook.com\/messages\/[^ ]*';
-        var messenger_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*';
+        var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
 
         // if the user is viewing messages show the icon, otherwise hide it
-        if (tab.url.match(facebook_url) || tab.url.match(messenger_url)) {
+        if (tab.url.match(messenger_url)) {
             chrome.pageAction.show(tabId);
         }
         else{
             chrome.pageAction.hide(tabId);
         }
+
+        // notify the view that it can inject its self
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+            if(tabs[0].url.match(messenger_url)){
+                chrome.tabs.sendMessage(tabs[0].id, {init: true});
+            }
+        });
     });
 
 
@@ -39,11 +45,6 @@
 
         return true;
     });
-
-
-    function getEncryptedMessage(callback){
-
-    }
 
 
     // send the content script the fields needed to make requests to facebook

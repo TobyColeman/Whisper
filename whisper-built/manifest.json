@@ -34,14 +34,14 @@
 	],
 
 	"externally_connectable": {
-		"matches": ["https://*.messenger.com/t/*"]
+		"matches": ["https://*.messenger.com/*"]
 	},
 
 	"content_scripts": [
 		{
-			"matches": ["https://*.messenger.com/t/*", "http://*.mmopricewatch.net/*" ],
+			"matches": ["https://*.messenger.com/*"],
 			"css": ["css/facebook-messages.css", "css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/messenger-main.js"],
+			"js" : ["js/injector.js", "js/messenger-main.js"],
 			"run_at": "document_start"
 		}
 	],

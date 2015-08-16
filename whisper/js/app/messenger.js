@@ -1,19 +1,22 @@
 define("messenger", ["messengerView", "MessageController"], function (messengerView, MessageController) {
-		
 	MessageController.init(function(success){
 
+		// user doesn't have a private key
 		if(!success){
 			return;
 		}
 
-		// injects script - credit: http://bit.ly/1JW19AK
-		var s = document.createElement('script');
-		s.src = chrome.extension.getURL('js/ajaxProxy.js');
-		s.onload = function() {
-		    this.parentNode.removeChild(this);
-		};
-		(document.head||document.documentElement).appendChild(s);
+		var viewInjected = false;
 
-		messengerView.init();		
+		// wait until the user is logged in to inject the view
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+			if (request.init == true && viewInjected == false){
+				viewInjected = true;
+
+			    window.addEventListener('load', function(){
+					messengerView.init();	
+			    })
+			}
+		});	
 	});
 });	

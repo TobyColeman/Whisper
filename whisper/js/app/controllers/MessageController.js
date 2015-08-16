@@ -32,17 +32,33 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 		// send the content script the fields needed to make requests to facebook
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-
-			console.log('-->>: ', request.url);
-
-			self.encryptMessage(request.data, sendResponse);
-
+		
+			if (request.type == 'encrypt_message'){
+				self.encryptMessage(request.data, sendResponse);
+			}
+			else if (request.type == 'decrypt_message'){
+				self.decryptMessage(request.data, sendResponse);
+			}
 			return true;
-       
 		});
-
 	};
 
+
+	MessageController.prototype.decryptMessage = function(proxyResponse, callback) {
+
+
+		var proxyResponseText = JSON.parse(proxyResponse.responseText.split('for (;;);')[1]);
+
+		for (var i = 0; i < proxyResponseText.payload.actions.length; i++) {
+			proxyResponseText.payload.actions[i].body = 'REPLACED TEXT';
+		};
+
+		proxyResponse.responseText = 'for (;;);' + JSON.stringify(proxyResponseText);	
+		proxyResponse.response = 'for (;;);' + JSON.stringify(proxyResponseText);	
+
+		callback({proxyResponse: proxyResponse});
+
+	};
 
 	MessageController.prototype.encryptMessage = function(data, callback) {
 
