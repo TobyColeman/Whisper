@@ -6,7 +6,8 @@ define(['openpgp'], function(openpgp) {
     function Key(pgpKey) {
         this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
         this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
-        this.fb_id = pgpKey['fb_id'];
+        this.FBID;
+        this.vanityID = pgpKey['vanityID'];
     }
 
 
@@ -16,6 +17,14 @@ define(['openpgp'], function(openpgp) {
     Key.prototype.getId = function() {
         return this.pubKey.users[0].userId.userid;
     }
+
+
+    /*
+     * @UID {int} numerical id associated with facebook vanity ID
+     */
+    Key.prototype.setFBID = function(FBID) {
+        this.FBID = FBID;
+    };
 
 
     /* 

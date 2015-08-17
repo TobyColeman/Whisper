@@ -105,7 +105,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var privKeyInfo = document.getElementById('key_table').children[0].children[1];
 
         if(table.id == 'friend_table' && privKeyInfo){
-            var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+            var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
         }
             
 
@@ -113,7 +113,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         keys.forEach(function(key, index) {
             var row = table.insertRow(index + 1);
-            row.insertCell(0).innerHTML = key.fb_id;
+            row.insertCell(0).innerHTML = key.vanityID;
             row.insertCell(1).innerHTML = key.getName();
             row.insertCell(2).innerHTML = key.getEmail();
 
@@ -126,7 +126,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
 
-            if (key.fb_id != privFBID){
+            if (key.vanityID != privVanityID){
                 deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
                 deleteBtn.addEventListener('click', promptDelete);             
             }
@@ -139,8 +139,8 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 showBtn.setAttribute('data-uid', 'whisper_key');
                 deleteBtn.setAttribute('data-uid', 'whisper_key');
             } else {
-                showBtn.setAttribute('data-uid', key.fb_id);
-                deleteBtn.setAttribute('data-uid', key.fb_id);
+                showBtn.setAttribute('data-uid', key.vanityID);
+                deleteBtn.setAttribute('data-uid', key.vanityID);
             }
 
             row.insertCell(3).appendChild(showBtn);
@@ -155,7 +155,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         // grab all the form data
         e.preventDefault();
         var form = document.forms["keyGenForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var name = form.name.value.trim();
         var email = form.email.value.trim();
         var password = form.password.value;
@@ -166,7 +166,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         // push an event to let the controller know a new key has been requested
         EventManager.publish('newKey', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'name': name,
             'email': email,
             'password': password,
@@ -179,7 +179,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
     function handlePrivInsert(e) {
         e.preventDefault();
         var form = document.forms["keyInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var password = form.password.value;
         var privKey = form.privKey.value.trim();
 
@@ -187,7 +187,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         document.getElementById('keyGenProgress').style.display = "block";
 
         EventManager.publish('privKeyInsert', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'password': password,
             'privKey': privKey
         });
@@ -198,11 +198,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
     function handlePubInsert(e) {
         e.preventDefault();
         var form = document.forms["friendInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var pubKey = form.pubKey.value.trim();
 
         EventManager.publish('pubKeyInsert', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'pubKey': pubKey
         });
     }
@@ -277,12 +277,12 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 EventManager.publish('noPrivKey', {
                     keys: false
                 });
-                var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+                var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
                 var friendTable = document.getElementById('friend_table');
                 var rows = friendTable.children[0]
                 for(var i = 1; i < rows.children.length; i++){
                     var uid = rows.children[i].getElementsByTagName('A')[0].getAttribute('data-uid');
-                    if(uid == privFBID){
+                    if(uid == privVanityID){
                         rows.removeChild(rows.children[i]);
                     }
                 }
@@ -323,7 +323,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         function updateModal(key) {
             var modal = document.getElementById('keyModal');
-            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.vanityID;
 
             if (key.privKey === null) {
                 modal.children.namedItem('privKeyText').style.display = "none";

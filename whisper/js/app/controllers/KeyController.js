@@ -62,15 +62,15 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = keypair.publicKeyArmored;
 
                 // store the key and notify subscribers of its' creation
-                StoreController.setKey(data.fb_id, pubKey, privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -108,11 +108,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            // key associated with an existing fb_id
+            // key associated with an existing vanityID
             StoreController.getKey(null, function(keys) {
-                if (keys[data.fb_id] !== undefined) {
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
@@ -120,16 +120,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = result['key'].toPublic().armor();
 
                 // everything ok, store the key
-                StoreController.setKey(data.fb_id, pubKey, data.privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, data.privKey, function() {
                     EventManager.publish('newPrivKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': data.privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -159,20 +159,20 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             StoreController.getKey(null, function(keys) {
 
-                // key associated with an existing fb_id
-                if (keys[data.fb_id] !== undefined) {
+                // key associated with an existing vanityID
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key
-                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
+                StoreController.setKey(data.vanityID, data.pubKey, null, function() {
                     EventManager.publish('newPubKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': data.pubKey
                         })
                     });

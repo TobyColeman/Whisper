@@ -5,7 +5,7 @@ define(function() {
 		this.isEncrypted = false;
 		this.hasAllKeys = true;
 		this.numPeople = 0;
-		this.keys = [];
+		this.keys = {};
 	}
 
 
@@ -20,7 +20,7 @@ define(function() {
 
 
 	Thread.prototype.addKey = function(key) {
-		this.keys.push(key);
+		this.keys[key.FBID] = key;
 		this.setNumPeople();
 	};
 

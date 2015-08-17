@@ -104,7 +104,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		
 		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
-
+		inputBox = document.getElementsByClassName('_54-z')[0];
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
 			em.publish('setEncryption', {encrypted: checkBox.checked});
@@ -144,6 +144,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		// index of the active thread needed for finding thread info 
 		activeThread = threadList.indexOf(activeThread);
 
+		// disable text input as we get settings for thread;
+		inputBox.setAttribute('contenteditable', false);
+
+		// reset the checkbox & disable whilst setting retrieved 
 		checkBox.disabled = true;
 		checkBox.checked = false;
 		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
@@ -161,11 +165,13 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		var encryptionText = checkBox.parentNode.parentNode.children[1];
 
+		// encryption disabled - not enough keys
 		if(!data.hasAllKeys){
 			checkBox.disabled = true;
 			encryptionText.style.textDecoration = 'line-through';
 			encryptionText.style.color = '#F0F0F0';		
 		}
+		// encryption enabled
 		else{
 			checkBox.disabled = false;
 			encryptionText.style.textDecoration = 'none';	
@@ -173,6 +179,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			checkBox.checked = data.isEncrypted;	
 		}
 
+		// enable text input as we have settings for the current thread;
+		inputBox.setAttribute('contenteditable', true);
+
+		// solo chat
 		var parent = document.getElementsByClassName('_3eur')[0];
 
 		if(parent){	
@@ -188,6 +198,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			return;
 		}
 
+		// group chat
 		var peopleList = document.getElementsByClassName(STYLES.threadPeopleList)[0].getElementsByTagName('UL')[0].children;
 			
 		for (var i = 0; i < peopleList.length; i++) {
@@ -198,11 +209,13 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 			var parent = peopleList[i].getElementsByClassName('_364g')[0];
 
-			var hasKey = data.keys[fbid] == true ? true : false;
+			var hasKey = data.keys[fbid] !== undefined ? true: false;
+
 			if(parent.children.length < 1)
 				makeLock(hasKey, parent);
 		};	
 
+		// make a new ionicon lock 
 		function makeLock(hasKey, parent){
 			var lockIcon = document.createElement('SPAN');
 
@@ -214,6 +227,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			}
 			parent.appendChild(lockIcon);		
 		}
+
+
 	}
 
 

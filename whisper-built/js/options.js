@@ -604,7 +604,8 @@ define('Key',['openpgp'], function(openpgp) {
     function Key(pgpKey) {
         this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
         this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
-        this.fb_id = pgpKey['fb_id'];
+        this.FBID;
+        this.vanityID = pgpKey['vanityID'];
     }
 
 
@@ -614,6 +615,14 @@ define('Key',['openpgp'], function(openpgp) {
     Key.prototype.getId = function() {
         return this.pubKey.users[0].userId.userid;
     }
+
+
+    /*
+     * @UID {int} numerical id associated with facebook vanity ID
+     */
+    Key.prototype.setFBID = function(FBID) {
+        this.FBID = FBID;
+    };
 
 
     /* 
@@ -702,24 +711,24 @@ define("StoreController", ['Key'], function(Key) {
 
     /* 
      * Stores armored keys
-     * @param fb_id    {string} facebook id used in the key
+     * @param vanityID    {string} facebook id used in the key
      * @param pubKey   {string} public part of the keypair
      * @param privKey  {string} private part of the keypair
      * @param callback {function} the function to execute when retreival is complete
      */
-    StoreController.prototype.setKey = function(fb_id, pubKey, privKey, callback) {
+    StoreController.prototype.setKey = function(vanityID, pubKey, privKey, callback) {
 
         var data = {};
 
         if (privKey !== null) {
             data['whisper_key'] = {
-                'fb_id': fb_id,
+                'vanityID': vanityID,
                 'privKey': privKey,
                 'pubKey': pubKey
             };
         } else {
-            data[fb_id] = {
-                'fb_id': fb_id,
+            data[vanityID] = {
+                'vanityID': vanityID,
                 'pubKey': pubKey
             };
         }
@@ -739,7 +748,7 @@ define("StoreController", ['Key'], function(Key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
-                if(key_id == 'whisper_key') chrome.storage.local.remove(key.fb_id);
+                if(key_id == 'whisper_key') chrome.storage.local.remove(key.vanityID);
             }
         })
     };
@@ -768,7 +777,7 @@ define("StoreController", ['Key'], function(Key) {
                 friends = [];
                 for (key in results) {
                     friends.push(new Key({
-                        "fb_id": results[key].fb_id,
+                        "vanityID": results[key].vanityID,
                         "pubKey": results[key].pubKey
                     }));
                 }
@@ -883,15 +892,15 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = keypair.publicKeyArmored;
 
                 // store the key and notify subscribers of its' creation
-                StoreController.setKey(data.fb_id, pubKey, privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -929,11 +938,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            // key associated with an existing fb_id
+            // key associated with an existing vanityID
             StoreController.getKey(null, function(keys) {
-                if (keys[data.fb_id] !== undefined) {
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
@@ -941,16 +950,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = result['key'].toPublic().armor();
 
                 // everything ok, store the key
-                StoreController.setKey(data.fb_id, pubKey, data.privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, data.privKey, function() {
                     EventManager.publish('newPrivKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': data.privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -980,20 +989,20 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             StoreController.getKey(null, function(keys) {
 
-                // key associated with an existing fb_id
-                if (keys[data.fb_id] !== undefined) {
+                // key associated with an existing vanityID
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key
-                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
+                StoreController.setKey(data.vanityID, data.pubKey, null, function() {
                     EventManager.publish('newPubKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': data.pubKey
                         })
                     });
@@ -1152,7 +1161,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var privKeyInfo = document.getElementById('key_table').children[0].children[1];
 
         if(table.id == 'friend_table' && privKeyInfo){
-            var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+            var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
         }
             
 
@@ -1160,7 +1169,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         keys.forEach(function(key, index) {
             var row = table.insertRow(index + 1);
-            row.insertCell(0).innerHTML = key.fb_id;
+            row.insertCell(0).innerHTML = key.vanityID;
             row.insertCell(1).innerHTML = key.getName();
             row.insertCell(2).innerHTML = key.getEmail();
 
@@ -1173,7 +1182,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
 
-            if (key.fb_id != privFBID){
+            if (key.vanityID != privVanityID){
                 deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
                 deleteBtn.addEventListener('click', promptDelete);             
             }
@@ -1186,8 +1195,8 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 showBtn.setAttribute('data-uid', 'whisper_key');
                 deleteBtn.setAttribute('data-uid', 'whisper_key');
             } else {
-                showBtn.setAttribute('data-uid', key.fb_id);
-                deleteBtn.setAttribute('data-uid', key.fb_id);
+                showBtn.setAttribute('data-uid', key.vanityID);
+                deleteBtn.setAttribute('data-uid', key.vanityID);
             }
 
             row.insertCell(3).appendChild(showBtn);
@@ -1202,7 +1211,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         // grab all the form data
         e.preventDefault();
         var form = document.forms["keyGenForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var name = form.name.value.trim();
         var email = form.email.value.trim();
         var password = form.password.value;
@@ -1213,7 +1222,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         // push an event to let the controller know a new key has been requested
         EventManager.publish('newKey', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'name': name,
             'email': email,
             'password': password,
@@ -1226,7 +1235,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
     function handlePrivInsert(e) {
         e.preventDefault();
         var form = document.forms["keyInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var password = form.password.value;
         var privKey = form.privKey.value.trim();
 
@@ -1234,7 +1243,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         document.getElementById('keyGenProgress').style.display = "block";
 
         EventManager.publish('privKeyInsert', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'password': password,
             'privKey': privKey
         });
@@ -1245,11 +1254,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
     function handlePubInsert(e) {
         e.preventDefault();
         var form = document.forms["friendInsForm"];
-        var fb_id = form.fb_id.value.trim().toLowerCase();
+        var vanityID = form.vanityID.value.trim().toLowerCase();
         var pubKey = form.pubKey.value.trim();
 
         EventManager.publish('pubKeyInsert', {
-            'fb_id': fb_id,
+            'vanityID': vanityID,
             'pubKey': pubKey
         });
     }
@@ -1324,12 +1333,12 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 EventManager.publish('noPrivKey', {
                     keys: false
                 });
-                var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+                var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
                 var friendTable = document.getElementById('friend_table');
                 var rows = friendTable.children[0]
                 for(var i = 1; i < rows.children.length; i++){
                     var uid = rows.children[i].getElementsByTagName('A')[0].getAttribute('data-uid');
-                    if(uid == privFBID){
+                    if(uid == privVanityID){
                         rows.removeChild(rows.children[i]);
                     }
                 }
@@ -1370,7 +1379,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         function updateModal(key) {
             var modal = document.getElementById('keyModal');
-            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
+            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.vanityID;
 
             if (key.privKey === null) {
                 modal.children.namedItem('privKeyText').style.display = "none";

@@ -24,13 +24,10 @@
 
 	"permissions": [
 		"webRequest",
-		"webRequestBlocking",
 		"tabs",
 		"storage",
 		"unlimitedStorage",
-		"https://*.facebook.com/messages*",
-		"https://*.messenger.com/*",
-		"https://www.messenger.com/ajax/mercury/threadlist_info.php"
+		"https://*.messenger.com/*"
 	],
 
 	"externally_connectable": {
@@ -53,6 +50,7 @@
 
 	"web_accessible_resources": [
 		"fonts/*.*", 
-		 "js/ajaxProxy.js"
+		"js/ajaxProxy.js",
+		"js/fb-overrides.js"
 	]	
 }

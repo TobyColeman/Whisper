@@ -33,24 +33,24 @@ define("StoreController", ['Key'], function(Key) {
 
     /* 
      * Stores armored keys
-     * @param fb_id    {string} facebook id used in the key
+     * @param vanityID    {string} facebook id used in the key
      * @param pubKey   {string} public part of the keypair
      * @param privKey  {string} private part of the keypair
      * @param callback {function} the function to execute when retreival is complete
      */
-    StoreController.prototype.setKey = function(fb_id, pubKey, privKey, callback) {
+    StoreController.prototype.setKey = function(vanityID, pubKey, privKey, callback) {
 
         var data = {};
 
         if (privKey !== null) {
             data['whisper_key'] = {
-                'fb_id': fb_id,
+                'vanityID': vanityID,
                 'privKey': privKey,
                 'pubKey': pubKey
             };
         } else {
-            data[fb_id] = {
-                'fb_id': fb_id,
+            data[vanityID] = {
+                'vanityID': vanityID,
                 'pubKey': pubKey
             };
         }
@@ -70,7 +70,7 @@ define("StoreController", ['Key'], function(Key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
-                if(key_id == 'whisper_key') chrome.storage.local.remove(key.fb_id);
+                if(key_id == 'whisper_key') chrome.storage.local.remove(key.vanityID);
             }
         })
     };
@@ -99,7 +99,7 @@ define("StoreController", ['Key'], function(Key) {
                 friends = [];
                 for (key in results) {
                     friends.push(new Key({
-                        "fb_id": results[key].fb_id,
+                        "vanityID": results[key].vanityID,
                         "pubKey": results[key].pubKey
                     }));
                 }

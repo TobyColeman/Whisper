@@ -34,6 +34,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
 		
 			if (request.type == 'encrypt_message'){
+				console.log(request.data);
 				self.encryptMessage(request.data, sendResponse);
 			}
 			else if (request.type == 'decrypt_message'){
@@ -63,19 +64,20 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	MessageController.prototype.encryptMessage = function(data, callback) {
 
 		var expr = /\[body\]=(.*?)&/;
-		var messageBody = data.match(expr)[1];
+		var messageBody = data.match(expr);
 
-		// can't find message for some reason
-		if(messageBody === undefined)
-			return false;
+		// sending a picture, sticker, thumbs up
+		if(messageBody === null){
+			callback({message:data});
+			return;
+		}
+			
 
-		messageBody = decodeURIComponent(messageBody);
+		messageBody = decodeURIComponent(messageBody[1]);
 		
 		if (thread.isEncrypted){
-			var payload = {
-				sender: myKey.fb_id,
-				messages: []
-			};
+
+			var payload = {};
 
 			(function(){
 
@@ -84,15 +86,12 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 				function encryptMessage(){
 					// for each person in the thread, encrypt your message 
 					if (i < thread.numPeople){
-						console.log('KEY: ', thread.keys);
-						openpgp.encryptMessage(thread.keys[i].key.pubKey, messageBody).then(function(pgpMessage){
 
-							var message = {
-								recipient: thread.keys[i].vanity,
-								content: pgpMessage
-							};
+						var id = Object.keys(thread.keys)[i];
 
-							payload.messages.push(message);
+						openpgp.encryptMessage(thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
+
+							payload[thread.keys[id].FBID] =  pgpMessage;
 
 							i++;
 							encryptMessage();
@@ -152,21 +151,13 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	 */
     MessageController.prototype.setActiveThread = function(data){
 
-    	var threadInfo, threadId, participants, keys = {};
+    	var threadInfo, threadId, participants;
 
-    	// parse respons from threadlist_info.php
+    	// parse response from threadlist_info.php
         threadInfo = JSON.parse(data);
 
         // array of participants in the active thread
         participants = threadInfo.payload.participants;
-
-        // get the index of our fbid as we don't want this in the thread
-        var myKeyIndex = Utils.findObjWithAttribute(participants, 'vanity', myKey.fb_id);
-
-        // store a refrence to our id in the keys obj as the view needs to know what locks to render
-       var fbid = participants[myKeyIndex].fbid;
-       keys[fbid] = true;
-       participants.splice(myKeyIndex, 1);
 
         // id of the active thread (group-convo)
         threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
@@ -177,7 +168,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
         // make a new thread, store its' id
         thread = new Thread(threadId);
-        thread.addKey({vanity: myKey.fb_id, key:myKey});
 
         // get the settings for the current thread, check what public
         // keys are in storage then notify the view
@@ -189,28 +179,19 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
     			function forloop(){
         			if (i < participants.length){
 
-        				Store.getKey(participants[i].vanity, function(result){
+        				Store.getKey(participants[i].vanity, function(key){
 
-        					var key = {};
+        					// var key = {};
         					var fbid = participants[i].fbid;
         					var vanity = participants[i].vanity;
 
         					// if we found a key 
-        					if(result){
-        						// need to store vanity -> key as this is 
-        						// how the key is stored in local storage
-        						key.vanity = vanity;
-        						key.key = result;
-        						// view needs numeric id for placement
-        						// of lock icons
-        						keys[fbid] = true;
+        					if(key){
+        						key.setFBID(fbid);
         						thread.addKey(key);
         					}
         						
         					else{
-        						key[vanity] = false
-        						keys[fbid] = false
-        						thread.addKey(key);
         						thread.hasAllKeys = false;
         					}
         					i++;
@@ -222,11 +203,11 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
         				// the encryption controls
         				if(thread.hasAllKeys)
 	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: keys,
+	    										   		   	   keys: thread.keys,
 	    										   		   	   hasAllKeys: true});
 	    				else
 	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: keys,
+	    										   		   	   keys: thread.keys,
 	    										   		   	   hasAllKeys: false});
 
 	    				// if we have all the keys and the thread is tagged as encrypted

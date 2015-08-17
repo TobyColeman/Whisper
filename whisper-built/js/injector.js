@@ -1,5 +1,5 @@
 function inject(script){
-	// injects script - credit: http://bit.ly/1JW19AK
+	// credit: http://bit.ly/1JW19AK
 	var s = document.createElement('script');
 	s.src = chrome.extension.getURL(script);
 	s.onload = function() {
@@ -9,3 +9,4 @@ function inject(script){
 }
 
 inject('js/ajaxProxy.js');
+inject('js/fb-overrides.js');

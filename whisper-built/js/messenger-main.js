@@ -604,7 +604,8 @@ define('Key',['openpgp'], function(openpgp) {
     function Key(pgpKey) {
         this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
         this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
-        this.fb_id = pgpKey['fb_id'];
+        this.FBID;
+        this.vanityID = pgpKey['vanityID'];
     }
 
 
@@ -614,6 +615,14 @@ define('Key',['openpgp'], function(openpgp) {
     Key.prototype.getId = function() {
         return this.pubKey.users[0].userId.userid;
     }
+
+
+    /*
+     * @UID {int} numerical id associated with facebook vanity ID
+     */
+    Key.prototype.setFBID = function(FBID) {
+        this.FBID = FBID;
+    };
 
 
     /* 
@@ -702,24 +711,24 @@ define("StoreController", ['Key'], function(Key) {
 
     /* 
      * Stores armored keys
-     * @param fb_id    {string} facebook id used in the key
+     * @param vanityID    {string} facebook id used in the key
      * @param pubKey   {string} public part of the keypair
      * @param privKey  {string} private part of the keypair
      * @param callback {function} the function to execute when retreival is complete
      */
-    StoreController.prototype.setKey = function(fb_id, pubKey, privKey, callback) {
+    StoreController.prototype.setKey = function(vanityID, pubKey, privKey, callback) {
 
         var data = {};
 
         if (privKey !== null) {
             data['whisper_key'] = {
-                'fb_id': fb_id,
+                'vanityID': vanityID,
                 'privKey': privKey,
                 'pubKey': pubKey
             };
         } else {
-            data[fb_id] = {
-                'fb_id': fb_id,
+            data[vanityID] = {
+                'vanityID': vanityID,
                 'pubKey': pubKey
             };
         }
@@ -739,7 +748,7 @@ define("StoreController", ['Key'], function(Key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
-                if(key_id == 'whisper_key') chrome.storage.local.remove(key.fb_id);
+                if(key_id == 'whisper_key') chrome.storage.local.remove(key.vanityID);
             }
         })
     };
@@ -768,7 +777,7 @@ define("StoreController", ['Key'], function(Key) {
                 friends = [];
                 for (key in results) {
                     friends.push(new Key({
-                        "fb_id": results[key].fb_id,
+                        "vanityID": results[key].vanityID,
                         "pubKey": results[key].pubKey
                     }));
                 }
@@ -883,15 +892,15 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = keypair.publicKeyArmored;
 
                 // store the key and notify subscribers of its' creation
-                StoreController.setKey(data.fb_id, pubKey, privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -929,11 +938,11 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return;
             }
 
-            // key associated with an existing fb_id
+            // key associated with an existing vanityID
             StoreController.getKey(null, function(keys) {
-                if (keys[data.fb_id] !== undefined) {
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
@@ -941,16 +950,16 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 var pubKey = result['key'].toPublic().armor();
 
                 // everything ok, store the key
-                StoreController.setKey(data.fb_id, pubKey, data.privKey, function() {
+                StoreController.setKey(data.vanityID, pubKey, data.privKey, function() {
                     EventManager.publish('newPrivKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': pubKey,
                             'privKey': data.privKey
                         })
                     });
-                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
+                    self.insertPubKey({vanityID: data.vanityID, pubKey: pubKey });
                 });
             });
         }
@@ -980,20 +989,20 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             StoreController.getKey(null, function(keys) {
 
-                // key associated with an existing fb_id
-                if (keys[data.fb_id] !== undefined) {
+                // key associated with an existing vanityID
+                if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.fb_id
+                        error: 'Key Already Exists For: ' + data.vanityID
                     });
                     return;
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key
-                StoreController.setKey(data.fb_id, data.pubKey, null, function() {
+                StoreController.setKey(data.vanityID, data.pubKey, null, function() {
                     EventManager.publish('newPubKey', {
                         visible: true,
                         keys: new Key({
-                            'fb_id': data.fb_id,
+                            'vanityID': data.vanityID,
                             'pubKey': data.pubKey
                         })
                     });
@@ -1052,7 +1061,7 @@ define('Thread',[],function() {
 		this.isEncrypted = false;
 		this.hasAllKeys = true;
 		this.numPeople = 0;
-		this.keys = [];
+		this.keys = {};
 	}
 
 
@@ -1067,7 +1076,7 @@ define('Thread',[],function() {
 
 
 	Thread.prototype.addKey = function(key) {
-		this.keys.push(key);
+		this.keys[key.FBID] = key;
 		this.setNumPeople();
 	};
 
@@ -1152,6 +1161,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
 		
 			if (request.type == 'encrypt_message'){
+				console.log(request.data);
 				self.encryptMessage(request.data, sendResponse);
 			}
 			else if (request.type == 'decrypt_message'){
@@ -1181,19 +1191,20 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	MessageController.prototype.encryptMessage = function(data, callback) {
 
 		var expr = /\[body\]=(.*?)&/;
-		var messageBody = data.match(expr)[1];
+		var messageBody = data.match(expr);
 
-		// can't find message for some reason
-		if(messageBody === undefined)
-			return false;
+		// sending a picture, sticker, thumbs up
+		if(messageBody === null){
+			callback({message:data});
+			return;
+		}
+			
 
-		messageBody = decodeURIComponent(messageBody);
+		messageBody = decodeURIComponent(messageBody[1]);
 		
 		if (thread.isEncrypted){
-			var payload = {
-				sender: myKey.fb_id,
-				messages: []
-			};
+
+			var payload = {};
 
 			(function(){
 
@@ -1202,15 +1213,12 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 				function encryptMessage(){
 					// for each person in the thread, encrypt your message 
 					if (i < thread.numPeople){
-						console.log('KEY: ', thread.keys);
-						openpgp.encryptMessage(thread.keys[i].key.pubKey, messageBody).then(function(pgpMessage){
 
-							var message = {
-								recipient: thread.keys[i].vanity,
-								content: pgpMessage
-							};
+						var id = Object.keys(thread.keys)[i];
 
-							payload.messages.push(message);
+						openpgp.encryptMessage(thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
+
+							payload[thread.keys[id].FBID] =  pgpMessage;
 
 							i++;
 							encryptMessage();
@@ -1270,21 +1278,13 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	 */
     MessageController.prototype.setActiveThread = function(data){
 
-    	var threadInfo, threadId, participants, keys = {};
+    	var threadInfo, threadId, participants;
 
-    	// parse respons from threadlist_info.php
+    	// parse response from threadlist_info.php
         threadInfo = JSON.parse(data);
 
         // array of participants in the active thread
         participants = threadInfo.payload.participants;
-
-        // get the index of our fbid as we don't want this in the thread
-        var myKeyIndex = Utils.findObjWithAttribute(participants, 'vanity', myKey.fb_id);
-
-        // store a refrence to our id in the keys obj as the view needs to know what locks to render
-       var fbid = participants[myKeyIndex].fbid;
-       keys[fbid] = true;
-       participants.splice(myKeyIndex, 1);
 
         // id of the active thread (group-convo)
         threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
@@ -1295,7 +1295,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
         // make a new thread, store its' id
         thread = new Thread(threadId);
-        thread.addKey({vanity: myKey.fb_id, key:myKey});
 
         // get the settings for the current thread, check what public
         // keys are in storage then notify the view
@@ -1307,28 +1306,19 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
     			function forloop(){
         			if (i < participants.length){
 
-        				Store.getKey(participants[i].vanity, function(result){
+        				Store.getKey(participants[i].vanity, function(key){
 
-        					var key = {};
+        					// var key = {};
         					var fbid = participants[i].fbid;
         					var vanity = participants[i].vanity;
 
         					// if we found a key 
-        					if(result){
-        						// need to store vanity -> key as this is 
-        						// how the key is stored in local storage
-        						key.vanity = vanity;
-        						key.key = result;
-        						// view needs numeric id for placement
-        						// of lock icons
-        						keys[fbid] = true;
+        					if(key){
+        						key.setFBID(fbid);
         						thread.addKey(key);
         					}
         						
         					else{
-        						key[vanity] = false
-        						keys[fbid] = false
-        						thread.addKey(key);
         						thread.hasAllKeys = false;
         					}
         					i++;
@@ -1340,11 +1330,11 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
         				// the encryption controls
         				if(thread.hasAllKeys)
 	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: keys,
+	    										   		   	   keys: thread.keys,
 	    										   		   	   hasAllKeys: true});
 	    				else
 	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: keys,
+	    										   		   	   keys: thread.keys,
 	    										   		   	   hasAllKeys: false});
 
 	    				// if we have all the keys and the thread is tagged as encrypted
@@ -1524,7 +1514,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		
 		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
-
+		inputBox = document.getElementsByClassName('_54-z')[0];
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
 			em.publish('setEncryption', {encrypted: checkBox.checked});
@@ -1564,6 +1554,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		// index of the active thread needed for finding thread info 
 		activeThread = threadList.indexOf(activeThread);
 
+		// disable text input as we get settings for thread;
+		inputBox.setAttribute('contenteditable', false);
+
+		// reset the checkbox & disable whilst setting retrieved 
 		checkBox.disabled = true;
 		checkBox.checked = false;
 		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
@@ -1581,11 +1575,13 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		var encryptionText = checkBox.parentNode.parentNode.children[1];
 
+		// encryption disabled - not enough keys
 		if(!data.hasAllKeys){
 			checkBox.disabled = true;
 			encryptionText.style.textDecoration = 'line-through';
 			encryptionText.style.color = '#F0F0F0';		
 		}
+		// encryption enabled
 		else{
 			checkBox.disabled = false;
 			encryptionText.style.textDecoration = 'none';	
@@ -1593,6 +1589,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			checkBox.checked = data.isEncrypted;	
 		}
 
+		// enable text input as we have settings for the current thread;
+		inputBox.setAttribute('contenteditable', true);
+
+		// solo chat
 		var parent = document.getElementsByClassName('_3eur')[0];
 
 		if(parent){	
@@ -1608,6 +1608,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			return;
 		}
 
+		// group chat
 		var peopleList = document.getElementsByClassName(STYLES.threadPeopleList)[0].getElementsByTagName('UL')[0].children;
 			
 		for (var i = 0; i < peopleList.length; i++) {
@@ -1618,11 +1619,13 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 			var parent = peopleList[i].getElementsByClassName('_364g')[0];
 
-			var hasKey = data.keys[fbid] == true ? true : false;
+			var hasKey = data.keys[fbid] !== undefined ? true: false;
+
 			if(parent.children.length < 1)
 				makeLock(hasKey, parent);
 		};	
 
+		// make a new ionicon lock 
 		function makeLock(hasKey, parent){
 			var lockIcon = document.createElement('SPAN');
 
@@ -1634,6 +1637,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			}
 			parent.appendChild(lockIcon);		
 		}
+
+
 	}
 
 
