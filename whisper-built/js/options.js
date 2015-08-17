@@ -739,6 +739,7 @@ define("StoreController", ['Key'], function(Key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
+                if(key_id == 'whisper_key') chrome.storage.local.remove(key.fb_id);
             }
         })
     };
@@ -1148,6 +1149,13 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
      */
     function updateTableRows(keys, table) {
 
+        var privKeyInfo = document.getElementById('key_table').children[0].children[1];
+
+        if(table.id == 'friend_table' && privKeyInfo){
+            var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+        }
+            
+
         keys = Array.isArray(keys) ? keys : [keys];
 
         keys.forEach(function(key, index) {
@@ -1164,8 +1172,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
-            deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-            deleteBtn.addEventListener('click', promptDelete);
+
+            if (key.fb_id != privFBID){
+                deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
+                deleteBtn.addEventListener('click', promptDelete);             
+            }
 
             /* 
              * TODO: User may have multiple private keys in future, so this would
@@ -1313,6 +1324,15 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 EventManager.publish('noPrivKey', {
                     keys: false
                 });
+                var privFBID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+                var friendTable = document.getElementById('friend_table');
+                var rows = friendTable.children[0]
+                for(var i = 1; i < rows.children.length; i++){
+                    var uid = rows.children[i].getElementsByTagName('A')[0].getAttribute('data-uid');
+                    if(uid == privFBID){
+                        rows.removeChild(rows.children[i]);
+                    }
+                }
             }
 
             else if (document.getElementById('friend_table').rows.length === 2){
@@ -1344,7 +1364,6 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                     });
                     return;
                 }
-                console.log('-->', key);
                 callback(key);
             });
         }

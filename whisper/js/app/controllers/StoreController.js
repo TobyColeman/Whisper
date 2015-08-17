@@ -70,6 +70,7 @@ define("StoreController", ['Key'], function(Key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
+                if(key_id == 'whisper_key') chrome.storage.local.remove(key.fb_id);
             }
         })
     };
