@@ -269,7 +269,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 });
             }
 
-            if (document.getElementById(tableId).rows.length === 2){
+            else if (document.getElementById('friend_table').rows.length === 2){
                  EventManager.publish('noPubKeys', {
                     keys: false
                 });               
@@ -298,6 +298,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                     });
                     return;
                 }
+                console.log('-->', key);
                 callback(key);
             });
         }
@@ -312,10 +313,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             } else {
                 modal.children.namedItem('privKeyText').style.display = "block";
                 modal.children.namedItem('privateHeading').style.display = "block";
+                modal.children.namedItem('privKeyText').innerHTML = key.privKey.armor();
             }
 
-            modal.children.namedItem('privKeyText').innerHTML = key.privKey;
-            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
+            
+            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey.armor();
 
             modal.showModal();
         }

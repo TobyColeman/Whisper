@@ -64,13 +64,13 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 // store the key and notify subscribers of its' creation
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
-                        visible: true,
                         keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -129,6 +129,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                             'privKey': data.privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -164,16 +165,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
                     return;
-                }
-
-                // if for some weird reason their facebook id is 'whisper_key'...
-                if (keys['whisper_key'] !== undefined) {
-                    if (keys['whisper_key'].fb_id === data.fb_id) {
-                        EventManager.publish('error', {
-                            error: 'Public key cannot have same ID as private key'
-                        });
-                        return;
-                    }
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key

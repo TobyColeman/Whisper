@@ -508,6 +508,16 @@ define('Utils',[],function() {
     }
 
 
+    // find an object from an array by property value
+    Utils.prototype.findObjWithAttribute = function(array, attr, value) {
+        for(var i = 0; i < array.length; i += 1) {
+            if(array[i][attr] === value) {
+                return i;
+            }
+        }
+    };
+
+
     // return singleton instance
     Utils.getInstance = function() {
         if (instance === null)
@@ -551,12 +561,29 @@ define("EventManager", [],function() {
      * adds functions to listen for events
      * @param listener {function} the function called when an event is pushed to
      */
-    EventManager.prototype.subscribe = function(event, listener) {
+    EventManager.prototype.subscribe = function(event, listeners) {
         if (!events[event])
             events[event] = [];
 
-        events[event].push(listener);
+        if (!Array.isArray(listeners)) listeners = [listeners];
+
+        for (var i = 0; i < listeners.length; i++) {
+            events[event].push(listeners[i])
+        };
     }
+
+
+    /* 
+     * TODO: removing by index is horrible...
+     * removes a listener function from an event
+     * @param listenerIndex {int} the position of the event in the event array
+     */
+    EventManager.prototype.removeListener = function(event, listenerIndex) {
+        if (!events[event])
+            return false;
+
+        events[event].splice(listenerIndex, 1);
+    };
 
 
     // return singleton instance
@@ -575,8 +602,8 @@ define('Key',['openpgp'], function(openpgp) {
      * @param pgpKey {dict} contains a public key, optional private key and a facebook id
      */
     function Key(pgpKey) {
-        this.pubKey = pgpKey['pubKey'];
-        this.privKey = pgpKey['privKey'] === undefined ? null : pgpKey['privKey'];
+        this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
+        this.privKey = pgpKey['privKey'] === undefined ? null : openpgp.key.readArmored(pgpKey['privKey']).keys[0];
         this.fb_id = pgpKey['fb_id'];
     }
 
@@ -585,8 +612,16 @@ define('Key',['openpgp'], function(openpgp) {
      * @returns {string} the id of the key, format: FirstName LastName <email@domain.com>
      */
     Key.prototype.getId = function() {
-        return openpgp.key.readArmored(this.pubKey).keys[0].users[0].userId.userid;
+        return this.pubKey.users[0].userId.userid;
     }
+
+
+    /* 
+     * @returns {boolean} whether the private key has been decrypted or not
+     */
+    Key.prototype.isUnlocked = function() {
+        return this.privKey.primaryKey.isDecrypted;
+    };
 
 
     /*
@@ -613,7 +648,7 @@ define('Key',['openpgp'], function(openpgp) {
      * @returns {integer} the length of the key
      */
     Key.prototype.getPubKeyLength = function() {
-        var publicKeyPacket = openpgp.key.readArmored(this.pubKey).keys[0].primaryKey;
+        var publicKeyPacket = this.pubKey.primaryKey;
 
         if (publicKeyPacket !== null) {
             strength = getBitLength(publicKeyPacket);
@@ -655,7 +690,6 @@ define("StoreController", ['Key'], function(Key) {
             delete result['settings'];
 
             if (key === null) {
-                console.log('---', result);
                 callback(result);
             } else if (result[key] === undefined) {
                 callback(false);
@@ -850,13 +884,13 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 // store the key and notify subscribers of its' creation
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
-                        visible: true,
                         keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -915,6 +949,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                             'privKey': data.privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -950,16 +985,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
                     return;
-                }
-
-                // if for some weird reason their facebook id is 'whisper_key'...
-                if (keys['whisper_key'] !== undefined) {
-                    if (keys['whisper_key'].fb_id === data.fb_id) {
-                        EventManager.publish('error', {
-                            error: 'Public key cannot have same ID as private key'
-                        });
-                        return;
-                    }
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key
@@ -1290,7 +1315,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 });
             }
 
-            if (document.getElementById(tableId).rows.length === 2){
+            else if (document.getElementById('friend_table').rows.length === 2){
                  EventManager.publish('noPubKeys', {
                     keys: false
                 });               
@@ -1319,12 +1344,12 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                     });
                     return;
                 }
+                console.log('-->', key);
                 callback(key);
             });
         }
 
         function updateModal(key) {
-            window.someKey = key;
             var modal = document.getElementById('keyModal');
             modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.fb_id;
 
@@ -1334,10 +1359,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             } else {
                 modal.children.namedItem('privKeyText').style.display = "block";
                 modal.children.namedItem('privateHeading').style.display = "block";
+                modal.children.namedItem('privKeyText').innerHTML = key.privKey.armor();
             }
 
-            modal.children.namedItem('privKeyText').innerHTML = key.privKey;
-            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey;
+            
+            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey.armor();
 
             modal.showModal();
         }

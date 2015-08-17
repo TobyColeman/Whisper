@@ -884,13 +884,13 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 // store the key and notify subscribers of its' creation
                 StoreController.setKey(data.fb_id, pubKey, privKey, function() {
                     EventManager.publish('newPrivKey', {
-                        visible: true,
                         keys: new Key({
                             'fb_id': data.fb_id,
                             'pubKey': pubKey,
                             'privKey': privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -949,6 +949,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                             'privKey': data.privKey
                         })
                     });
+                    self.insertPubKey({fb_id: data.fb_id, pubKey: pubKey });
                 });
             });
         }
@@ -984,16 +985,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                         error: 'Key Already Exists For: ' + data.fb_id
                     });
                     return;
-                }
-
-                // if for some weird reason their facebook id is 'whisper_key'...
-                if (keys['whisper_key'] !== undefined) {
-                    if (keys['whisper_key'].fb_id === data.fb_id) {
-                        EventManager.publish('error', {
-                            error: 'Public key cannot have same ID as private key'
-                        });
-                        return;
-                    }
                 }
 
                 // Everything is ok, so store the key and publish the newly stored key
@@ -1191,8 +1182,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		var expr = /\[body\]=(.*?)&/;
 		var messageBody = data.match(expr)[1];
 
-		data['testAttribute'] = 5;
-
 		// can't find message for some reason
 		if(messageBody === undefined)
 			return false;
@@ -1212,7 +1201,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 				function encryptMessage(){
 					// for each person in the thread, encrypt your message 
 					if (i < thread.numPeople){
-
+						console.log('KEY: ', thread.keys);
 						openpgp.encryptMessage(thread.keys[i].key.pubKey, messageBody).then(function(pgpMessage){
 
 							var message = {
@@ -1292,9 +1281,9 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
         var myKeyIndex = Utils.findObjWithAttribute(participants, 'vanity', myKey.fb_id);
 
         // store a refrence to our id in the keys obj as the view needs to know what locks to render
-        var fbid = participants[myKeyIndex].fbid;
-        keys[fbid] = true;
-        participants.splice(myKeyIndex, 1);
+       var fbid = participants[myKeyIndex].fbid;
+       keys[fbid] = true;
+       participants.splice(myKeyIndex, 1);
 
         // id of the active thread (group-convo)
         threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
@@ -1305,6 +1294,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
         // make a new thread, store its' id
         thread = new Thread(threadId);
+        thread.addKey({vanity: myKey.fb_id, key:myKey});
 
         // get the settings for the current thread, check what public
         // keys are in storage then notify the view
@@ -1717,7 +1707,6 @@ define("messenger", ["messengerView", "MessageController"], function (messengerV
 				viewInjected = true;
 
 			    window.addEventListener('load', function(){
-			    	console.log('injected');
 					messengerView.init();	
 			    })
 			}

@@ -57,7 +57,7 @@ var baseConfig = {
 //stand on their own, they all include jquery and the noConflict.js file
 
 var configs = [
-    /*
+    
     {
         include: ['almond', 'openpgp', 'Utils','EventManager', 'KeyController',
                   'StoreController', 'Key', 'optionsView', 'options'],
@@ -69,7 +69,7 @@ var configs = [
             endFile: '../js/frags/end-opts.js',
         }
     },
-
+    /*
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
                   'StoreController', 'MessageController', 'Key', 
@@ -83,7 +83,7 @@ var configs = [
         }
     },
     */
-
+    
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
                   'StoreController', 'MessageController', 'Key', 'Thread', 'Person', 
