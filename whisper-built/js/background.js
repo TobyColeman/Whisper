@@ -1,4 +1,4 @@
-(function(){
+(function(){  
 
     // data needed for making requests to facebook
     var user = {
@@ -6,51 +6,73 @@
         fb_dtsg :null
     }
 
-    // called when tab updated
-    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
+    var messenger_loaded_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*'
 
-        //  check if the user is currently viewing facebook messages
-        var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
+    
+    chrome.runtime.onMessage.addListener(
+        function handleMessages(request, sender, sendResponse){
+            // send the content script the fields needed to make requests to facebook
+            if(request.type == 'getThreadInfo')
+                sendResponse({user: user}); 
 
-        // if the user is viewing messages show the icon, otherwise hide it
-        if (tab.url.match(messenger_url)) {
-            chrome.pageAction.show(tabId);
+            // check the content script initialised successfully
+            else if (request.type == 'enabled'){
+
+                var imgPath = request.enabled == true ? 'images/locked.png' : 'images/unlocked.png'; 
+                var title = request.enabled == true ? 'Whisper' : 'No private key';
+
+                chrome.pageAction.setIcon({tabId: sender.tab.id, path:{19: imgPath, 38: imgPath}}, function(){
+
+                    chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
+
+                    if (request.enabled){ 
+                        externalListener();
+                    } 
+                    else{
+                        chrome.runtime.onMessage.removeListener(handleMessages);
+                    }                        
+                });  
+            }   
+        }           
+    );
+  
+
+
+    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {   
+        // display pageAction if on messenger.com
+        if (!!tab.url.match(messenger_url)) {
+            chrome.pageAction.show(tab.id);
+
+            // if threads loaded, inject the view
+            if(!!tab.url.match(messenger_loaded_url)){
+                chrome.tabs.sendMessage(tab.id, {init: true});
+            }
         }
         else{
-            chrome.pageAction.hide(tabId);
-        }
-
-        // notify the view that it can inject its self
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-            if(tabs[0].url.match(messenger_url)){
-                chrome.tabs.sendMessage(tabs[0].id, {init: true});
-            }
-        });
+            chrome.pageAction.hide(tab.id);
+        }  
     });
+
 
 
     // listen for messages from the webpage
-    chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
+    function externalListener(){
+        chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
 
-        // get the active tab
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            // get the active tab
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 
-            // pass the message to the content script
-            chrome.tabs.sendMessage(tabs[0].id, request, function(response) {
-                
-                // send the response back to ajaxProxy.js
-                sendResponse(response);              
+                // pass the message to the content script
+                chrome.tabs.sendMessage(tabs[0].id, request, function(response) {
+                    
+                    // send the response back to ajaxProxy.js
+                    sendResponse(response);              
+                });
             });
+            return true;
         });
-
-        return true;
-    });
-
-
-    // send the content script the fields needed to make requests to facebook
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-        sendResponse({user: user});           
-    });
+    }
 
 
     // Credit: http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
@@ -83,17 +105,12 @@
 
         }
 
-        console.log('URL: ', details.url, user);
+        // console.log('URL: ', details.url, user);
     },
     {urls: ['*://*.messenger.com/ajax/bz', 
             '*://*.messenger.com/ajax/mercury/send_messages.php',
             '*://*.messenger.com/chat/user_info/']},
     ['requestBody']);
-
-
-    console.log('---', chrome.runtime);
-
-
 })();
 
 

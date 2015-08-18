@@ -6,18 +6,18 @@
 
 	"default_locale": "en",
 	"description": "__MSG_extDescription__",
+
 	"icons": {
-		"16": "images/lock16.png",
-		"48": "images/lock48.png",
-	   "128": "images/lock128.png"
+		"16": "images/locked.png",
+		"48": "images/locked.png",
+	   "128": "images/locked.png"
 	},
 
 	"page_action": {
 		"default_icon": {
-			"38": "images/lock38.png"
+			"38": "images/lock-grey.png"
 		},
-		"default_title": "Crypto Message",
-		"default_popup": "popup.html"
+		"default_title": "Whisper"
 	},
 
 	"options_page": "options.html",
@@ -51,6 +51,7 @@
 	"web_accessible_resources": [
 		"fonts/*.*", 
 		"js/ajaxProxy.js",
-		"js/fb-overrides.js"
+		"js/fb-overrides.js",
+		"images/unlocked.png"
 	]	
 }
