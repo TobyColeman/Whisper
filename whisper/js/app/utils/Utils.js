@@ -42,18 +42,20 @@ define(function() {
     }
 
 
-    /* removes x attribute from a node & its' subtree
-     * @param attribute {string} the name of the attribute to be remove
-     * @param node {string} the root of the subtree
+    /* 
+     * calls a function for each child of an element
+     * @param node {Element} the root of the subtree
+     * @param callback {function} operation performed on each node/child
      */ 
-    Utils.prototype.removeNestedAttributes = function(attribute, node) {
+    Utils.prototype.forEachChild = function(node, callback) {
 
-        node.removeAttribute(attribute);
+        callback(node);
 
-        if (node.children !== undefined)
+        if (node.children !== undefined){
             for (var i = 0; i < node.children.length; i++) {
-                this.removeNestedAttributes(attribute, node.children[i]);
-            }
+                this.forEachChild(node.children[i], callback);
+            }            
+        }
     }
 
 

@@ -7,5 +7,174 @@
 	"extDescription": {
 		"message": "PGP for Facebook messages",
 		"description": "Extension description"
+	},
+
+	// general 
+
+	"submitPrompt":{
+		"message": "Submit",
+		"description": ""
+	},
+
+	"yesPrompt":{
+		"message": "Yes",
+		"description": ""
+	},
+
+	"noPrompt":{
+		"message": "No",
+		"description": ""
+	},
+
+	"closePrompt":{
+		"message": "Close",
+		"description": ""
+	},
+
+	"name":{
+		"message": "Name",
+		"description": ""
+	},
+
+	"length":{
+		"message": "Length",
+		"description": ""
+	},
+
+	"email":{
+		"message": "Email",
+		"description": ""
+	},
+
+	// options page strings
+
+	"dashboardHeading":{
+		"message": "Whisper - Dashboard",
+		"description": "Title for the dashboard"
+	},
+
+	"keyGeneratePopup":{
+		"message": "Generating Key. This may take some time...",
+		"description": ""
+	},
+
+	"noKeyPopup": {
+		"message": "You do not yet have a key.",
+		"description": ""
+	},
+
+	"noPubkeysPopup":{
+		"message": "No keys to display.",
+		"description": ""
+	},
+
+	"genKeyPrompt":{
+		"message": "Generate Key",
+		"description": ""
+	},
+
+	"insKeyPrompt":{
+		"message": "Insert Key",
+		"description": ""
+	},
+
+	"deleteKeyPrompt":{
+		"message": "Delete key for: ",
+		"description": ""
+	},
+
+	"insPubkeyPrompt":{
+		"message": "Insert Friends' Key",
+		"description": ""
+	},
+
+	"privateKeyTitle":{
+		"message": "Private Key",
+		"description": ""
+	},
+
+	"deleteKeyTitle":{
+		"message" : "Delete Key",
+		"description": ""
+	},
+
+	"publickeyTitle":{
+		"message": "Public Key",
+		"description": ""
+	},
+
+	"keyLengthTitle": {
+		"message": "Key bit-length",
+		"description": ""
+	}, 
+
+	"fbidTitle": {
+		"message": "Facebook ID",
+		"description": ""
+	},
+
+	"pubKeyTableTitle":{
+		"message": "Friends' / Public Keys",
+		"description": ""
+	},
+
+	"FBIDPlaceholder": {
+		"message": "Your Facebook ID",
+		"description": ""
+	},
+
+	"namePlaceholder":{
+		"message": "Your name",
+		"description": ""
+	},
+
+	"emailPlaceholder": {
+		"message": "Your email",
+		"description": ""
+	},
+
+	"passwordPlaceholder": {
+		"message": "Password",
+		"description": ""
+	},
+
+	"passwordPromptPlaceholder":{
+		"message": "paste your private key here...",
+		"description": ""
+	},
+
+	"friendIDPlaceholder":{
+		"message": "Friend's Facebook ID",
+		"description": ""
+	},
+
+	"friendKeyPlaceholder":{
+		"message": "paste your friend's public key here...",
+		"description": ""
+	},
+
+	"invalidKeyError":{
+		"message": "Invalid Key",
+		"description": ""
+	},
+
+	"noPrivKeyError":{
+		"message": "Please Insert a Private Key",
+		"description": ""
+	},
+
+	"noPubKeyError":{
+		"message": "Please Insert a Public Key",
+		"description":""
+	},
+
+	"wrongPasswordError":{
+		"message": "Wrong Password",
+		"description": ""
+	},
+
+	"keyExistsError":{
+		"message": "Key Already Exists For: ",
+		"description": ""
 	}
 }

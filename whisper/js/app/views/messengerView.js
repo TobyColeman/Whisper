@@ -244,7 +244,10 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		threadInfoRow.id = 'encryption-toggle';
 		threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerHTML = 'Encryption';
 
-		Utils.removeNestedAttributes('data-reactid', threadInfoRow);
+	    Utils.forEachChild(threadInfoRow, function(node){
+	        node.removeAttribute('data-reactid');
+	    });
+	    
 		threadInfoPane.childNodes[1].insertAdjacentElement('afterEnd', threadInfoRow);
 	}
 

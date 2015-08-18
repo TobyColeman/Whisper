@@ -3,6 +3,14 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         var instance = null;
 
+        var ERRORS = {
+            invalidKey: chrome.i18n.getMessage('invalidKeyError'),
+            noPrivKey: chrome.i18n.getMessage('noPrivKeyError'),
+            noPubKey: chrome.i18n.getMessage('noPubKeyError'),
+            wrongPassword: chrome.i18n.getMessage('wrongPasswordError'),
+            keyExits: chrome.i18n.getMessage('keyExistsError'),
+        }
+
         function KeyController() {
             self = this;
             if (instance !== null)
@@ -87,7 +95,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             // malformed key check
             if (result['err']) {
                 EventManager.publish('error', {
-                    error: 'Invalid Key'
+                    error: ERRORS.invalidKeyError
                 });
                 return;
             }
@@ -95,7 +103,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             // key is not private
             if (!result['key'].isPrivate()) {
                 EventManager.publish('error', {
-                    error: 'Please Insert a Private Key'
+                    error: ERRORS.noPrivKey
                 });
                 return;
             }
@@ -103,7 +111,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             // wrong password
             if (!self.validateKeyPassword(result['key'], data.password)) {
                 EventManager.publish('error', {
-                    error: 'Wrong password'
+                    error: ERRORS.wrongPassword
                 });
                 return;
             }
@@ -112,7 +120,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
             StoreController.getKey(null, function(keys) {
                 if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.vanityID
+                        error: ERRORS.keyExits + data.vanityID
                     });
                     return;
                 }
@@ -145,14 +153,14 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
             if (result['err']) {
                 EventManager.publish('error', {
-                    error: 'Invalid Key'
+                    error: ERRORS.invalidKey
                 });
                 return;
             }
 
             if (!result['key'].isPublic()) {
                 EventManager.publish('error', {
-                    error: 'Please Insert a Public Key'
+                    error: ERRORS.noPubKey
                 });
                 return;
             }
@@ -162,7 +170,7 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 // key associated with an existing vanityID
                 if (keys[data.vanityID] !== undefined) {
                     EventManager.publish('error', {
-                        error: 'Key Already Exists For: ' + data.vanityID
+                        error: ERRORS.keyExits + data.vanityID
                     });
                     return;
                 }

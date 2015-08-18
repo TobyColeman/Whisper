@@ -9,7 +9,7 @@
 
 	<body>
 
-		<h1 class="header">Whisper - Dashboard</h1>
+		<h1 class="header" data-i18n='dashboardHeading'></h1>
 
 		<div id="errorBlock" class="redBlock invis">
 			<h3 name="blockText" class="text-center"></h3>
@@ -18,47 +18,47 @@
 		<h2>My Key</h2>
 
 		<div id="keyGenProgress" class="redBlock invis">
-			<h3 name="blockText" class="text-center">Generating Key. This may take some time...</h3>
+			<h3 name="blockText" class="text-center" data-i18n="keyGeneratePopup"></h3>
 		</div>
 
 
 
 		<!-- KEY CREATION -->
 		<div id="keyFormWrapper" class="invis">
-			<p>You do not yet have a key.</p>
+			<p data-i18n="noKeyPopup"></p>
 
 			<select class="dropdown-input" id="keyOpts" required>
-				<option value="1" selected="selected">Generate Key</option>
-				<option value="2">Insert Key</option>
+				<option value="1" selected="selected" data-i18n="genKeyPrompt"></option>
+				<option value="2" data-i18n="insKeyPrompt"></option>
 			</select>
 
 			<form id="keyGenForm">
-				<input class="text-input" type="text" name="vanityID" placeholder="your Facebook ID" required>
+				<input class="text-input" type="text" name="vanityID" placeholder=""  data-i18n="FBIDPlaceholder" required>
 				<br>
-				<input class="text-input" type="text" name="name" placeholder="your name" required>
+				<input class="text-input" type="text" name="name" placeholder="" data-i18n="namePlaceholder"required>
 				<br>
-				<input class="text-input" type="email" name="email" placeholder="your email" required>
+				<input class="text-input" type="email" name="email" placeholder="" data-i18n="emailPlaceholder"required>
 				<br>
-				<input class="text-input" type="password" name="password" placeholder="password" required>
+				<input class="text-input" type="password" name="password" placeholder="" data-i18n="passwordPlaceholder"required>
 				<br>
-				<label>Key bit-length</label>
+				<label data-i18n="keyLengthTitle"></label>
 				<br>
 				<select class="dropdown-input" name="numBits" required>
 					<option value="1024" selected="selected">1024</option>
 					<option value="2048">2048</option>
 				</select>
 				<br>
-				<button type="submit" value="submit">Submit</button>
+				<button type="submit" value="submit" data-i18n="submitPrompt"></button>
 			</form>
 
 			<form id="keyInsForm" class="invis">
-				<input class="text-input" type="text" name="vanityID" placeholder="your Facebook ID" required>
+				<input class="text-input" type="text" name="vanityID" placeholder="" data-i18n="FBIDPlaceholder"required>
 				<br>
-				<input class="text-input" type="password" name="password" placeholder="your password" required>
+				<input class="text-input" type="password" name="password" placeholder="" data-i18n="passwordPlaceholder" required>
 				<br>
-				<textarea class="textarea-large" name="privKey" spellcheck="false" placeholder="paste your private key here..." required></textarea>
+				<textarea class="textarea-large" name="privKey" spellcheck="false" placeholder="" data-i18n="passwordPromptPlaceholder"required></textarea>
 				<br>
-				<button type="submit" value="submit">Submit</button>
+				<button type="submit" value="submit" data-i18n="submitPrompt"></button>
 			</form>
 
 
@@ -69,11 +69,11 @@
 		<table id="key_table" class="invis">
 			<tbody>
 				<tr>
-					<th>Facebook Id</th>
-					<th>Name</th>
-					<th>Email</th>
+					<th data-i18n="fbidTitle"></th>
+					<th data-i18n="name"></th>
+					<th data-i18n="email"></th>
 					<th></th>
-					<th>Length</th>
+					<th data-i18n="length"></th>
 					<th></th>
 				</tr>
 			</tbody>
@@ -81,19 +81,18 @@
 
 		<br>
 
-		<h2 id="friend_header">Friends' / Public Keys</h2>
-		<p id="no_friends" class="invis">No keys to display.</p>
+		<h2 id="friend_header" data-i18n="pubKeyTableTitle"></h2>
+		<p id="no_friends" class="invis" data-i18n="noPubkeysPopup"></p>
 
 		<div id="friendFormWrapper">
-			<h2><a href="#" id="friendFormToggle">Insert Friends' Key</a></h2>
+			<h2><a href="#" id="friendFormToggle" data-i18n="insPubkeyPrompt"></a></h2>
 			<br>
 			<form id="friendInsForm" style="display:none;">
-				<input class="text-input" type="text" name="vanityID" placeholder="Friend's Facebook ID" required>
-				<button type="submit" value="submit">Submit</button>
+				<input class="text-input" type="text" name="vanityID" placeholder="" data-i18n="friendIDPlaceholder" required>
+				<button type="submit" value="submit" data-i18n="submitPrompt"></button>
 				<br>
 				<textarea class="textarea-medium" name="pubKey" spellcheck="false" 
-						  placeholder="paste your friend's public key here..." required>
-			    </textarea>
+						  placeholder="" data-i18n="friendKeyPlaceholder" required></textarea>
 				<br>
 			</form>
 		</div>
@@ -104,44 +103,42 @@
 			<table id="friend_table" class="invis">
 				<tbody>
 					<tr>
-						<th>Facebook Id</th>
-						<th>Name</th>
-						<th>Email</th>
+						<th data-i18n="fbidTitle"></th>
+						<th data-i18n="name"></th>
+						<th data-i18n="email"></th>
 						<th></th>
-						<th>Length</th>
+						<th data-i18n="length"></th>
 						<th></th>
 					</tr>
 				</tbody>
 			</table>
-
-
 
 		</div>
 
 		<dialog id="keyModal" class="modal-prompt">
 		  <h2 name="modalHeading" class="text-center"></h2>
 
-		  <h3 name="privateHeading" class="invis">Private Key</h3>
+		  <h3 name="privateHeading" class="invis" data-i18n="privateKeyTitle"></h3>
 		  <textarea name="privKeyText" class="textarea-medium invis"></textarea>
 		  <br>
 
-		  <h3 name="publicHeading">Public Key</h3>
+		  <h3 name="publicHeading" data-i18n="publicKeyTitle"></h3>
 		  <textarea name="pubKeyText" class="textarea-medium"></textarea>
 		  <br>
 
-		  <button id="modalClose" class="close">Close</button>
+		  <button id="modalClose" class="close" data-i18n="closePrompt"></button>
 		</dialog>
 
 		<dialog id="delModal" class="modal-prompt">
-			<h2 class="text-center">Delete Key</h2>
-			<p name="delMsg" class="text-center">Delete key for: <strong name="delName"></strong></p>
+			<h2 class="text-center" data-i18n="deleteKeyTitle"></h2>
+			<p name="delMsg" class="text-center" data-i18n="deleteKeyPrompt"><strong name="delName"></strong></p>
 			<form id="delForm" class="col-left">
 				<input type="hidden" name="keyId">
 				<input type="hidden" name="rowIndex">
 				<input type="hidden" name="tableId"> 
-				<button type="submit" id="delModalBtn">Yes</button>
+				<button type="submit" id="delModalBtn" data-i18n="yesPrompt"></button>
 			</form>
-			<button class="close">No</button>
+			<button class="close" data-i18n="noPrompt"></button>
 		</dialog>
 
 		<script type="text/javascript" src="js/options.js"></script>		

@@ -17,7 +17,7 @@
 		"default_icon": {
 			"38": "images/lock-grey.png"
 		},
-		"default_title": "Whisper"
+		"default_title": "__MSG_extNAME__"
 	},
 
 	"options_page": "options.html",
@@ -50,8 +50,6 @@
 
 	"web_accessible_resources": [
 		"fonts/*.*", 
-		"js/ajaxProxy.js",
-		"js/fb-overrides.js",
-		"images/unlocked.png"
+		"js/content-start.js"
 	]	
 }

@@ -1,3 +1,5 @@
+(function(){
+
 onLoaded("AsyncRequest", function() {
 
 	(function(AsyncRequest){
@@ -77,3 +79,4 @@ function onLoaded(name, callback) {
     }, interval);
 }
 
+})();

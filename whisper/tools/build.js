@@ -14,8 +14,7 @@ var requirejs = require('./r.js');
 var baseConfig = {
     baseUrl: "../js",
     locale: "en-us",
- // optimize: "uglify",
-    optimize: "none", // For debugging built versions
+    optimize: "uglify",
 
 
     paths: {
@@ -41,8 +40,13 @@ var baseConfig = {
         'almond': 'lib/almond',
 
         // utility/helper classes
-        'Utils': 'app/Utils',
-        'EventManager': 'app/EventManager',
+        'Utils': 'app/utils/Utils',
+        'EventManager': 'app/utils/EventManager',
+
+        // injected scripts
+        'injector': 'app/injected/injector',
+        'ajaxProxy': 'app/injected/ajaxProxy',
+        'fb-overrides': 'app/injected/fb-overrides',
 
         // 'main' files / entry point for the app
         'fb-messenger': 'app/fb-messenger',
@@ -58,6 +62,7 @@ var baseConfig = {
 
 var configs = [
     
+    // options build
     {
         include: ['almond', 'openpgp', 'Utils','EventManager', 'KeyController',
                   'StoreController', 'Key', 'optionsView', 'options'],
@@ -70,21 +75,8 @@ var configs = [
         }
     },
     
-    /*
-    {
-        include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
-                  'StoreController', 'MessageController', 'Key', 
-                  'facebookView', 'fb-messenger'],
-        out: '../../whisper-built/js/fb-main.js',
-        skipModuleInsertion: true,
-        wrap: {
-            startFile: '../js/frags/start.js',
-            // true = load synchronously. This is a feature of almond.js
-            endFile: '../js/frags/end-fb.js',
-        }
-    },
-    */
     
+    // messenger build
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
                   'StoreController', 'MessageController', 'Key', 'Thread', 'Person', 
@@ -96,6 +88,20 @@ var configs = [
             // true = load synchronously. This is a feature of almond.js
             endFile: '../js/frags/end-messenger.js',
         }
+    },
+
+    // injected scripts
+    {
+        include: ['ajaxProxy', 'fb-overrides'],
+        out: '../../whisper-built/js/content-start.js',
+        skipModuleInsertion: true
+    },
+
+
+    {
+        include: ['injector'],
+        out: '../../whisper-built/js/injector.js',
+        skipModuleInsertion: true
     }
 
 ]; 
