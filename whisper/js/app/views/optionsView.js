@@ -112,6 +112,10 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         keys = Array.isArray(keys) ? keys : [keys];
 
         keys.forEach(function(key, index) {
+
+            if (key.vanityID == privVanityID)
+                return;
+
             var row = table.insertRow(index + 1);
             row.insertCell(0).innerHTML = key.vanityID;
             row.insertCell(1).innerHTML = key.getName();
@@ -277,15 +281,6 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 EventManager.publish('noPrivKey', {
                     keys: false
                 });
-                var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
-                var friendTable = document.getElementById('friend_table');
-                var rows = friendTable.children[0]
-                for(var i = 1; i < rows.children.length; i++){
-                    var uid = rows.children[i].getElementsByTagName('A')[0].getAttribute('data-uid');
-                    if(uid == privVanityID){
-                        rows.removeChild(rows.children[i]);
-                    }
-                }
             }
 
             else if (document.getElementById('friend_table').rows.length === 2){

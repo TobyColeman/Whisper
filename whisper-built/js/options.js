@@ -1168,6 +1168,10 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         keys = Array.isArray(keys) ? keys : [keys];
 
         keys.forEach(function(key, index) {
+
+            if (key.vanityID == privVanityID)
+                return;
+
             var row = table.insertRow(index + 1);
             row.insertCell(0).innerHTML = key.vanityID;
             row.insertCell(1).innerHTML = key.getName();
