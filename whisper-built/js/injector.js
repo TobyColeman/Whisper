@@ -1,0 +1,1 @@
+(function(){function e(e){var t=document.createElement("script");t.src=chrome.extension.getURL(e),t.onload=function(){this.parentNode.removeChild(this)},(document.head||document.documentElement).appendChild(t)}e("js/content-start.js")})();

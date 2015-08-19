@@ -11,7 +11,7 @@ define("messenger", ["messengerView", "MessageController"], function (messengerV
 		// wait until the user is logged in to inject the view
 		chrome.runtime.onMessage.addListener(
 			function initView(request, sender, sendResponse){
-				if(request.init){
+				if(request.type == 'init' && !!request.init){
 					messengerView.init();
 					chrome.runtime.onMessage.removeListener(initView);					
 				}

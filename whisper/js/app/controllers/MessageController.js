@@ -122,10 +122,11 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 		// get the id of the thread
 		chrome.runtime.sendMessage({type: 'getThreadInfo', site: data.site}, function(response){
-			user = response.user;
+			postData = response.payload;
             self.makeRequest("/ajax/mercury/threadlist_info.php", 
                         {type  : 'POST',
-                         params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + user.id + '&__a=1b&__req=1&fb_dtsg=' + user.fb_dtsg}, 
+                         params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + postData.uid + '&__a=1b&__req=1&fb_dtsg=' + postData.fb_dtsg,
+                     	 retries: 3}, 
                          self.setActiveThread)
 		});
 	};
@@ -242,18 +243,31 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	// ajax helper function
 	MessageController.prototype.makeRequest = function(url, options, callback) {
         var xhr = new XMLHttpRequest();
+        var retries = options.retries;
 
         xhr.onreadystatechange = function(){
-            if(xhr.readyState == 4 && xhr.status == 200)
-                callback(xhr.responseText.replace('for (;;);', ''));
+            if(xhr.readyState == 4 && xhr.status == 200){
+            	callback(xhr.responseText.replace('for (;;);', ''));
+            }
+            else if (xhr.readyState == 4 && xhr.status != 200){
+            	retries--;
+            	if(retries > 0){
+            		setTimeout(function(){
+            			makeRequest();
+            		},500);	
+            	}
+            }      
         }
 
-        xhr.open(options.type, url, true);
+        function makeRequest(){
+	        xhr.open(options.type, url, true);
 
-        if(options.type === 'POST')
-            xhr.send(options.params);
-        else
-            xhr.send();
+	        if(options.type === 'POST')
+	            xhr.send(options.params);
+	        else
+	            xhr.send();       	
+        }
+        makeRequest();
 	};
 
 

@@ -2,7 +2,7 @@
 
 	var send = xhr.send;
 	var open = xhr.open;
-	var extensionId = 'fponoehammiikgnomgdpbjpjlflfflif';
+	var extensionId = 'kembhmjccahjefmlfildnnbfeoakoigb';
 
 	// override open method
     xhr.open = function(method, url, async) {
@@ -12,20 +12,39 @@
 		xhr.send = function(data){
 
 	    	// user is sending a message
-	    	if (method == 'POST' && url == '/ajax/mercury/send_messages.php'){
-		    	var that = this;
+	    	if (method == 'POST'){
 
-	    		var payload = {
-	    			type: 'encrypt_message',
-	    			url: url,
-	    			data: data
-	    		}
+				var fb_dtsg = data.match(/fb_dtsg=(.*?)&/)[1];
+				var uid = data.match(/__user=(.*?)&/)[1];
 
-		    	// send request body to be encrypted if the user has encryption turned off, data will be plaintext
-		 		chrome.runtime.sendMessage(extensionId, payload, function(response){	
-		 			// call send with the replaced message 	 				
-		 			send.call(that, response.message);
-		 		});
+			 	var payload = {
+			 		type: 'update_post_info',
+			 		fb_dtsg: fb_dtsg, 
+			 		uid: uid
+			 	}
+
+			 	chrome.runtime.sendMessage(extensionId, payload);
+
+	    		if(url == '/ajax/mercury/send_messages.php'){
+
+	    			var that = this;
+
+		    		var payload = {
+		    			type: 'encrypt_message',
+		    			url: url,
+		    			data: data
+		    		}
+
+			    	// send request body to be encrypted if the user has encryption turned off, data will be plaintext
+			 		chrome.runtime.sendMessage(extensionId, payload, function(response){	
+			 			// call send with the replaced message 	 				
+			 			send.call(that, response.message);
+			 		});
+			 		
+			 	}
+			 	else{
+			 		send.call(this, data);
+			 	}
 	 		}
 	 		else{
 	 			send.call(this, data);
@@ -35,5 +54,6 @@
     };
 
 })(XMLHttpRequest.prototype);
+
 
 

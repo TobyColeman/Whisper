@@ -2,6 +2,7 @@
 // TODO: Remove StoreController and publish events instead
 define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
 
+    // insert strings from messages.json
     Utils.forEachChild(document.documentElement, function(el){
 
         var resourceName = el.dataset['i18n'];
@@ -14,10 +15,10 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         }
         else{
             if(!!el.childNodes.length){
-                el.childNodes[0].innerText = chrome.i18n.getMessage(resourceName);
+                el.childNodes[0].innerHTML = chrome.i18n.getMessage(resourceName);
             }
             else{
-                el.innerText = chrome.i18n.getMessage(resourceName);
+                el.innerHTML = chrome.i18n.getMessage(resourceName);
             }
             
         } 
@@ -52,7 +53,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
      */
     function renderError(data) {
         var errorBlock = document.getElementById('errorBlock');
-        errorBlock.children.namedItem('blockText').innerText = 'Error: ' + data.error;
+        errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
         document.getElementById('keyGenProgress').style.display = "none";
         errorBlock.style.display = "block";
 
@@ -126,7 +127,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var privKeyInfo = document.getElementById('key_table').children[0].children[1];
 
         if(table.id == 'friend_table' && privKeyInfo){
-            var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerText;
+            var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerHTML;
         }
             
 
@@ -138,13 +139,13 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
                 return;
 
             var row = table.insertRow(index + 1);
-            row.insertCell(0).innerText = key.vanityID;
-            row.insertCell(1).innerText = key.getName();
-            row.insertCell(2).innerText = key.getEmail();
+            row.insertCell(0).innerHTML = key.vanityID;
+            row.insertCell(1).innerHTML = key.getName();
+            row.insertCell(2).innerHTML = key.getEmail();
 
             // used for showing details of a key
             var showBtn = document.createElement("A");
-            showBtn.innerText = "show key";
+            showBtn.innerHTML = "show key";
             showBtn.href = "#";
             showBtn.addEventListener('click', showKeyDetails);
 
@@ -169,7 +170,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             }
 
             row.insertCell(3).appendChild(showBtn);
-            row.insertCell(4).innerText = key.getPubKeyLength();
+            row.insertCell(4).innerHTML = key.getPubKeyLength();
             row.insertCell(5).appendChild(deleteBtn);
         });
     }
@@ -263,7 +264,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
         var row = e.target.parentNode.parentElement;
         var rowIndex = row.rowIndex;
         var tableId = row.parentElement.parentElement.id;
-        var name = e.target.parentElement.parentElement.childNodes[1].innerText;
+        var name = e.target.parentElement.parentElement.childNodes[1].innerHTML;
         var keyId = e.target.getAttribute('data-uid');
 
         // store the references in hiden form and displays modal
@@ -271,7 +272,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         function updateModal() {
             var modal = document.getElementById('delModal');
-            modal.children.namedItem("delMsg").children.namedItem("delName").innerText = name;
+            modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
             document.forms["delForm"].keyId.value = keyId;
             document.forms["delForm"].rowIndex.value = rowIndex;
             document.forms["delForm"].tableId.value = tableId;
@@ -339,7 +340,7 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
 
         function updateModal(key) {
             var modal = document.getElementById('keyModal');
-            modal.children.namedItem('modalHeading').innerText = 'Key For: ' + key.getName() + " - " + key.vanityID;
+            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.vanityID;
 
             if (key.privKey === null) {
                 modal.children.namedItem('privKeyText').style.display = "none";
@@ -347,11 +348,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             } else {
                 modal.children.namedItem('privKeyText').style.display = "block";
                 modal.children.namedItem('privateHeading').style.display = "block";
-                modal.children.namedItem('privKeyText').innerText = key.privKey.armor();
+                modal.children.namedItem('privKeyText').innerHTML = key.privKey.armor();
             }
 
             
-            modal.children.namedItem('pubKeyText').innerText = key.pubKey.armor();
+            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey.armor();
 
             modal.showModal();
         }

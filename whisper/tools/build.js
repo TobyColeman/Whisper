@@ -28,11 +28,9 @@ var baseConfig = {
         // Models
         'Key': 'app/models/Key',
         'Thread': 'app/models/Thread',
-        'Person': 'app/models/Person',
 
         // Views
         'optionsView': 'app/views/optionsView',
-        'facebookView': 'app/views/facebookView',
         'messengerView': 'app/views/messengerView',
 
         // libraries
@@ -49,9 +47,10 @@ var baseConfig = {
         'fb-overrides': 'app/injected/fb-overrides',
 
         // 'main' files / entry point for the app
-        'fb-messenger': 'app/fb-messenger',
         'messenger': 'app/messenger',
-        'options': 'app/options'
+        'options': 'app/options',
+
+        'background': 'app/background'
 
     }
  };
@@ -79,7 +78,7 @@ var configs = [
     // messenger build
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
-                  'StoreController', 'MessageController', 'Key', 'Thread', 'Person', 
+                  'StoreController', 'MessageController', 'Key', 'Thread', 
                   'messengerView', 'messenger'],
         out: '../../whisper-built/js/messenger-main.js',
         skipModuleInsertion: true,
@@ -101,6 +100,12 @@ var configs = [
     {
         include: ['injector'],
         out: '../../whisper-built/js/injector.js',
+        skipModuleInsertion: true
+    },
+
+    {
+        include: ['background'],
+        out: '../../whisper-built/js/background.js',
         skipModuleInsertion: true
     }
 

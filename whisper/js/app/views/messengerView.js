@@ -30,7 +30,6 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 	function init(){
 		
 		if (!validateDom()){
-			alert('Could not initialise Whisper. Please refresh the page. If this issue persists please check for an updated version of the plugin.');
 			return;
 		}
 		
@@ -242,7 +241,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		var threadInfoRow = threadInfoPane.childNodes[1].cloneNode(true)
 		threadInfoRow.id = 'encryption-toggle';
-		threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerHTML = 'Encryption';
+		threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerText =  chrome.i18n.getMessage("Encryption");
 
 	    Utils.forEachChild(threadInfoRow, function(node){
 	        node.removeAttribute('data-reactid');
@@ -264,17 +263,17 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		dialog.id = "pwDialog";
 
-		errorMsg.innerHTML = "Incorrect Password";
+		errorMsg.innerText =  chrome.i18n.getMessage("wrongPasswordError");
 
 		passwordField.type = "text";
 		passwordField.id = 'keyPw';
 		passwordField.placeholder = 'Private Key Password';
 
 		submitBtn.id = "submitDialog";
-		submitBtn.innerHTML = "OK";
+		submitBtn.innerText =  chrome.i18n.getMessage("OKPrompt");
 
 		closeBtn.id = "closeDialog";
-		closeBtn.innerHTML = "Close";
+		closeBtn.innerText =  chrome.i18n.getMessage("ClosePrompt");
 		
 		form.appendChild(passwordField);
 		form.appendChild(btnWrapper);

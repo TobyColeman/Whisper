@@ -26,6 +26,11 @@
 		"description": ""
 	},
 
+	"OKPrompt":{
+		"message": "OK",
+		"description": ""
+	},
+
 	"closePrompt":{
 		"message": "Close",
 		"description": ""
@@ -43,6 +48,11 @@
 
 	"email":{
 		"message": "Email",
+		"description": ""
+	},
+
+	"Encryption":{
+		"message": "Encryption",
 		"description": ""
 	},
 
