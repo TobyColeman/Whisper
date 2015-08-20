@@ -7,9 +7,7 @@
 	"extDescription": {
 		"message": "PGP for Facebook messages",
 		"description": "Extension description"
-	},
-
-	// general 
+	}, 
 
 	"submitPrompt":{
 		"message": "Submit",
@@ -55,8 +53,6 @@
 		"message": "Encryption",
 		"description": ""
 	},
-
-	// options page strings
 
 	"dashboardHeading":{
 		"message": "Whisper - Dashboard",

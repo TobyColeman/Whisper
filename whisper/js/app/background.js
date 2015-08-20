@@ -1,5 +1,8 @@
 (function(){  
 
+    // listen to messages from injected scripts
+    externalListener();
+
     // data needed for making requests to facebook
     var postData = {
         uid :null,
@@ -27,11 +30,10 @@
 
                     chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
 
-                    if (request.enabled){ 
-                        externalListener();
-                    } 
-                    else{
+                    if (!request.enabled){ 
+                        // externalListener();
                         chrome.runtime.onMessage.removeListener(handleMessages);
+                        chrome.runtime.onMessageExternal.removeListener(externalListener);
                     }                        
                 });  
             }   
@@ -78,4 +80,6 @@
             return true;
         });
     }
+
+
 })();
