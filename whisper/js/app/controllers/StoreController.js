@@ -91,7 +91,13 @@ define("StoreController", ['Key'], function(Key) {
         this.getKey(null, function(results) {
 
             var friends = false;
-            delete results['whisper_key'];
+
+            if (results['whisper_key']){
+                var privKeyVanityId = results['whisper_key'].vanityID;
+                
+                delete results[privKeyVanityId];
+                delete results['whisper_key'];                
+            }
 
             // since user only has one key pair, we can assume the remaining 
             // items in the dict are their friends' public keys

@@ -9,6 +9,9 @@ function inject(script){
 	(document.head||document.documentElement).appendChild(s);
 }
 
-inject('js/content-start.js');
+chrome.storage.local.get('whisper_key', function(result){
+ 	if(!!result['whisper_key']) inject('js/content-start.js');
+});
+
 
 })();

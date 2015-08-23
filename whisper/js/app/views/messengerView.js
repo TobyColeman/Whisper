@@ -20,6 +20,8 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		colSpan: '_3x6u',
 		// information button in active state
 		infoBtn: '_fl3 _30yy',
+		// facebook profile url in 1-1 convo
+		profileLink: '_3tl1'
 	}
 
 	// ignore checking these styles as they are not always used in the page
@@ -104,6 +106,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		
 		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
 		inputBox = document.getElementsByClassName('_54-z')[0];
+
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
 			em.publish('setEncryption', {encrypted: checkBox.checked});
@@ -115,7 +118,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			checkBox.checked = false;
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('keyPw').value = '';
-			em.publish('setEncryption', {encrypted: false});
+			em.publish('setDecryption', {enabled: false});
 			document.getElementById('pwDialog').close();
 		});
 
@@ -129,6 +132,9 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		// submitting password with ok button
 		document.getElementById('submitDialog').addEventListener('click', processForm);
+
+		// show dialog as soon as page is loaded
+		document.getElementById('pwDialog').showModal();
 	}
 
 
@@ -193,8 +199,17 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 						parent.removeChild(parent.children[i]);
 				};
 			}
-			makeLock(data.hasAllKeys, parent)
-			return;
+
+			var fbVanity = document.getElementsByClassName(STYLES.profileLink)[2].children[0].href.split('/')[3];
+
+            for(key in data.keys){
+            	if(data.keys[key].vanityID == fbVanity){
+            		makeLock(key, parent);
+            		return;
+            	}  
+            }
+            makeLock(false, parent);
+            return;
 		}
 
 		// group chat

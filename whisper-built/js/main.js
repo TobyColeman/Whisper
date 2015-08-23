@@ -1088,373 +1088,765 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         return KeyController.getInstance();
     });
-// TODO: Could split this up into more modular parts to make it easier to read
-// TODO: Remove StoreController and publish events instead
-define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Utils, EventManager, StoreController) {
+define('Thread',[],function() {
 
-    // insert strings from messages.json
-    Utils.forEachChild(document.documentElement, function(el){
+	function Thread(id){
+		this.id = id;
+		this.isEncrypted = false;
+		this.hasAllKeys = true;
+		this.numPeople = 0;
+		this.keys = {};
+	}
 
-        var resourceName = el.dataset['i18n'];
 
-        if(!resourceName)
+	Thread.prototype.setEncrypted = function(encrypted) {
+		this.isEncrypted = encrypted;
+	};
+
+
+	Thread.prototype.setNumPeople = function() {
+		this.numPeople +=1;
+	};
+
+
+	Thread.prototype.addKey = function(key) {
+		this.keys[key.FBID] = key;
+		this.setNumPeople();
+	};
+
+
+	Thread.prototype.removeKey = function(key) {
+
+		var index = this.keys.indexOf(key);
+
+		if (index > -1)
+			this.keys.splice(index, 1);
+	};
+
+
+	Thread.prototype.makeMessage = function(message, sender) {
+
+		var payload = {
+			sender: sender,
+			messages: []
+		};
+
+		(function(){
+			var i = 0;
+
+			function encryptMessage(){
+				if (i < this.numPeople){
+					openpgp.encryptMessage(keys[i].pubKey.keys, message).then(function(pgpMessage){
+
+						var message = {
+							recipient: keys[i],
+							content: pgpMessage
+						};
+
+						payload.messages.push(message);
+
+						i++;
+						encryptMessage();
+					})
+				}
+				else{
+
+				}
+			}
+		});
+	};
+
+
+	return Thread;
+});
+define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Utils", "openpgp"], function(e, Store, Key, Thread, Utils, openpgp){
+
+	var instance = null;
+	var thread, myKey;
+	var decryption = true;
+
+	function MessageController() {
+		self = this;
+		if (instance !== null)
+			throw new Error("MessageController instance already exists");
+	}
+
+
+	MessageController.prototype.init = function(callback) {
+
+        Store.hasPrivKey(function(key) {
+
+        	myKey = !!key ? key : false;
+
+        	if(myKey){
+				e.subscribe('setThread', self.getThreadInfo);
+				e.subscribe('setEncryption', self.setEncryption);
+				e.subscribe('decryptKey', self.decryptKey);  
+				e.subscribe('setDecryption', function(data){
+					decryption = data.enabled;
+				}) 
+				self.listen(); 
+        	}
+            callback(myKey);
+        });
+	};
+
+
+	MessageController.prototype.listen = function() {
+
+		// send the content script the fields needed to make requests to facebook
+		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+		
+			if (request.type == 'encrypt_message'){
+				self.encryptMessage(request.data, sendResponse);
+			}
+			else if (request.type == 'decrypt_message'){
+				processMessage(request.data, sendResponse, self.decryptMessage)
+			}
+			else if(request.type == 'descrypt_message_batch'){
+				processMessage(request.data, sendResponse, self.decryptMessageBatch);
+			}
+			return true;
+		});
+
+		function processMessage(data, sendResponse, decryptionHandler){
+			// decryption enabled and user key unlocked
+			if(myKey.isUnlocked() && decryption){
+				decryptionHandler(data, sendResponse);
+			}
+			// decryption disabled
+			else if(!myKey.isUnlocked() && !decryption){
+				sendResponse({message: data});
+			}
+			// waiting for password
+			else if (!myKey.isUnlocked() && decryption){
+				console.log('waiting for password');
+				setTimeout(function(){
+					processMessage(data, sendResponse, decryptionHandler)
+				}, 500);
+			}
+			return true;
+		}
+	};
+
+
+	MessageController.prototype.decryptMessage = function(data, callback) {
+
+		var body = isJSON(decodeURIComponent(data));
+
+		// plaintext message, picture or sticker
+		if (!body){
+			callback({message: data});
+			return;
+		}
+		// message not found for user
+		else if(!body[myKey.FBID]){
+			callback({message: data});
+			return;
+		}
+
+		try{
+			var pgpMessage = openpgp.message.readArmored(body[myKey.FBID]);
+		}
+		catch(error){
+			callback({message: 'Could Not Decrypt Message'});
+			return;
+		}
+		
+
+		openpgp.decryptMessage(myKey.privKey, pgpMessage).then(function(plaintext){
+			callback({message: plaintext});
+		}).catch(function(error){
+			callback({message: 'Could Not Decrypt Message'});
+		});
+
+		function isJSON(msg){
+			try{
+				var body = JSON.parse(msg)
+				return body;
+			}
+			catch(e){
+				return false;
+			}
+		}			
+
+	};
+
+
+	MessageController.prototype.decryptMessageBatch = function(data, callback) {
+
+		(function(){
+
+			var i = 0;
+
+			function decryptMessages(){
+
+				if(i < data.length){
+
+					self.decryptMessage(data[i].body, function(response){
+
+						data[i].body = response.message;
+
+						i++;
+						decryptMessages();
+					});
+
+				}else{
+					console.log('END OF MESSAGES');
+					callback({message: data});
+				}
+			}
+			decryptMessages();
+		})();	
+	};
+
+
+	MessageController.prototype.encryptMessage = function(data, callback) {
+
+		var expr = /\[body\]=(.*?)&/;
+		var messageBody = data.match(expr);
+
+		// sending a picture, sticker, thumbs up
+		if(messageBody === null){
+			callback({message:data});
+			return;
+		}
+			
+
+		messageBody = decodeURIComponent(messageBody[1]);
+		
+		if (thread.isEncrypted){
+
+			var payload = {};
+
+			(function(){
+
+				var i = 0;
+
+				function encryptMessage(){
+					// for each person in the thread, encrypt your message 
+					if (i < thread.numPeople){
+
+						var id = Object.keys(thread.keys)[i];
+
+						openpgp.encryptMessage(thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
+
+							payload[thread.keys[id].FBID] =  pgpMessage;
+
+							i++;
+							encryptMessage();
+						});
+					}
+					else{
+						// replace the plaintext message with encrypted message
+						payload = '[body]=' + encodeURIComponent(JSON.stringify(payload)) + '&';
+						data = data.replace(expr, payload);
+						callback({message:data});
+					}
+				}
+				encryptMessage();
+			})();
+		}
+		else{
+			callback({message:data});
+		}
+			
+	};
+
+
+	/*
+	 * Grabs thread id and participants for the current active thread, using fb's api
+	 * @param data {object} contains index of the current thread & the site
+	 */
+	MessageController.prototype.getThreadInfo = function(data) {
+
+		// get the id of the thread
+		chrome.runtime.sendMessage({type: 'getThreadInfo', site: data.site}, function(response){
+			postData = response.payload;
+			if(myKey) myKey.setFBID(postData.uid);
+            self.makeRequest("/ajax/mercury/threadlist_info.php", 
+                        {type  : 'POST',
+                         params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + postData.uid + '&__a=1b&__req=1&fb_dtsg=' + postData.fb_dtsg,
+                     	 retries: 3}, 
+                         self.setActiveThread);
+		});
+	};
+
+
+	/*
+	 * decrypts the user's private key
+	 * @param data {object} contains password from dialog in the view
+	 */
+	MessageController.prototype.decryptKey = function(data) {
+
+        if (!myKey.privKey.decrypt(data.password)){
+            e.publish('wrongPassword');
             return;
-
-        if(el.tagName == 'INPUT' || el.tagName == 'TEXTAREA'){
-            el.placeholder = chrome.i18n.getMessage(resourceName);
         }
-        else{
-            if(!!el.childNodes.length){
-                el.childNodes[0].innerHTML = chrome.i18n.getMessage(resourceName);
-            }
-            else{
-                el.innerHTML = chrome.i18n.getMessage(resourceName);
-            }
-            
-        } 
-    });
-
-    function bindEvent() {
-        // form events
-        document.forms["keyGenForm"].addEventListener('submit', handleKeyForm);
-        document.forms["keyInsForm"].addEventListener('submit', handlePrivInsert);
-        document.forms["friendInsForm"].addEventListener('submit', handlePubInsert);
-        document.forms["delForm"].addEventListener('submit', doDelete);
-
-        // click events
-        document.getElementById('keyOpts').addEventListener('change', toggleKeyGenType);
-        document.getElementById('friendFormToggle').addEventListener('click', toggleFriendForm);
-        Utils.addListenerToClass('close', 'click', function() {
-            this.parentNode.close()
-        });
-
-        // events emitted from EventManager (stuff from the controllers)
-        EventManager.subscribe('newPubKey', renderFriendTable);
-        EventManager.subscribe('noPubKeys', renderFriendTable);
-        EventManager.subscribe('newPrivKey', renderUserKey);
-        EventManager.subscribe('noPrivKey', renderUserKey);
-        EventManager.subscribe('error', renderError);
-    }
+        e.publish('correctPassword');
+	};
 
 
-    /*
-     * Displays error messages passed down from the controller
-     * @param data.error {string} error message displayed to the user
-     */
-    function renderError(data) {
-        var errorBlock = document.getElementById('errorBlock');
-        errorBlock.children.namedItem('blockText').innerHTML = 'Error: ' + data.error;
-        document.getElementById('keyGenProgress').style.display = "none";
-        errorBlock.style.display = "block";
+	/* Constructs a new thread object & retrieves key's for every participant
+	 * Notifies the view as to whether encryption was on/off for the current thread
+	 * @param data {object} ajax response from facebook's api to threadlist_info
+	 */
+    MessageController.prototype.setActiveThread = function(data){
 
-        setTimeout(function() {
-            errorBlock.style.display = "none";
-        }, 2000);
-    }
+    	var threadInfo, threadId, participants;
 
+    	// parse response from threadlist_info.php
+        threadInfo = JSON.parse(data);
 
-    /* 
-     * sets the visibility of the key table / creation form
-     * @param data.visible {boolean}	if true should show table
-     * @param data.keys    {array} 	    contains Key objects
-     */
-    function renderUserKey(data) {
+        // array of participants in the active thread
+        participants = threadInfo.payload.participants;
 
-        var keyFormWrapper = document.getElementById('keyFormWrapper');
-        var keyTable = document.getElementById('key_table');
+        // id of the active thread (group-convo)
+        threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
 
-        if (!data.keys) {
-            keyFormWrapper.style.display = "block";
-            keyTable.style.display = "none";
-            return;
-        }
+        // id of the active thread (solo-convo)
+        if (threadId === undefined)
+        	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
 
-        // update the rows in the table where user's key is displayed
-        updateTableRows(data.keys, keyTable);
+        // make a new thread, store its' id
+        thread = new Thread(threadId);
 
-        // display the table and hide creation form
-        keyTable.style.display = "block";
-        document.getElementById('keyGenProgress').style.display = "none";
-        document.forms["keyGenForm"].reset();
-        document.forms["keyInsForm"].reset();
-        keyFormWrapper.style.display = "none";
-    }
+        // get the settings for the current thread, check what public
+        // keys are in storage then notify the view
+        Store.getSettings(thread.id, function(encrypted){
 
+    		(function(){
+    			var i = 0;
 
-    /* 
-     * sets the visibility of the table displaying the user's friends' keys
-     * @param data.visible {boolean}	if true should show table
-     * @param data.keys    {array} 	    contains Key objects
-     */
-    function renderFriendTable(data) {
+    			function forloop(){
+        			if (i < participants.length){
 
-        var friendTable = document.getElementById('friend_table');
-        var noFriendMsg = document.getElementById('no_friends');
+        				Store.getKey(participants[i].vanity, function(key){
 
-        if (!data.keys) {
-            noFriendMsg.style.display = "block";
-            friendTable.style.display = "none";
-            return;
-        }
+        					// var key = {};
+        					var fbid = participants[i].fbid;
+        					var vanity = participants[i].vanity;
 
-        // update the rows in the table where public keys are displayed
-        updateTableRows(data.keys, friendTable);
+        					// if we found a key 
+        					if(key){
+        						key.setFBID(fbid);
+        						thread.addKey(key);
+        					}
+        						
+        					else{
+        						thread.hasAllKeys = false;
+        					}
+        					i++;
+        					forloop();
+        				});
+        			}
+        			else{
+        				// if we're missing a key, we'll tell the view to disable
+        				// the encryption controls
+        				if(thread.hasAllKeys)
+	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
+	    										   		   	   keys: thread.keys,
+	    										   		   	   hasAllKeys: true});
+	    				else
+	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
+	    										   		   	   keys: thread.keys,
+	    										   		   	   hasAllKeys: false});
 
-        // display the table and reset public key insertion form
-        friendTable.style.display = "block";
-        document.forms["friendInsForm"].reset();
-        noFriendMsg.style.display = "none";
-    }
-
-
-    /* 
-     * Updates the key table with the user's details
-     * @param keys {array} an array of Key objects
-     * @param table {element} the table to append rows to
-     */
-    function updateTableRows(keys, table) {            
-
-        keys = Array.isArray(keys) ? keys : [keys];
-
-        keys.forEach(function(key, index) {
-
-            var row = table.insertRow(index + 1);
-            row.insertCell(0).innerHTML = key.vanityID;
-            row.insertCell(1).innerHTML = key.getName();
-            row.insertCell(2).innerHTML = key.getEmail();
-
-            // used for showing details of a key
-            var showBtn = document.createElement("A");
-            showBtn.innerHTML = "show key";
-            showBtn.href = "#";
-            showBtn.addEventListener('click', showKeyDetails);
-
-            // used for deleting a key
-            var deleteBtn = document.createElement("SPAN");
-
-            deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-            deleteBtn.addEventListener('click', promptDelete);             
-
-            /* 
-             * TODO: User may have multiple private keys in future, so this would
-             * only need to be slightly modified 
-             */
-            if (key.privKey != null) {
-                showBtn.setAttribute('data-uid', 'whisper_key');
-                deleteBtn.setAttribute('data-uid', 'whisper_key');
-            } else {
-                showBtn.setAttribute('data-uid', key.vanityID);
-                deleteBtn.setAttribute('data-uid', key.vanityID);
-            }
-
-            row.insertCell(3).appendChild(showBtn);
-            row.insertCell(4).innerHTML = key.getPubKeyLength();
-            row.insertCell(5).appendChild(deleteBtn);
+	    				// if we have all the keys and the thread is tagged as encrypted
+	    				// ask for the user's password if needed
+			        	thread.setEncrypted(encrypted);
+			        	// self.getPassword(encrypted);
+    				
+        			}
+        		}
+        		forloop();
+    		})();
         });
     }
 
 
-    // Grabs the form data needed to create a key & requests its' creation
-    function handleKeyForm(e) {
-        // grab all the form data
-        e.preventDefault();
-        var form = document.forms["keyGenForm"];
-        var vanityID = form.vanityID.value.trim().toLowerCase();
-        var name = form.name.value.trim();
-        var email = form.email.value.trim();
-        var password = form.password.value;
-        var numBits = form.numBits[form.numBits.selectedIndex].value;
+    /* Toggles encryption on/off for the current thread & stores settings
+     * @param data {object} contains a boolean for encrypted state
+     */ 
+    MessageController.prototype.setEncryption = function(data) {
+    	thread.setEncrypted(data.encrypted);
+    	// self.getPassword(data.encrypted);
 
-        // notify the user a key is being generated
-        document.getElementById('keyGenProgress').style.display = "block";
-
-        // push an event to let the controller know a new key has been requested
-        EventManager.publish('newKey', {
-            'vanityID': vanityID,
-            'name': name,
-            'email': email,
-            'password': password,
-            'numBits': numBits
-        });
-    }
-
-
-    // Grabs already generated private key & requests its' insertion
-    function handlePrivInsert(e) {
-        e.preventDefault();
-        var form = document.forms["keyInsForm"];
-        var vanityID = form.vanityID.value.trim().toLowerCase();
-        var password = form.password.value;
-        var privKey = form.privKey.value.trim();
-
-        // notify the user a key is being generated
-        document.getElementById('keyGenProgress').style.display = "block";
-
-        EventManager.publish('privKeyInsert', {
-            'vanityID': vanityID,
-            'password': password,
-            'privKey': privKey
-        });
-    }
-
-
-    // Grabs form data and requests public key to be stored
-    function handlePubInsert(e) {
-        e.preventDefault();
-        var form = document.forms["friendInsForm"];
-        var vanityID = form.vanityID.value.trim().toLowerCase();
-        var pubKey = form.pubKey.value.trim();
-
-        EventManager.publish('pubKeyInsert', {
-            'vanityID': vanityID,
-            'pubKey': pubKey
-        });
-    }
-
-
-    // Sets the visibility of the public key form
-    function toggleFriendForm(e) {
-        if (document.forms["friendInsForm"].style.display == "none") {
-            document.forms["friendInsForm"].style.display = "block";
-        } else {
-            document.forms["friendInsForm"].style.display = "none";
-        }
-    }
-
-
-    // Sets the visibility of the private key forms
-    function toggleKeyGenType(e) {
-
-        if (e.target.value == 1) {
-            document.forms["keyGenForm"].style.display = "block";
-            document.forms["keyInsForm"].style.display = "none";
-        } else {
-            document.forms["keyGenForm"].style.display = "none";
-            document.forms["keyInsForm"].style.display = "block";
-        }
-    }
-
-
-    // displays a modal asking user to confirm deletion
-    function promptDelete(e) {
-
-        // store a reference to the stuff needed for deletion 
-        var row = e.target.parentNode.parentElement;
-        var rowIndex = row.rowIndex;
-        var tableId = row.parentElement.parentElement.id;
-        var name = e.target.parentElement.parentElement.childNodes[1].innerHTML;
-        var keyId = e.target.getAttribute('data-uid');
-
-        // store the references in hiden form and displays modal
-        updateModal();
-
-        function updateModal() {
-            var modal = document.getElementById('delModal');
-            modal.children.namedItem("delMsg").children.namedItem("delName").innerHTML = name;
-            document.forms["delForm"].keyId.value = keyId;
-            document.forms["delForm"].rowIndex.value = rowIndex;
-            document.forms["delForm"].tableId.value = tableId;
-            modal.showModal();
-        }
-    }
-
-
-    // grabs hidden form data and attempts to delete key from storage
-    function doDelete(e) {
-
-        e.preventDefault();
-
-        var keyId = document.forms["delForm"].keyId.value;
-        var tableId = document.forms["delForm"].tableId.value;
-        var rowIndex = document.forms["delForm"].rowIndex.value;
-
-        StoreController.delKey(keyId, function(success) {
-
-            if (!success) {
-                renderError({
-                    error: 'Could not find key'
-                });
-                return;
-            }
-
-            if (keyId === 'whisper_key') {
-                EventManager.publish('noPrivKey', {
-                    keys: false
-                });
-            }
-
-            else if (document.getElementById('friend_table').rows.length === 2){
-                 EventManager.publish('noPubKeys', {
-                    keys: false
-                });               
-            }
-
-            document.getElementById(tableId).rows[rowIndex].remove();
-
-            document.forms["delForm"].parentNode.close();
-        });
+    	Store.setSettings(thread.id);
     };
 
 
-    // display key details to the user
-    function showKeyDetails(e) {
+    MessageController.prototype.getPassword = function(encrypted) {
+    	if(encrypted && !myKey.isUnlocked()){
+    		e.publish('getPassword');	    		
+    	}
+    };
 
-        getKeyFromTable(e, updateModal);
 
-        // Helper function for getting key from table, checks if key exists.
-        function getKeyFromTable(e, callback) {
-            var keyId = e.target.getAttribute('data-uid');
+	// ajax helper function
+	MessageController.prototype.makeRequest = function(url, options, callback) {
+        var xhr = new XMLHttpRequest();
+        var retries = options.retries;
 
-            StoreController.getKey(keyId, function(key) {
-                if (!key) {
-                    renderError({
-                        error: 'Could not find key'
-                    });
-                    return;
-                }
-                callback(key);
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState == 4 && xhr.status == 200){
+            	callback(xhr.responseText.replace('for (;;);', ''));
+            }
+            else if (xhr.readyState == 4 && xhr.status != 200){
+            	retries--;
+            	if(retries > 0){
+            		setTimeout(function(){
+            			makeRequest();
+            		},500);	
+            	}
+            }      
+        }
+
+        function makeRequest(){
+	        xhr.open(options.type, url, true);
+
+	        if(options.type === 'POST')
+	            xhr.send(options.params);
+	        else
+	            xhr.send();       	
+        }
+        makeRequest();
+	};
+
+
+	MessageController.getInstance = function() {
+		if (instance === null)
+			instance = new MessageController();
+		return instance;
+	}
+
+	return MessageController.getInstance();
+});
+
+// View for messenger.com
+
+define("messengerView", ["Utils", "EventManager"], function (Utils, em){
+
+	// Styles used when injecting plugin elements into messenger.com
+	var STYLES = {
+		// heading of the current chat window
+		heading : '_3oh-',
+		// currently selected thread
+		activeThread: '_1ht2',
+		// right column 
+		threadInfoPane: '_3tkv',
+		// name of person in 1-1 thread
+		threadPersonName: '_3eur',
+		// list of people in a group thread
+		threadPeopleList: '_4wc-',
+		// wrapper that toggles visibility of right col
+		threadInfoPaneWrapper: '_4_j5',
+		// span tag in column row
+		colSpan: '_3x6u',
+		// information button in active state
+		infoBtn: '_fl3 _30yy',
+		// facebook profile url in 1-1 convo
+		profileLink: '_3tl1'
+	}
+
+	// ignore checking these styles as they are not always used in the page
+	// dom checking function is pretty bad really...
+	var exceptions = ['rightCol', 'colSpan', 'threadPeopleList', 'threadPersonName'];
+
+
+	function init(){
+		
+		if (!validateDom()){
+			return;
+		}
+		
+		// inject the checkbox needed to toggle encryption on/off
+		injectToThread();
+
+		// makes the popup dialog for entering password
+		makeDialog();
+
+		// add event listeners
+		bindDomEvents();
+
+		// listen to controller events
+		subscribeEvents();
+
+		setThread();
+	}
+
+
+	// checks that facebook's markup hasn't changed
+	function validateDom(){
+
+		for(var key in STYLES){
+			if ( !Utils.classExists(STYLES[key]) && exceptions.indexOf(key) === -1){
+				console.log('STYLE: ', key, ' was not found.');
+				return false;
+			}
+				
+		}
+		return true;
+	}
+
+
+	// subscribes to events emitted by the event manager
+	function subscribeEvents(){
+		em.subscribe('renderThreadSettings', renderThreadSettings);
+
+		em.subscribe('getPassword', function(){
+			document.getElementById('pwDialog').showModal();
+		});
+
+		em.subscribe('wrongPassword', function(){
+			document.getElementById('pwDialog').children[0].style.display = 'block';
+		});
+
+		em.subscribe('correctPassword', function(){
+			document.getElementById('pwDialog').children[0].style.display = 'none';
+			document.getElementById('pwDialog').close();
+		});
+	}
+
+
+	// adds all the event listeners
+	function bindDomEvents(){
+
+		// watches for changes between threads
+		var threadTitle = document.getElementsByClassName(STYLES.heading)[0];
+		var config = { attributes: true, childList: true, characterData: true, subtree: true };
+		var titleObserver = new MutationObserver(function() {
+			setThread();
+		});
+		titleObserver.observe(threadTitle, config);
+
+		// watches for change in the right colum / where thread interactions are
+		var threadInfoWrapper = document.getElementsByClassName(STYLES.threadInfoPaneWrapper)[0];
+		var config = { attributes: true, subtree: false };
+		var threadInfoPaneObserver = new MutationObserver(function(mutations) {
+			injectToThread();  	
+		});
+		threadInfoPaneObserver.observe(threadInfoWrapper, config);
+
+		
+		checkBox = document.getElementById('encryption-toggle').getElementsByTagName('INPUT')[0];
+		inputBox = document.getElementsByClassName('_54-z')[0];
+
+		// enable / disable encryption for current conversation
+		checkBox.addEventListener('click', function(){
+			em.publish('setEncryption', {encrypted: checkBox.checked});
+		});
+
+		// listen for dialog close event when entering password, will turn off encryption
+		document.getElementById('closeDialog').addEventListener('click', function(e){
+			e.preventDefault();
+			checkBox.checked = false;
+			document.getElementById('pwDialog').children[0].style.display = 'none';
+			document.getElementById('keyPw').value = '';
+			em.publish('setDecryption', {enabled: false});
+			document.getElementById('pwDialog').close();
+		});
+
+		// submitting password on enter press
+		document.getElementById('keyPw').onkeydown = function(e){
+			if(e.keyCode == 13){
+				e.preventDefault();
+				processForm(e);
+			}
+		};
+
+		// submitting password with ok button
+		document.getElementById('submitDialog').addEventListener('click', processForm);
+
+		// show dialog as soon as page is loaded
+		document.getElementById('pwDialog').showModal();
+	}
+
+
+	// gets the index of the selected thread and pushes an event to retrieve
+	// the participants and thread id
+	function setThread(){
+
+		// currently selected thread
+		var activeThread = document.getElementsByClassName(STYLES.activeThread)[0];
+		// get the list of threads
+		var threadList = Array.prototype.slice.call(activeThread.parentElement.children);
+		// index of the active thread needed for finding thread info 
+		activeThread = threadList.indexOf(activeThread);
+
+		// disable text input as we get settings for thread;
+		inputBox.setAttribute('contenteditable', false);
+
+		// reset the checkbox & disable whilst setting retrieved 
+		checkBox.disabled = true;
+		checkBox.checked = false;
+		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
+	}
+
+
+	function processForm(e){
+		e.preventDefault();
+		var password = document.getElementById('keyPw').value;
+		em.publish('decryptKey', {password: password});
+	}
+
+
+	function renderThreadSettings(data){
+
+		var encryptionText = checkBox.parentNode.parentNode.children[1];
+
+		// encryption disabled - not enough keys
+		if(!data.hasAllKeys){
+			checkBox.disabled = true;
+			encryptionText.style.textDecoration = 'line-through';
+			encryptionText.style.color = '#F0F0F0';		
+		}
+		// encryption enabled
+		else{
+			checkBox.disabled = false;
+			encryptionText.style.textDecoration = 'none';	
+			encryptionText.style.color = '#141823';
+			checkBox.checked = data.isEncrypted;	
+		}
+
+		// enable text input as we have settings for the current thread;
+		inputBox.setAttribute('contenteditable', true);
+
+		// solo chat
+		var parent = document.getElementsByClassName('_3eur')[0];
+
+		if(parent){	
+			parent = parent.children[0];
+
+			if (parent.children.length > 0){
+				for (var i = 0; i < parent.children.length; i++) {
+					if ( parent.children[i].tagName == 'SPAN' )
+						parent.removeChild(parent.children[i]);
+				};
+			}
+
+			var fbVanity = document.getElementsByClassName(STYLES.profileLink)[2].children[0].href.split('/')[3];
+
+            for(key in data.keys){
+            	if(data.keys[key].vanityID == fbVanity){
+            		makeLock(key, parent);
+            		return;
+            	}  
+            }
+            makeLock(false, parent);
+            return;
+		}
+
+		// group chat
+		var peopleList = document.getElementsByClassName(STYLES.threadPeopleList)[0].getElementsByTagName('UL')[0].children;
+			
+		for (var i = 0; i < peopleList.length; i++) {
+
+			var lockIcon = document.createElement('SPAN');
+
+			var fbid = peopleList[i].getAttribute('data-reactid').split('$fbid=2')[1];
+
+			var parent = peopleList[i].getElementsByClassName('_364g')[0];
+
+			var hasKey = data.keys[fbid] !== undefined ? true: false;
+
+			if(parent.children.length < 1)
+				makeLock(hasKey, parent);
+		};	
+
+		// make a new ionicon lock 
+		function makeLock(hasKey, parent){
+			var lockIcon = document.createElement('SPAN');
+
+			if(hasKey){
+				lockIcon.className = 'ion-locked ion-padded ion-blue';
+			}
+			else{
+				lockIcon.className = 'ion-unlocked ion-padded';
+			}
+			parent.appendChild(lockIcon);		
+		}
+
+
+	}
+
+
+	// inject the checkbox toggle option into the current thread
+	function injectToThread(){
+
+		var threadInfoPane = document.getElementsByClassName(STYLES.threadInfoPane)[0];
+
+		if (threadInfoPane === undefined || document.getElementById('encryption-toggle') !== null)
+			return;
+
+		var threadInfoRow = threadInfoPane.childNodes[1].cloneNode(true)
+		threadInfoRow.id = 'encryption-toggle';
+		threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerText =  chrome.i18n.getMessage("Encryption");
+
+	    Utils.forEachChild(threadInfoRow, function(node){
+	        node.removeAttribute('data-reactid');
+	    });
+	    
+		threadInfoPane.childNodes[1].insertAdjacentElement('afterEnd', threadInfoRow);
+	}
+
+
+	// create a popup dialog for the user to enter their private key password
+	function makeDialog(){
+		var dialog = document.createElement("DIALOG");
+		var errorMsg = document.createElement("P");
+		var form = document.createElement("FORM");
+		var btnWrapper = document.createElement("DIV");
+		var passwordField = document.createElement("INPUT");
+		var submitBtn = document.createElement("BUTTON");
+		var closeBtn = document.createElement("BUTTON");
+
+		dialog.id = "pwDialog";
+
+		errorMsg.innerText =  chrome.i18n.getMessage("wrongPasswordError");
+
+		passwordField.type = "text";
+		passwordField.id = 'keyPw';
+		passwordField.placeholder = 'Private Key Password';
+
+		submitBtn.id = "submitDialog";
+		submitBtn.innerText =  chrome.i18n.getMessage("OKPrompt");
+
+		closeBtn.id = "closeDialog";
+		closeBtn.innerText =  chrome.i18n.getMessage("ClosePrompt");
+		
+		form.appendChild(passwordField);
+		form.appendChild(btnWrapper);
+		btnWrapper.appendChild(closeBtn);
+		btnWrapper.appendChild(submitBtn);
+		dialog.appendChild(errorMsg);
+		dialog.appendChild(form);
+		document.body.appendChild(dialog);
+	}
+
+	return{
+		init: init
+	}
+});
+
+define("main", ["messengerView", "MessageController"], function (messengerView, MessageController) {
+
+	MessageController.init(function(success){
+
+		chrome.runtime.sendMessage({type: 'enabled', enabled: !!success});
+
+		if(success){
+            window.addEventListener('load', function(){
+                messengerView.init();
             });
         }
-
-        function updateModal(key) {
-            var modal = document.getElementById('keyModal');
-            modal.children.namedItem('modalHeading').innerHTML = 'Key For: ' + key.getName() + " - " + key.vanityID;
-
-            if (key.privKey === null) {
-                modal.children.namedItem('privKeyText').style.display = "none";
-                modal.children.namedItem('privateHeading').style.display = "none";
-            } else {
-                modal.children.namedItem('privKeyText').style.display = "block";
-                modal.children.namedItem('privateHeading').style.display = "block";
-                modal.children.namedItem('privKeyText').innerHTML = key.privKey.armor();
-            }
-
-            
-            modal.children.namedItem('pubKeyText').innerHTML = key.pubKey.armor();
-
-            modal.showModal();
-        }
-    }
-
-
-    return {
-        renderUserKey: renderUserKey,
-        renderFriendTable: renderFriendTable,
-        renderError: renderError,
-        bindEvents: bindEvent
-    }
-
-});
-define("options", ['KeyController', 'optionsView'], function (KeyController, optionsView) {
-	optionsView.bindEvents();
-    KeyController.init();
-});
+		
+	});
+});	
 
 	//The modules for your project will be inlined above
     //this snippet. Ask almond to synchronously require the
     //module value for 'main' here and return it as the
-    //value to use for the public API for the built file.
-    window.addEventListener('load', function(){
-    	return require('options');
-    })
+    //value to use for the public API for the built file
+    return require('main');
 }));

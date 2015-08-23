@@ -1,1 +1,159 @@
-(function(e){var t=e.send,n=e.open,r="kembhmjccahjefmlfildnnbfeoakoigb";e.open=function(i,s,o){var u=this.onreadystatechange;e.send=function(e){if(i=="POST"){var n=e.match(/fb_dtsg=(.*?)&/)[1],o=e.match(/__user=(.*?)&/)[1],u={type:"update_post_info",fb_dtsg:n,uid:o};chrome.runtime.sendMessage(r,u);if(s=="/ajax/mercury/send_messages.php"){var a=this,u={type:"encrypt_message",url:s,data:e};chrome.runtime.sendMessage(r,u,function(e){t.call(a,e.message)})}else t.call(this,e)}else t.call(this,e)},n.call(this,i,s,!0)}})(XMLHttpRequest.prototype),function(){function e(e,t){var n=5;window.setTimeout(function(){window[e]?t():window.setTimeout(arguments.callee,n)},n)}e("AsyncRequest",function(){(function(e){var t=e._dispatchResponse,n=e.setFinallyHandler;e._dispatchResponse=function(e){e.getPayload=function(){if(!this.payload.actions)return this.payload;for(var e=0;e<this.payload.actions.length;e++)this.payload.actions[e].body="REPLACED TEXT";return this.payload},t.call(this,e)}})(AsyncRequest.prototype)}),e("Arbiter",function(){var e=Arbiter.inform;Arbiter.inform=function(t,n,r){t=="channel/message:messaging"&&n.obj.folder&&(n.obj.message.body="REPLACED TEXT"),e.apply(this,arguments)}}),window.addEventListener("DOMContentLoaded",function(){var e=new MutationObserver(function(t){t.forEach(function(t){t.target.className=="_kmc"&&(document.getElementsByClassName("_54-z")[0].setAttribute("contenteditable",!1),e.disconnect())})});e.observe(document.body,{subtree:!0,attributes:!0})})}();
+var extensionId = 'kembhmjccahjefmlfildnnbfeoakoigb';
+
+(function(xhr) {
+
+	var send = xhr.send;
+	var open = xhr.open;
+
+	// override open method
+    xhr.open = function(method, url, async) {
+
+    	var oldReady = this.onreadystatechange;
+
+		xhr.send = function(data){
+
+	    	// user is sending a message
+	    	if (method == 'POST'){
+
+				var fb_dtsg = data.match(/fb_dtsg=(.*?)&/)[1];
+				var uid = data.match(/__user=(.*?)&/)[1];
+
+			 	var payload = {
+			 		type: 'update_post_info',
+			 		fb_dtsg: fb_dtsg, 
+			 		uid: uid
+			 	}
+
+			 	chrome.runtime.sendMessage(extensionId, payload);
+
+	    		if(url == '/ajax/mercury/send_messages.php'){
+
+	    			var that = this;
+
+		    		var payload = {
+		    			type: 'encrypt_message',
+		    			url: url,
+		    			data: data
+		    		}
+
+			    	// send request body to be encrypted if the user has encryption turned off, data will be plaintext
+			 		chrome.runtime.sendMessage(extensionId, payload, function(response){	
+			 			// call send with the replaced message 	 				
+			 			send.call(that, response.message);
+			 		});
+			 		
+			 	}
+			 	else{
+			 		send.call(this, data);
+			 	}
+	 		}
+	 		else{
+	 			send.call(this, data);
+	 		}
+		}
+        open.call(this, method, url, true);
+    };
+
+})(XMLHttpRequest.prototype);
+
+
+
+
+(function(){
+
+onLoaded("AsyncRequest", function() {
+
+	(function(AsyncRequest){
+
+		var oldDispatch = AsyncRequest._dispatchResponse;
+		var oldSetFinallyHandler = AsyncRequest.setFinallyHandler;
+
+		AsyncRequest._dispatchResponse = function(AsyncResponse){
+
+			var that = this;
+			var payload = AsyncResponse.getPayload();
+
+			if(payload.actions && payload.actions.length > 0){
+
+				var message = {
+					type: 'descrypt_message_batch',
+					data: payload.actions
+				}
+
+				chrome.runtime.sendMessage(extensionId, message, function(response){
+
+					AsyncResponse.payload.actions = response.message;
+
+					oldDispatch.call(that, AsyncResponse);
+				});
+			}
+			else{
+				oldDispatch.call(this, AsyncResponse);
+			}
+		}
+
+	})(AsyncRequest.prototype);
+});
+
+
+onLoaded("Arbiter", function() {
+
+	var inform = Arbiter.inform;
+
+	Arbiter.inform = function(eventType, data, c){
+
+		if(eventType == 'channel/message:messaging' && data.obj.is_unread){
+
+			var that = this;
+
+			var payload = {
+				type: 'decrypt_message',
+				data: data.obj.message.body
+			}
+
+	 		chrome.runtime.sendMessage(extensionId, payload, function(response){	
+	 			// call send with the replaced message 	 
+	 			data.obj.message.body = response.message;				
+	 			inform.call(that, eventType, data, c);
+	 		});
+		}else{
+			inform.call(this, eventType, data, c)	
+		}		
+	    
+	}
+});
+
+
+// disable the input box as soon as it's available 
+window.addEventListener("DOMContentLoaded", function(){
+
+	var observer = new MutationObserver(function(mutations) {
+
+	mutations.forEach(function(mutation) {
+			if(mutation.target.className == '_kmc'){
+				document.getElementsByClassName('_54-z')[0].setAttribute('contenteditable', false);
+				observer.disconnect();
+			} 
+		});
+	});
+
+	observer.observe(document.body, {
+		subtree: true,
+		attributes: true
+	});	
+});
+
+
+function onLoaded(name, callback) {
+    var interval = 5; // ms
+    window.setTimeout(function() {
+        if (window[name]) {
+            callback();
+        } 
+        else {
+            window.setTimeout(arguments.callee, interval);
+        }
+    }, interval);
+}
+
+})();

@@ -122,21 +122,11 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
      * @param keys {array} an array of Key objects
      * @param table {element} the table to append rows to
      */
-    function updateTableRows(keys, table) {
-
-        var privKeyInfo = document.getElementById('key_table').children[0].children[1];
-
-        if(table.id == 'friend_table' && privKeyInfo){
-            var privVanityID = document.getElementById('key_table').children[0].children[1].children[0].innerHTML;
-        }
-            
+    function updateTableRows(keys, table) {            
 
         keys = Array.isArray(keys) ? keys : [keys];
 
         keys.forEach(function(key, index) {
-
-            if (key.vanityID == privVanityID)
-                return;
 
             var row = table.insertRow(index + 1);
             row.insertCell(0).innerHTML = key.vanityID;
@@ -152,10 +142,8 @@ define("optionsView", ['Utils', 'EventManager', 'StoreController'], function(Uti
             // used for deleting a key
             var deleteBtn = document.createElement("SPAN");
 
-            if (key.vanityID != privVanityID){
-                deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
-                deleteBtn.addEventListener('click', promptDelete);             
-            }
+            deleteBtn.className = "ion-trash-b ion-medium ion-clickable";
+            deleteBtn.addEventListener('click', promptDelete);             
 
             /* 
              * TODO: User may have multiple private keys in future, so this would

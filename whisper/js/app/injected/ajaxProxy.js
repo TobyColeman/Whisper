@@ -1,8 +1,9 @@
+var extensionId = 'kembhmjccahjefmlfildnnbfeoakoigb';
+
 (function(xhr) {
 
 	var send = xhr.send;
 	var open = xhr.open;
-	var extensionId = 'kembhmjccahjefmlfildnnbfeoakoigb';
 
 	// override open method
     xhr.open = function(method, url, async) {

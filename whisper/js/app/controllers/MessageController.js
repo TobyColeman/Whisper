@@ -2,6 +2,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	var instance = null;
 	var thread, myKey;
+	var decryption = true;
 
 	function MessageController() {
 		self = this;
@@ -13,16 +14,18 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	MessageController.prototype.init = function(callback) {
 
         Store.hasPrivKey(function(key) {
-            if (!key){
-                myKey = false;
-            }
-            else{
-                myKey = key;
+
+        	myKey = !!key ? key : false;
+
+        	if(myKey){
 				e.subscribe('setThread', self.getThreadInfo);
 				e.subscribe('setEncryption', self.setEncryption);
-				e.subscribe('decryptKey', self.decryptKey);   
-				self.listen();   
-            }
+				e.subscribe('decryptKey', self.decryptKey);  
+				e.subscribe('setDecryption', function(data){
+					decryption = data.enabled;
+				}) 
+				self.listen(); 
+        	}
             callback(myKey);
         });
 	};
@@ -34,32 +37,106 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
 		
 			if (request.type == 'encrypt_message'){
-				console.log(request.data);
 				self.encryptMessage(request.data, sendResponse);
 			}
 			else if (request.type == 'decrypt_message'){
-				self.decryptMessage(request.data, sendResponse);
+				processMessage(request.data, sendResponse, self.decryptMessage)
+			}
+			else if(request.type == 'descrypt_message_batch'){
+				processMessage(request.data, sendResponse, self.decryptMessageBatch);
 			}
 			return true;
 		});
+
+		function processMessage(data, sendResponse, decryptionHandler){
+			// decryption enabled and user key unlocked
+			if(myKey.isUnlocked() && decryption){
+				decryptionHandler(data, sendResponse);
+			}
+			// decryption disabled
+			else if(!myKey.isUnlocked() && !decryption){
+				sendResponse({message: data});
+			}
+			// waiting for password
+			else if (!myKey.isUnlocked() && decryption){
+				setTimeout(function(){
+					processMessage(data, sendResponse, decryptionHandler)
+				}, 200);
+			}
+			return true;
+		}
 	};
 
 
-	MessageController.prototype.decryptMessage = function(proxyResponse, callback) {
+	MessageController.prototype.decryptMessage = function(data, callback) {
 
+		var body = isJSON(decodeURIComponent(data));
 
-		var proxyResponseText = JSON.parse(proxyResponse.responseText.split('for (;;);')[1]);
+		// plaintext message, picture or sticker
+		if (!body){
+			callback({message: data});
+			return;
+		}
+		// message not found for user
+		else if(!body[myKey.FBID]){
+			callback({message: data});
+			return;
+		}
 
-		for (var i = 0; i < proxyResponseText.payload.actions.length; i++) {
-			proxyResponseText.payload.actions[i].body = 'REPLACED TEXT';
-		};
+		try{
+			var pgpMessage = openpgp.message.readArmored(body[myKey.FBID]);
+		}
+		catch(error){
+			callback({message: 'Could Not Decrypt Message'});
+			return;
+		}
+		
 
-		proxyResponse.responseText = 'for (;;);' + JSON.stringify(proxyResponseText);	
-		proxyResponse.response = 'for (;;);' + JSON.stringify(proxyResponseText);	
+		openpgp.decryptMessage(myKey.privKey, pgpMessage).then(function(plaintext){
+			callback({message: plaintext});
+		}).catch(function(error){
+			callback({message: 'Could Not Decrypt Message'});
+		});
 
-		callback({proxyResponse: proxyResponse});
+		function isJSON(msg){
+			try{
+				var body = JSON.parse(msg)
+				return body;
+			}
+			catch(e){
+				return false;
+			}
+		}			
 
 	};
+
+
+	MessageController.prototype.decryptMessageBatch = function(data, callback) {
+
+		(function(){
+
+			var i = 0;
+
+			function decryptMessages(){
+
+				if(i < data.length){
+
+					self.decryptMessage(data[i].body, function(response){
+
+						data[i].body = response.message;
+
+						i++;
+						decryptMessages();
+					});
+
+				}else{
+					callback({message: data});
+				}
+			}
+			decryptMessages();
+		})();	
+	};
+
 
 	MessageController.prototype.encryptMessage = function(data, callback) {
 
@@ -99,7 +176,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 					}
 					else{
 						// replace the plaintext message with encrypted message
-						payload = '[body]=' + JSON.stringify(payload) + '&';
+						payload = '[body]=' + encodeURIComponent(JSON.stringify(payload)) + '&';
 						data = data.replace(expr, payload);
 						callback({message:data});
 					}
@@ -123,11 +200,12 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		// get the id of the thread
 		chrome.runtime.sendMessage({type: 'getThreadInfo', site: data.site}, function(response){
 			postData = response.payload;
+			if(myKey) myKey.setFBID(postData.uid);
             self.makeRequest("/ajax/mercury/threadlist_info.php", 
                         {type  : 'POST',
                          params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + postData.uid + '&__a=1b&__req=1&fb_dtsg=' + postData.fb_dtsg,
                      	 retries: 3}, 
-                         self.setActiveThread)
+                         self.setActiveThread);
 		});
 	};
 
@@ -214,9 +292,8 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	    				// if we have all the keys and the thread is tagged as encrypted
 	    				// ask for the user's password if needed
 			        	thread.setEncrypted(encrypted);
-
-			        	if(encrypted && !myKey.isUnlocked())
-			        		e.publish('getPassword');	    				
+			        	// self.getPassword(encrypted);
+    				
         			}
         		}
         		forloop();
@@ -230,13 +307,16 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
      */ 
     MessageController.prototype.setEncryption = function(data) {
     	thread.setEncrypted(data.encrypted);
+    	// self.getPassword(data.encrypted);
 
-    	if(data.encrypted && !myKey.isUnlocked())
-    		e.publish('getPassword');
+    	Store.setSettings(thread.id);
+    };
 
-    	Store.setSettings(thread.id, function(){
-    		// don't need anything in this callback yet
-    	});
+
+    MessageController.prototype.getPassword = function(encrypted) {
+    	if(encrypted && !myKey.isUnlocked()){
+    		e.publish('getPassword');	    		
+    	}
     };
 
 

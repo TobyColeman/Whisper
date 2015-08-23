@@ -14,7 +14,7 @@ var requirejs = require('./r.js');
 var baseConfig = {
     baseUrl: "../js",
     locale: "en-us",
-    optimize: "uglify",
+    optimize: "none",
 
 
     paths: {
@@ -47,11 +47,10 @@ var baseConfig = {
         'fb-overrides': 'app/injected/fb-overrides',
 
         // 'main' files / entry point for the app
-        'messenger': 'app/messenger',
+        'main': 'app/main',
         'options': 'app/options',
 
         'background': 'app/background'
-
     }
  };
 
@@ -69,7 +68,6 @@ var configs = [
         skipModuleInsertion: true,
         wrap: {
             startFile: '../js/frags/start.js',
-            // true = load synchronously. This is a feature of almond.js
             endFile: '../js/frags/end-opts.js',
         }
     },
@@ -79,12 +77,11 @@ var configs = [
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
                   'StoreController', 'MessageController', 'Key', 'Thread', 
-                  'messengerView', 'messenger'],
-        out: '../../whisper-built/js/messenger-main.js',
+                  'messengerView', 'main'],
+        out: '../../whisper-built/js/main.js',
         skipModuleInsertion: true,
         wrap: {
             startFile: '../js/frags/start.js',
-            // true = load synchronously. This is a feature of almond.js
             endFile: '../js/frags/end-messenger.js',
         }
     },

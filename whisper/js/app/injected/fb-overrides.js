@@ -9,22 +9,26 @@ onLoaded("AsyncRequest", function() {
 
 		AsyncRequest._dispatchResponse = function(AsyncResponse){
 
-			// var oldgetPayload = AsyncResponse.getPayload;
+			var that = this;
+			var payload = AsyncResponse.getPayload();
 
-			AsyncResponse.getPayload = function(){
+			if(payload.actions && payload.actions.length > 0){
 
-				if(!this.payload.actions){
-					return this.payload;
+				var message = {
+					type: 'descrypt_message_batch',
+					data: payload.actions
 				}
 
-				for (var i = 0; i < this.payload.actions.length; i++) {
-					this.payload.actions[i].body = 'REPLACED TEXT';
-				};
+				chrome.runtime.sendMessage(extensionId, message, function(response){
 
-				return this.payload;	
+					AsyncResponse.payload.actions = response.message;
+
+					oldDispatch.call(that, AsyncResponse);
+				});
 			}
-
-			oldDispatch.call(this, AsyncResponse);
+			else{
+				oldDispatch.call(this, AsyncResponse);
+			}
 		}
 
 	})(AsyncRequest.prototype);
@@ -35,14 +39,26 @@ onLoaded("Arbiter", function() {
 
 	var inform = Arbiter.inform;
 
-	Arbiter.inform = function(a, b, c){
+	Arbiter.inform = function(eventType, data, c){
 
-		if(a == 'channel/message:messaging'){
-			if(b.obj.folder){
-			 b.obj.message.body = 'REPLACED TEXT';
-			}        
+		if(eventType == 'channel/message:messaging' && data.obj.is_unread){
+
+			var that = this;
+
+			var payload = {
+				type: 'decrypt_message',
+				data: data.obj.message.body
+			}
+
+	 		chrome.runtime.sendMessage(extensionId, payload, function(response){	
+	 			// call send with the replaced message 	 
+	 			data.obj.message.body = response.message;				
+	 			inform.call(that, eventType, data, c);
+	 		});
+		}else{
+			inform.call(this, eventType, data, c)	
 		}		
-	    inform.apply(this, arguments);	
+	    
 	}
 });
 

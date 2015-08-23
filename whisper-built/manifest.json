@@ -37,7 +37,7 @@
 		{
 			"matches": ["https://*.messenger.com/*"],
 			"css": ["css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/injector.js", "js/messenger-main.js"],
+			"js" : ["js/injector.js", "js/main.js"],
 			"run_at": "document_start"
 		}
 	],

@@ -1,1 +1,86 @@
-(function(){function r(){chrome.runtime.onMessageExternal.addListener(function(t,n,r){if(t.type=="update_post_info"){e.uid=t.uid,e.fb_dtsg=t.fb_dtsg;return}return chrome.tabs.query({active:!0,currentWindow:!0},function(e){chrome.tabs.sendMessage(e[0].id,t,function(e){r(e)})}),!0})}r();var e={uid:null,fb_dtsg:null},t="https://[^ ]*messenger.com/[^ ]*",n="https://[^ ]*messenger.com/t/[^ ]*";chrome.runtime.onMessage.addListener(function i(t,n,s){if(t.type=="getThreadInfo")s({payload:e});else if(t.type=="enabled"){var o=t.enabled==1?"images/locked.png":"images/unlocked.png",u=t.enabled==1?"Whisper":"No private key";chrome.pageAction.setIcon({tabId:n.tab.id,path:{19:o,38:o}},function(){chrome.pageAction.setTitle({title:u,tabId:n.tab.id}),t.enabled||(chrome.runtime.onMessage.removeListener(i),chrome.runtime.onMessageExternal.removeListener(r))})}}),chrome.tabs.onUpdated.addListener(function(e,r,i){i.url.match(t)?(chrome.pageAction.show(i.id),!i.url.match(n)||chrome.tabs.sendMessage(i.id,{type:"init",init:!0})):chrome.pageAction.hide(i.id)})})();
+(function(){  
+
+    externalListener();
+
+    // data needed for making requests to facebook
+    var postData = {
+        uid :null,
+        fb_dtsg :null
+    }
+
+    var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
+    var messenger_loaded_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*'
+
+    
+    chrome.runtime.onMessage.addListener(
+        function handleMessages(request, sender, sendResponse){
+            // send the content script the fields needed to make requests to facebook
+            if (request.type == 'getThreadInfo'){
+                sendResponse({payload: postData}); 
+
+            }
+            else if (request.type == 'key_insert'){
+                chrome.tabs.query({url: "https://*.messenger.com/t/*"}, function(tabs) {
+                    for (var i = 0; i < tabs.length; i++) {
+                        chrome.tabs.reload(tabs[i].id);
+                    };
+                });
+            }
+            // check the content script initialised successfully
+            else if (request.type == 'enabled'){
+                var imgPath = request.enabled == true ? 'images/locked.png' : 'images/unlocked.png'; 
+                var title = request.enabled == true ? 'Whisper' : 'No private key';
+
+                chrome.pageAction.setIcon({tabId: sender.tab.id, path:{19: imgPath, 38: imgPath}}, function(){
+
+                    chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
+                    
+                });  
+            }   
+        }           
+    );
+
+    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {   
+        // display pageAction if on messenger.com
+        if (!!tab.url.match(messenger_url)) {
+            chrome.pageAction.show(tab.id);
+
+            // if threads loaded, inject the view
+            if(!!tab.url.match(messenger_loaded_url)){
+                chrome.tabs.sendMessage(tab.id, {type: 'init', init: true});
+            }
+        }
+        else{
+            chrome.pageAction.hide(tab.id);
+        }  
+    });
+
+
+
+    // listen for messages from content-start
+    function externalListener(){
+        chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
+
+            if(request.type == 'update_post_info'){
+                postData.uid = request.uid;
+                postData.fb_dtsg = request.fb_dtsg;
+                console.log(postData);
+                return;
+            }
+
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+
+                // pass the message to the content script
+                chrome.tabs.sendMessage(tabs[0].id, request, function(response) {
+                    
+                    // send the response back to content-start
+                    sendResponse(response);              
+                });
+            });
+            return true;
+        });
+    }
+
+
+})();
+
