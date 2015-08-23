@@ -71,9 +71,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
                 // store the key and notify subscribers of its' creation
                 StoreController.setKey(data.vanityID, pubKey, privKey, function() {
-
-                    self.sendUpdate();
-
                     EventManager.publish('newPrivKey', {
                         keys: new Key({
                             'vanityID': data.vanityID,
@@ -132,9 +129,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
                 // everything ok, store the key
                 StoreController.setKey(data.vanityID, pubKey, data.privKey, function() {
-
-                    self.sendUpdate();
-
                     EventManager.publish('newPrivKey', {
                         visible: true,
                         keys: new Key({
@@ -183,9 +177,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
                 // Everything is ok, so store the key and publish the newly stored key
                 StoreController.setKey(data.vanityID, data.pubKey, null, function() {
-
-                    self.sendUpdate();
-
                     if(data.noUpdate)
                         return;
 
@@ -233,12 +224,6 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
                 return false;
             return true;
         }
-
-
-        // notifies background script of a new key
-        KeyController.prototype.sendUpdate = function() {
-            chrome.runtime.sendMessage({type: 'key_insert'});
-        };
 
 
         // return singleton instance

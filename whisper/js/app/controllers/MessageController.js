@@ -33,9 +33,8 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	MessageController.prototype.listen = function() {
 
-		// send the content script the fields needed to make requests to facebook
+		// listeners for modifying sent/recieved messages
 		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-		
 			if (request.type == 'encrypt_message'){
 				self.encryptMessage(request.data, sendResponse);
 			}
@@ -68,31 +67,38 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	};
 
 
-	MessageController.prototype.decryptMessage = function(data, callback) {
+	/*
+	 * decrypts message into plaintext
+	 * @param body {string} body of the message
+	 * @param callback {function} function to execute after decryption
+	 */
+	MessageController.prototype.decryptMessage = function(body, callback) {
 
-		var body = isJSON(decodeURIComponent(data));
+		var encryptedBody = isJSON(decodeURIComponent(body));
 
 		// plaintext message, picture or sticker
-		if (!body){
-			callback({message: data});
+		if (!encryptedBody){
+			callback({message: body});
 			return;
 		}
 		// message not found for user
-		else if(!body[myKey.FBID]){
-			callback({message: data});
+		else if(!encryptedBody[myKey.FBID]){
+			callback({message: body});
 			return;
 		}
 
+		// read in the message
 		try{
-			var pgpMessage = openpgp.message.readArmored(body[myKey.FBID]);
+			var pgpMessage = openpgp.message.readArmored(encryptedBody[myKey.FBID]);
 		}
 		catch(error){
 			callback({message: 'Could Not Decrypt Message'});
 			return;
 		}
 		
-
+		// decrypt the message
 		openpgp.decryptMessage(myKey.privKey, pgpMessage).then(function(plaintext){
+			plaintext = "🔏 " + plaintext;
 			callback({message: plaintext});
 		}).catch(function(error){
 			callback({message: 'Could Not Decrypt Message'});
@@ -107,11 +113,15 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 				return false;
 			}
 		}			
-
 	};
 
 
-	MessageController.prototype.decryptMessageBatch = function(data, callback) {
+	/*
+	 * Decrypts an array of messages pulled in from an async request
+	 * @param messages {array} contains messages from facebook
+	 * @param callback {function} function called after decryption
+	 */ 
+	MessageController.prototype.decryptMessageBatch = function(messages, callback) {
 
 		(function(){
 
@@ -119,18 +129,18 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 			function decryptMessages(){
 
-				if(i < data.length){
+				if(i < messages.length){
 
-					self.decryptMessage(data[i].body, function(response){
+					self.decryptMessage(messages[i].body, function(response){
 
-						data[i].body = response.message;
+						messages[i].body = response.message;
 
 						i++;
 						decryptMessages();
 					});
 
 				}else{
-					callback({message: data});
+					callback({message: messages});
 				}
 			}
 			decryptMessages();
@@ -138,6 +148,10 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	};
 
 
+	/*
+	 * Encrypts outgoing message
+	 * @param data params passed to send() in xhr 
+	 */
 	MessageController.prototype.encryptMessage = function(data, callback) {
 
 		var expr = /\[body\]=(.*?)&/;
@@ -198,7 +212,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	MessageController.prototype.getThreadInfo = function(data) {
 
 		// get the id of the thread
-		chrome.runtime.sendMessage({type: 'getThreadInfo', site: data.site}, function(response){
+		chrome.runtime.sendMessage({type: 'getPostData', site: data.site}, function(response){
 			postData = response.payload;
 			if(myKey) myKey.setFBID(postData.uid);
             self.makeRequest("/ajax/mercury/threadlist_info.php", 
@@ -207,20 +221,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
                      	 retries: 3}, 
                          self.setActiveThread);
 		});
-	};
-
-
-	/*
-	 * decrypts the user's private key
-	 * @param data {object} contains password from dialog in the view
-	 */
-	MessageController.prototype.decryptKey = function(data) {
-
-        if (!myKey.privKey.decrypt(data.password)){
-            e.publish('wrongPassword');
-            return;
-        }
-        e.publish('correctPassword');
 	};
 
 
@@ -291,9 +291,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	    				// if we have all the keys and the thread is tagged as encrypted
 	    				// ask for the user's password if needed
-			        	thread.setEncrypted(encrypted);
-			        	// self.getPassword(encrypted);
-    				
+			        	thread.setEncrypted(encrypted);    				
         			}
         		}
         		forloop();
@@ -302,21 +300,26 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
     }
 
 
+	/*
+	 * decrypts the user's private key
+	 * @param data {object} contains password from dialog in the view
+	 */
+	MessageController.prototype.decryptKey = function(data) {
+
+        if (!myKey.privKey.decrypt(data.password)){
+            e.publish('wrongPassword');
+            return;
+        }
+        e.publish('correctPassword');
+	};
+
+
     /* Toggles encryption on/off for the current thread & stores settings
      * @param data {object} contains a boolean for encrypted state
      */ 
     MessageController.prototype.setEncryption = function(data) {
     	thread.setEncrypted(data.encrypted);
-    	// self.getPassword(data.encrypted);
-
     	Store.setSettings(thread.id);
-    };
-
-
-    MessageController.prototype.getPassword = function(encrypted) {
-    	if(encrypted && !myKey.isUnlocked()){
-    		e.publish('getPassword');	    		
-    	}
     };
 
 
@@ -334,7 +337,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
             	if(retries > 0){
             		setTimeout(function(){
             			makeRequest();
-            		},500);	
+            		},1000);	
             	}
             }      
         }

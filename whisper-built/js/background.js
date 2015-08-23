@@ -5,7 +5,8 @@
     // data needed for making requests to facebook
     var postData = {
         uid :null,
-        fb_dtsg :null
+        fb_dtsg :null,
+        lastFetched: new Date()
     }
 
     var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
@@ -15,11 +16,11 @@
     chrome.runtime.onMessage.addListener(
         function handleMessages(request, sender, sendResponse){
             // send the content script the fields needed to make requests to facebook
-            if (request.type == 'getThreadInfo'){
+            if (request.type == 'getPostData'){
                 sendResponse({payload: postData}); 
 
             }
-            else if (request.type == 'key_insert'){
+            else if (request.type == 'key_update'){
                 chrome.tabs.query({url: "https://*.messenger.com/t/*"}, function(tabs) {
                     for (var i = 0; i < tabs.length; i++) {
                         chrome.tabs.reload(tabs[i].id);
@@ -62,10 +63,15 @@
         chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
 
             if(request.type == 'update_post_info'){
-                postData.uid = request.uid;
-                postData.fb_dtsg = request.fb_dtsg;
-                console.log(postData);
-                return;
+
+                var curTime = new Date();
+
+                if ( (((curTime.getTime() - postData.lastFetched.getTime())*0.001)/60) > 60 || postData.uid == null ){
+                    console.log('updated post data');
+                    postData.uid = request.uid;
+                    postData.fb_dtsg = request.fb_dtsg;
+                    console.log(postData);
+                }
             }
 
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {

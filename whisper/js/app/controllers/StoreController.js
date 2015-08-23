@@ -54,7 +54,7 @@ define("StoreController", ['Key'], function(Key) {
                 'pubKey': pubKey
             };
         }
-
+        this.sendUpdate();
         chrome.storage.local.set(data, callback);
     }
 
@@ -65,14 +65,16 @@ define("StoreController", ['Key'], function(Key) {
      * @param callback {function} runs upon deletion/failure
      */
     StoreController.prototype.delKey = function(key_id, callback) {
+        var that = this;
         this.getKey(key_id, function(key) {
             if (!key) {
                 callback(false);
             } else {
                 chrome.storage.local.remove(key_id, callback(true));
+                that.sendUpdate();
                 if(key_id == 'whisper_key') chrome.storage.local.remove(key.vanityID);
             }
-        })
+        });
     };
 
 
@@ -146,6 +148,11 @@ define("StoreController", ['Key'], function(Key) {
         });
     };
 
+
+    // notifies background script of a new key / deletion
+    StoreController.prototype.sendUpdate = function() {
+        chrome.runtime.sendMessage({type: 'key_update'});
+    };
 
     // return singleton instance
     StoreController.getInstance = function() {
