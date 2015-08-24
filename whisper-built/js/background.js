@@ -67,7 +67,6 @@
                 var curTime = new Date();
 
                 if ( (((curTime.getTime() - postData.lastFetched.getTime())*0.001)/60) > 60 || postData.uid == null ){
-                    console.log('updated post data');
                     postData.uid = request.uid;
                     postData.fb_dtsg = request.fb_dtsg;
                     console.log(postData);

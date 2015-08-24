@@ -74,7 +74,12 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	 */
 	MessageController.prototype.decryptMessage = function(body, callback) {
 
-		var encryptedBody = isJSON(decodeURIComponent(body));
+		try{
+			var encryptedBody = isJSON(decodeURIComponent(body));
+		}
+		catch(e){
+			var encryptedBody = isJSON(body);
+		}
 
 		// plaintext message, picture or sticker
 		if (!encryptedBody){

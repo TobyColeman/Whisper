@@ -5,7 +5,6 @@ onLoaded("AsyncRequest", function() {
 	(function(AsyncRequest){
 
 		var oldDispatch = AsyncRequest._dispatchResponse;
-		var oldSetFinallyHandler = AsyncRequest.setFinallyHandler;
 
 		AsyncRequest._dispatchResponse = function(AsyncResponse){
 
@@ -55,7 +54,11 @@ onLoaded("Arbiter", function() {
 	 			data.obj.message.body = response.message;				
 	 			inform.call(that, eventType, data, c);
 	 		});
-		}else{
+		}
+		/* should probably override this instead of xhr object...
+		else if(eventType == 'AsyncRequest/send' && data.request.data.message_batch){}
+		*/
+		else{
 			inform.call(this, eventType, data, c)	
 		}		
 	    
