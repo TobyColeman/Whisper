@@ -1,0 +1,1 @@
+!function(){function e(e){var n=document.createElement("script");n.src=chrome.extension.getURL(e),n.onload=function(){this.parentNode.removeChild(this)},(document.head||document.documentElement).appendChild(n)}chrome.storage.local.get("whisper_key",function(n){n.whisper_key&&e("js/injected.js")}),console.log("PGP",openpgp)}();
