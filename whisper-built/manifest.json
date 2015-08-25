@@ -37,13 +37,13 @@
 		{
 			"matches": ["https://*.messenger.com/*"],
 			"css": ["css/messenger.css", "css/ionicons.css"],
-			"js" : ["js/injector.js", "js/main.js"],
+			"js" : ["js/openpgp.js", "js/injector.js", "js/main.js"],
 			"run_at": "document_start"
 		}
 	],
 
 	"background": {
-		"scripts": ["js/background.js"],
+		"scripts": ["js/openpgp.js","js/background.js"],
 		"persistent": false
 	},
 

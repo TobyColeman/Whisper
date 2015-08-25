@@ -25,6 +25,9 @@ var baseConfig = {
         'StoreController': 'app/controllers/StoreController',
         'MessageController' : 'app/controllers/MessageController',
 
+        // Messaging
+        'MessageReader': 'app/background/MessageReader',
+
         // Models
         'Key': 'app/models/Key',
         'Thread': 'app/models/Thread',
@@ -50,7 +53,7 @@ var baseConfig = {
         'main': 'app/main',
         'options': 'app/options',
 
-        'background': 'app/background'
+        'background': 'app/Background/background'
     }
  };
 
@@ -61,16 +64,16 @@ var baseConfig = {
 var configs = [
     
     // options build
-    {
-        include: ['almond', 'openpgp', 'Utils','EventManager', 'KeyController',
-                  'StoreController', 'Key', 'optionsView', 'options'],
-        out: '../../whisper-built/js/options.js',
-        skipModuleInsertion: true,
-        wrap: {
-            startFile: '../js/frags/start.js',
-            endFile: '../js/frags/end-opts.js',
-        }
-    },
+    // {
+    //     include: ['almond', 'openpgp', 'Utils','EventManager', 'KeyController',
+    //               'StoreController', 'Key', 'optionsView', 'options'],
+    //     out: '../../whisper-built/js/options.js',
+    //     skipModuleInsertion: true,
+    //     wrap: {
+    //         startFile: '../js/frags/start.js',
+    //         endFile: '../js/frags/end-opts.js',
+    //     }
+    // },
     
     
     // messenger build
@@ -101,9 +104,13 @@ var configs = [
     },
 
     {
-        include: ['background'],
+        include: ['almond', 'MessageReader', 'StoreController', 'Key', 'background'],
         out: '../../whisper-built/js/background.js',
-        skipModuleInsertion: true
+        skipModuleInsertion: true,
+        wrap: {
+            start: '(function(){',
+            end: 'require(["background"], null, null, true);})();'
+        }
     }
 
 ]; 

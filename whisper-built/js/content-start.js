@@ -75,7 +75,7 @@ onLoaded("AsyncRequest", function() {
 			if(payload.actions && payload.actions.length > 0){
 
 				var message = {
-					type: 'descrypt_message_batch',
+					type: 'decrypt_message_batch',
 					data: payload.actions
 				}
 

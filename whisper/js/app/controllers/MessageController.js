@@ -2,7 +2,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	var instance = null;
 	var thread, myKey;
-	var decryption = true;
 
 	function MessageController() {
 		self = this;
@@ -13,21 +12,19 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	MessageController.prototype.init = function(callback) {
 
-        Store.hasPrivKey(function(key) {
+		chrome.runtime.sendMessage({type: 'enabled'}, function(response){
 
-        	myKey = !!key ? key : false;
-
-        	if(myKey){
+			if(response.success){
 				e.subscribe('setThread', self.getThreadInfo);
 				e.subscribe('setEncryption', self.setEncryption);
 				e.subscribe('decryptKey', self.decryptKey);  
 				e.subscribe('setDecryption', function(data){
-					decryption = data.enabled;
-				}) 
+					chrome.runtime.sendMessage({type:'disableDecryption'});
+				}); 
 				self.listen(); 
-        	}
-            callback(myKey);
-        });
+			}
+			callback(response.success);
+		});
 	};
 
 
@@ -38,118 +35,8 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 			if (request.type == 'encrypt_message'){
 				self.encryptMessage(request.data, sendResponse);
 			}
-			else if (request.type == 'decrypt_message'){
-				processMessage(request.data, sendResponse, self.decryptMessage)
-			}
-			else if(request.type == 'descrypt_message_batch'){
-				processMessage(request.data, sendResponse, self.decryptMessageBatch);
-			}
 			return true;
 		});
-
-		function processMessage(data, sendResponse, decryptionHandler){
-			// decryption enabled and user key unlocked
-			if(myKey.isUnlocked() && decryption){
-				decryptionHandler(data, sendResponse);
-			}
-			// decryption disabled
-			else if(!myKey.isUnlocked() && !decryption){
-				sendResponse({message: data});
-			}
-			// waiting for password
-			else if (!myKey.isUnlocked() && decryption){
-				setTimeout(function(){
-					processMessage(data, sendResponse, decryptionHandler)
-				}, 200);
-			}
-			return true;
-		}
-	};
-
-
-	/*
-	 * decrypts message into plaintext
-	 * @param body {string} body of the message
-	 * @param callback {function} function to execute after decryption
-	 */
-	MessageController.prototype.decryptMessage = function(body, callback) {
-
-		try{
-			var encryptedBody = isJSON(decodeURIComponent(body));
-		}
-		catch(e){
-			var encryptedBody = isJSON(body);
-		}
-
-		// plaintext message, picture or sticker
-		if (!encryptedBody){
-			callback({message: body});
-			return;
-		}
-		// message not found for user
-		else if(!encryptedBody[myKey.FBID]){
-			callback({message: body});
-			return;
-		}
-
-		// read in the message
-		try{
-			var pgpMessage = openpgp.message.readArmored(encryptedBody[myKey.FBID]);
-		}
-		catch(error){
-			callback({message: 'Could Not Decrypt Message'});
-			return;
-		}
-		
-		// decrypt the message
-		openpgp.decryptMessage(myKey.privKey, pgpMessage).then(function(plaintext){
-			plaintext = "🔏 " + plaintext;
-			callback({message: plaintext});
-		}).catch(function(error){
-			callback({message: 'Could Not Decrypt Message'});
-		});
-
-		function isJSON(msg){
-			try{
-				var body = JSON.parse(msg)
-				return body;
-			}
-			catch(e){
-				return false;
-			}
-		}			
-	};
-
-
-	/*
-	 * Decrypts an array of messages pulled in from an async request
-	 * @param messages {array} contains messages from facebook
-	 * @param callback {function} function called after decryption
-	 */ 
-	MessageController.prototype.decryptMessageBatch = function(messages, callback) {
-
-		(function(){
-
-			var i = 0;
-
-			function decryptMessages(){
-
-				if(i < messages.length){
-
-					self.decryptMessage(messages[i].body, function(response){
-
-						messages[i].body = response.message;
-
-						i++;
-						decryptMessages();
-					});
-
-				}else{
-					callback({message: messages});
-				}
-			}
-			decryptMessages();
-		})();	
 	};
 
 
@@ -166,8 +53,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		if(messageBody === null){
 			callback({message:data});
 			return;
-		}
-			
+		}		
 
 		messageBody = decodeURIComponent(messageBody[1]);
 		
@@ -205,8 +91,7 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		}
 		else{
 			callback({message:data});
-		}
-			
+		}	
 	};
 
 
@@ -219,7 +104,6 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 		// get the id of the thread
 		chrome.runtime.sendMessage({type: 'getPostData', site: data.site}, function(response){
 			postData = response.payload;
-			if(myKey) myKey.setFBID(postData.uid);
             self.makeRequest("/ajax/mercury/threadlist_info.php", 
                         {type  : 'POST',
                          params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + postData.uid + '&__a=1b&__req=1&fb_dtsg=' + postData.fb_dtsg,
@@ -310,12 +194,14 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	 * @param data {object} contains password from dialog in the view
 	 */
 	MessageController.prototype.decryptKey = function(data) {
-
-        if (!myKey.privKey.decrypt(data.password)){
-            e.publish('wrongPassword');
-            return;
-        }
-        e.publish('correctPassword');
+		chrome.runtime.sendMessage({type:'decryptKey', password: data.password}, function(response){
+			if (response.success){
+				e.publish('correctPassword');
+			}
+			else{
+				e.publish('wrongPassword');
+			}
+		});
 	};
 
 
