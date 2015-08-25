@@ -431,41 +431,42 @@ var requirejs, require, define;
 
 define("MessageReader", [],function(){
 
-	var instance = null;
+    var instance = null;
+    var self;
 
-	function MessageReader(key){
-		self = this;
-		this.isDecrypting = true;
-		this.FBID;
-		if (instance !== null)
-			throw new Error("MessageController instance already exists");
-	}
-
-
-	MessageReader.prototype.bindKey = function(key){
-		this.key = key;
-	}
+    function MessageReader(key){
+        self = this;
+        this.isDecrypting = true;
+        this.FBID;
+        if (instance !== null)
+            throw new Error("MessageController instance already exists");
+    }
 
 
-	MessageReader.prototype.setFBID = function(FBID) {
-		this.key.setFBID(FBID);
-	};
+    MessageReader.prototype.bindKey = function(key){
+        this.key = key;
+    }
 
 
-	MessageReader.prototype.decrypt = function(password){
-		if(!this.key.privKey.decrypt(password)){
-			return false;
-		}
-		return true;
-	}
+    MessageReader.prototype.setFBID = function(FBID) {
+        this.key.setFBID(FBID);
+    };
+
+
+    MessageReader.prototype.decrypt = function(password){
+        if(!this.key.privKey.decrypt(password)){
+            return false;
+        }
+        return true;
+    }
 
 
     MessageReader.prototype.processMessage = function(request, sendResponse){
-    	// no key
-    	if(!this.key){
-    		sendResponse({message: request.data});
-    		return;
-    	}
+        // no key
+        if(!this.key){
+            sendResponse({message: request.data});
+            return;
+        }
         // decryption enabled and user key unlocked
         if(this.key.isUnlocked() && this.isDecrypting){
             pickHandler();
@@ -482,12 +483,12 @@ define("MessageReader", [],function(){
         }
 
         function pickHandler(){
-        	if (request.type == 'decrypt_message'){
-        		self.decryptMessage(request.data, sendResponse);
-        	}
-        	else{
-        		self.decryptMessageBatch(request.data, sendResponse);
-        	}
+            if (request.type == 'decrypt_message'){
+                self.decryptMessage(request.data, sendResponse);
+            }
+            else{
+                self.decryptMessageBatch(request.data, sendResponse);
+            }
         }
         return true;
     }
@@ -579,13 +580,51 @@ define("MessageReader", [],function(){
     };
 
 
-	MessageReader.getInstance = function() {
-		if (instance === null)
-			instance = new MessageReader();
-		return instance;
+    MessageReader.getInstance = function() {
+        if (instance === null)
+            instance = new MessageReader();
+        return instance;
+    }
+
+    return MessageReader.getInstance();
+});
+define('Thread',[],function() {
+
+	function Thread(id){
+		this.id = id;
+		this.isEncrypted = false;
+		this.hasAllKeys = true;
+		this.numPeople = 0;
+		this.keys = {};
 	}
 
-	return MessageReader.getInstance();
+
+	Thread.prototype.setEncrypted = function(encrypted) {
+		this.isEncrypted = encrypted;
+	};
+
+
+	Thread.prototype.setNumPeople = function() {
+		this.numPeople +=1;
+	};
+
+
+	Thread.prototype.addKey = function(key) {
+		this.keys[key.FBID] = key;
+		this.setNumPeople();
+	};
+
+
+	Thread.prototype.removeKey = function(key) {
+
+		var index = this.keys.indexOf(key);
+
+		if (index > -1)
+			this.keys.splice(index, 1);
+	};
+
+
+	return Thread;
 });
 /*! OpenPGPjs.org  this is LGPL licensed code, see LICENSE/our website for more information.- v1.2.0 - 2015-06-12 */!function(a){"object"==typeof exports?module.exports=a():"function"==typeof define&&define.amd?define('openpgp',a):"undefined"!=typeof window?window.openpgp=a():"undefined"!=typeof global?global.openpgp=a():"undefined"!=typeof self&&(self.openpgp=a())}(function(){return function a(b,c,d){function e(g,h){if(!c[g]){if(!b[g]){var i="function"==typeof require&&require;if(!h&&i)return i(g,!0);if(f)return f(g,!0);throw new Error("Cannot find module '"+g+"'")}var j=c[g]={exports:{}};b[g][0].call(j.exports,function(a){var c=b[g][1][a];return e(c?c:a)},j,j.exports,a,b,c,d)}return c[g].exports}for(var f="function"==typeof require&&require,g=0;g<d.length;g++)e(d[g]);return e}({1:[function(a,b,c){var d=b.exports={};d.nextTick=function(){var a="undefined"!=typeof window&&window.setImmediate,b="undefined"!=typeof window&&window.postMessage&&window.addEventListener;if(a)return function(a){return window.setImmediate(a)};if(b){var c=[];return window.addEventListener("message",function(a){var b=a.source;if((b===window||null===b)&&"process-tick"===a.data&&(a.stopPropagation(),c.length>0)){var d=c.shift();d()}},!0),function(a){c.push(a),window.postMessage("process-tick","*")}}return function(a){setTimeout(a,0)}}(),d.title="browser",d.browser=!0,d.env={},d.argv=[],d.binding=function(a){throw new Error("process.binding is not supported")},d.cwd=function(){return"/"},d.chdir=function(a){throw new Error("process.chdir is not supported")}},{}],2:[function(a,b,c){"use strict";var d=a("./promise/promise").Promise,e=a("./promise/polyfill").polyfill;c.Promise=d,c.polyfill=e},{"./promise/polyfill":6,"./promise/promise":7}],3:[function(a,b,c){"use strict";function d(a){var b=this;if(!e(a))throw new TypeError("You must pass an array to all.");return new b(function(b,c){function d(a){return function(b){e(a,b)}}function e(a,c){h[a]=c,0===--i&&b(h)}var g,h=[],i=a.length;0===i&&b([]);for(var j=0;j<a.length;j++)g=a[j],g&&f(g.then)?g.then(d(j),c):e(j,g)})}var e=a("./utils").isArray,f=a("./utils").isFunction;c.all=d},{"./utils":11}],4:[function(a,b,c){function d(){return function(){j.nextTick(g)}}function e(){var a=0,b=new m(g),c=document.createTextNode("");return b.observe(c,{characterData:!0}),function(){c.data=a=++a%2}}function f(){return function(){n.setTimeout(g,1)}}function g(){for(var a=0;a<o.length;a++){var b=o[a],c=b[0],d=b[1];c(d)}o=[]}function h(a,b){var c=o.push([a,b]);1===c&&i()}var i,j=a("__browserify_process"),k="undefined"!=typeof self?self:"undefined"!=typeof window?window:{},l="undefined"!=typeof window?window:{},m=l.MutationObserver||l.WebKitMutationObserver,n="undefined"!=typeof k?k:void 0===this?window:this,o=[];i="undefined"!=typeof j&&"[object process]"==={}.toString.call(j)?d():m?e():f(),c.asap=h},{__browserify_process:1}],5:[function(a,b,c){"use strict";function d(a,b){return 2!==arguments.length?e[a]:void(e[a]=b)}var e={instrument:!1};c.config=e,c.configure=d},{}],6:[function(a,b,c){function d(){var a;a="undefined"!=typeof e?e:"undefined"!=typeof window&&window.document?window:self;var b="Promise"in a&&"resolve"in a.Promise&&"reject"in a.Promise&&"all"in a.Promise&&"race"in a.Promise&&function(){var b;return new a.Promise(function(a){b=a}),g(b)}();b||(a.Promise=f)}var e="undefined"!=typeof self?self:"undefined"!=typeof window?window:{},f=a("./promise").Promise,g=a("./utils").isFunction;c.polyfill=d},{"./promise":7,"./utils":11}],7:[function(a,b,c){"use strict";function d(a){if(!q(a))throw new TypeError("You must pass a resolver function as the first argument to the promise constructor");if(!(this instanceof d))throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");this._subscribers=[],e(a,this)}function e(a,b){function c(a){j(b,a)}function d(a){l(b,a)}try{a(c,d)}catch(e){d(e)}}function f(a,b,c,d){var e,f,g,h,k=q(c);if(k)try{e=c(d),g=!0}catch(m){h=!0,f=m}else e=d,g=!0;i(b,e)||(k&&g?j(b,e):h?l(b,f):a===y?j(b,e):a===z&&l(b,e))}function g(a,b,c,d){var e=a._subscribers,f=e.length;e[f]=b,e[f+y]=c,e[f+z]=d}function h(a,b){for(var c,d,e=a._subscribers,g=a._detail,h=0;h<e.length;h+=3)c=e[h],d=e[h+b],f(b,c,d,g);a._subscribers=null}function i(a,b){var c,d=null;try{if(a===b)throw new TypeError("A promises callback cannot return that same promise.");if(p(b)&&(d=b.then,q(d)))return d.call(b,function(d){return c?!0:(c=!0,void(b!==d?j(a,d):k(a,d)))},function(b){return c?!0:(c=!0,void l(a,b))}),!0}catch(e){return c?!0:(l(a,e),!0)}return!1}function j(a,b){a===b?k(a,b):i(a,b)||k(a,b)}function k(a,b){a._state===w&&(a._state=x,a._detail=b,o.async(m,a))}function l(a,b){a._state===w&&(a._state=x,a._detail=b,o.async(n,a))}function m(a){h(a,a._state=y)}function n(a){h(a,a._state=z)}var o=a("./config").config,p=(a("./config").configure,a("./utils").objectOrFunction),q=a("./utils").isFunction,r=(a("./utils").now,a("./all").all),s=a("./race").race,t=a("./resolve").resolve,u=a("./reject").reject,v=a("./asap").asap;o.async=v;var w=void 0,x=0,y=1,z=2;d.prototype={constructor:d,_state:void 0,_detail:void 0,_subscribers:void 0,then:function(a,b){var c=this,d=new this.constructor(function(){});if(this._state){var e=arguments;o.async(function(){f(c._state,d,e[c._state-1],c._detail)})}else g(this,d,a,b);return d},"catch":function(a){return this.then(null,a)}},d.all=r,d.race=s,d.resolve=t,d.reject=u,c.Promise=d},{"./all":3,"./asap":4,"./config":5,"./race":8,"./reject":9,"./resolve":10,"./utils":11}],8:[function(a,b,c){"use strict";function d(a){var b=this;if(!e(a))throw new TypeError("You must pass an array to race.");return new b(function(b,c){for(var d,e=0;e<a.length;e++)d=a[e],d&&"function"==typeof d.then?d.then(b,c):b(d)})}var e=a("./utils").isArray;c.race=d},{"./utils":11}],9:[function(a,b,c){"use strict";function d(a){var b=this;return new b(function(b,c){c(a)})}c.reject=d},{}],10:[function(a,b,c){"use strict";function d(a){if(a&&"object"==typeof a&&a.constructor===this)return a;var b=this;return new b(function(b){b(a)})}c.resolve=d},{}],11:[function(a,b,c){"use strict";function d(a){return e(a)||"object"==typeof a&&null!==a}function e(a){return"function"==typeof a}function f(a){return"[object Array]"===Object.prototype.toString.call(a)}var g=Date.now||function(){return(new Date).getTime()};c.objectOrFunction=d,c.isFunction=e,c.isArray=f,c.now=g},{}],12:[function(a,b,c){"use strict";function d(a,b){return this instanceof d?(this.text=a.replace(/\r/g,"").replace(/[\t ]+\n/g,"\n").replace(/\n/g,"\r\n"),void(this.packets=b||new h.List)):new d(a,b)}function e(a){var b=j.decode(a);if(b.type!==i.armor.signed)throw new Error("No cleartext signed message.");var c=new h.List;c.read(b.data),f(b.headers,c);var e=new d(b.text,c);return e}function f(a,b){for(var c=function(a){for(var c=0;c<b.length;c++)if(b[c].tag===i.packet.signature&&!a.some(function(a){return b[c].hashAlgorithm===a}))return!1;return!0},d=null,e=[],f=0;f<a.length;f++){if(d=a[f].match(/Hash: (.+)/),!d)throw new Error('Only "Hash" header allowed in cleartext signed message');d=d[1].replace(/\s/g,""),d=d.split(","),d=d.map(function(a){a=a.toLowerCase();try{return i.write(i.hash,a)}catch(b){throw new Error("Unknown hash algorithm in armor header: "+a)}}),e=e.concat(d)}if(!e.length&&!c([i.hash.md5]))throw new Error('If no "Hash" header in cleartext signed message, then only MD5 signatures allowed');if(!c(e))throw new Error("Hash algorithm mismatch in armor header and signature")}var g=a("./config"),h=a("./packet"),i=a("./enums.js"),j=a("./encoding/armor.js");d.prototype.getSigningKeyIds=function(){var a=[],b=this.packets.filterByTag(i.packet.signature);return b.forEach(function(b){a.push(b.issuerKeyId)}),a},d.prototype.sign=function(a){var b=new h.List,c=new h.Literal;c.setText(this.text);for(var d=0;d<a.length;d++){if(a[d].isPublic())throw new Error("Need private key for signing");var e=new h.Signature;e.signatureType=i.signature.text,e.hashAlgorithm=g.prefer_hash_algorithm;var f=a[d].getSigningKeyPacket();if(e.publicKeyAlgorithm=f.algorithm,!f.isDecrypted)throw new Error("Private key is not decrypted.");e.sign(f,c),b.push(e)}this.packets=b},d.prototype.verify=function(a){var b=[],c=this.packets.filterByTag(i.packet.signature),d=new h.Literal;d.setText(this.text);for(var e=0;e<c.length;e++){for(var f=null,g=0;g<a.length&&!(f=a[g].getSigningKeyPacket(c[e].issuerKeyId));g++);var j={};f?(j.keyid=c[e].issuerKeyId,j.valid=c[e].verify(f,d)):(j.keyid=c[e].issuerKeyId,j.valid=null),b.push(j)}return b},d.prototype.getText=function(){return this.text.replace(/\r\n/g,"\n")},d.prototype.armor=function(){var a={hash:i.read(i.hash,g.prefer_hash_algorithm).toUpperCase(),text:this.text,data:this.packets.write()};return j.encode(i.armor.signed,a)},c.CleartextMessage=d,c.readArmored=e},{"./config":17,"./encoding/armor.js":41,"./enums.js":43,"./packet":53}],13:[function(a,b,c){(function(){"use strict";function a(a,b){var c=a.split("."),d=n;!(c[0]in d)&&d.execScript&&d.execScript("var "+c[0]);for(var e;c.length&&(e=c.shift());)c.length||b===l?d=d[e]?d[e]:d[e]={}:d[e]=b}function b(a,b){if(this.index="number"==typeof b?b:0,this.d=0,this.buffer=a instanceof(o?Uint8Array:Array)?a:new(o?Uint8Array:Array)(32768),2*this.buffer.length<=this.index)throw Error("invalid index");this.buffer.length<=this.index&&c(this)}function c(a){var b,c=a.buffer,d=c.length,e=new(o?Uint8Array:Array)(d<<1);if(o)e.set(c);else for(b=0;d>b;++b)e[b]=c[b];return a.buffer=e}function d(a){this.buffer=new(o?Uint16Array:Array)(2*a),this.length=0}function e(a,b){this.e=w,this.f=0,this.input=o&&a instanceof Array?new Uint8Array(a):a,this.c=0,b&&(b.lazy&&(this.f=b.lazy),"number"==typeof b.compressionType&&(this.e=b.compressionType),b.outputBuffer&&(this.b=o&&b.outputBuffer instanceof Array?new Uint8Array(b.outputBuffer):b.outputBuffer),"number"==typeof b.outputIndex&&(this.c=b.outputIndex)),this.b||(this.b=new(o?Uint8Array:Array)(32768))}function f(a,b){this.length=a,this.g=b}function g(a,b){function c(a,b){var c,d=a.g,e=[],f=0;c=z[a.length],e[f++]=65535&c,e[f++]=c>>16&255,e[f++]=c>>24;var g;switch(m){case 1===d:g=[0,d-1,0];break;case 2===d:g=[1,d-2,0];break;case 3===d:g=[2,d-3,0];break;case 4===d:g=[3,d-4,0];break;case 6>=d:g=[4,d-5,1];break;case 8>=d:g=[5,d-7,1];break;case 12>=d:g=[6,d-9,2];break;case 16>=d:g=[7,d-13,2];break;case 24>=d:g=[8,d-17,3];break;case 32>=d:g=[9,d-25,3];break;case 48>=d:g=[10,d-33,4];break;case 64>=d:g=[11,d-49,4];break;case 96>=d:g=[12,d-65,5];break;case 128>=d:g=[13,d-97,5];break;case 192>=d:g=[14,d-129,6];break;case 256>=d:g=[15,d-193,6];break;case 384>=d:g=[16,d-257,7];break;case 512>=d:g=[17,d-385,7];break;case 768>=d:g=[18,d-513,8];break;case 1024>=d:g=[19,d-769,8];break;case 1536>=d:g=[20,d-1025,9];break;case 2048>=d:g=[21,d-1537,9];break;case 3072>=d:g=[22,d-2049,10];break;case 4096>=d:g=[23,d-3073,10];break;case 6144>=d:g=[24,d-4097,11];break;case 8192>=d:g=[25,d-6145,11];break;case 12288>=d:g=[26,d-8193,12];break;case 16384>=d:g=[27,d-12289,12];break;case 24576>=d:g=[28,d-16385,13];break;case 32768>=d:g=[29,d-24577,13];break;default:throw"invalid distance"}c=g,e[f++]=c[0],e[f++]=c[1],e[f++]=c[2];var h,i;for(h=0,i=e.length;i>h;++h)r[s++]=e[h];u[e[0]]++,v[e[3]]++,t=a.length+b-1,n=null}var d,e,f,g,i,j,k,n,p,q={},r=o?new Uint16Array(2*b.length):[],s=0,t=0,u=new(o?Uint32Array:Array)(286),v=new(o?Uint32Array:Array)(30),w=a.f;if(!o){for(f=0;285>=f;)u[f++]=0;for(f=0;29>=f;)v[f++]=0}for(u[256]=1,d=0,e=b.length;e>d;++d){for(f=i=0,g=3;g>f&&d+f!==e;++f)i=i<<8|b[d+f];if(q[i]===l&&(q[i]=[]),j=q[i],!(0<t--)){for(;0<j.length&&32768<d-j[0];)j.shift();if(d+3>=e){for(n&&c(n,-1),f=0,g=e-d;g>f;++f)p=b[d+f],r[s++]=p,++u[p];break}0<j.length?(k=h(b,d,j),n?n.length<k.length?(p=b[d-1],r[s++]=p,++u[p],c(k,0)):c(n,-1):k.length<w?n=k:c(k,0)):n?c(n,-1):(p=b[d],r[s++]=p,++u[p])}j.push(d)}return r[s++]=256,u[256]++,a.j=u,a.i=v,o?r.subarray(0,s):r}function h(a,b,c){var d,e,g,h,i,j,k=0,l=a.length;h=0,j=c.length;a:for(;j>h;h++){if(d=c[j-h-1],g=3,k>3){for(i=k;i>3;i--)if(a[d+i-1]!==a[b+i-1])continue a;g=k}for(;258>g&&l>b+g&&a[d+g]===a[b+g];)++g;if(g>k&&(e=d,k=g),258===g)break}return new f(k,b-e)}function i(a,b){var c,e,f,g,h,i=a.length,k=new d(572),l=new(o?Uint8Array:Array)(i);if(!o)for(g=0;i>g;g++)l[g]=0;for(g=0;i>g;++g)0<a[g]&&k.push(g,a[g]);if(c=Array(k.length/2),e=new(o?Uint32Array:Array)(k.length/2),1===c.length)return l[k.pop().index]=1,l;for(g=0,h=k.length/2;h>g;++g)c[g]=k.pop(),e[g]=c[g].value;for(f=j(e,e.length,b),g=0,h=c.length;h>g;++g)l[c[g].index]=f[g];return l}function j(a,b,c){function d(a){var c=n[a][p[a]];c===b?(d(a+1),d(a+1)):--l[c],++p[a]}var e,f,g,h,i,j=new(o?Uint16Array:Array)(c),k=new(o?Uint8Array:Array)(c),l=new(o?Uint8Array:Array)(b),m=Array(c),n=Array(c),p=Array(c),q=(1<<c)-b,r=1<<c-1;for(j[c-1]=b,f=0;c>f;++f)r>q?k[f]=0:(k[f]=1,q-=r),q<<=1,j[c-2-f]=(j[c-1-f]/2|0)+b;for(j[0]=k[0],m[0]=Array(j[0]),n[0]=Array(j[0]),f=1;c>f;++f)j[f]>2*j[f-1]+k[f]&&(j[f]=2*j[f-1]+k[f]),m[f]=Array(j[f]),n[f]=Array(j[f]);for(e=0;b>e;++e)l[e]=c;for(g=0;g<j[c-1];++g)m[c-1][g]=a[g],n[c-1][g]=g;for(e=0;c>e;++e)p[e]=0;for(1===k[c-1]&&(--l[0],++p[c-1]),f=c-2;f>=0;--f){for(h=e=0,i=p[f+1],g=0;g<j[f];g++)h=m[f+1][i]+m[f+1][i+1],h>a[e]?(m[f][g]=h,n[f][g]=b,i+=2):(m[f][g]=a[e],n[f][g]=e,++e);p[f]=0,1===k[f]&&d(f)}return l}function k(a){var b,c,d,e,f=new(o?Uint16Array:Array)(a.length),g=[],h=[],i=0;for(b=0,c=a.length;c>b;b++)g[a[b]]=(0|g[a[b]])+1;for(b=1,c=16;c>=b;b++)h[b]=i,i+=0|g[b],i<<=1;for(b=0,c=a.length;c>b;b++)for(i=h[a[b]],h[a[b]]+=1,d=f[b]=0,e=a[b];e>d;d++)f[b]=f[b]<<1|1&i,i>>>=1;return f}var l=void 0,m=!0,n=this,o="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Uint32Array&&"undefined"!=typeof DataView;b.prototype.a=function(a,b,d){var e,f=this.buffer,g=this.index,h=this.d,i=f[g];if(d&&b>1&&(a=b>8?(u[255&a]<<24|u[a>>>8&255]<<16|u[a>>>16&255]<<8|u[a>>>24&255])>>32-b:u[a]>>8-b),8>b+h)i=i<<b|a,h+=b;else for(e=0;b>e;++e)i=i<<1|a>>b-e-1&1,8===++h&&(h=0,f[g++]=u[i],i=0,g===f.length&&(f=c(this)));f[g]=i,this.buffer=f,this.d=h,this.index=g},b.prototype.finish=function(){var a,b=this.buffer,c=this.index;return 0<this.d&&(b[c]<<=8-this.d,b[c]=u[b[c]],c++),o?a=b.subarray(0,c):(b.length=c,a=b),a};var p,q=new(o?Uint8Array:Array)(256);for(p=0;256>p;++p){for(var r=p,s=r,t=7,r=r>>>1;r;r>>>=1)s<<=1,s|=1&r,--t;q[p]=(s<<t&255)>>>0}var u=q;d.prototype.getParent=function(a){return 2*((a-2)/4|0)},d.prototype.push=function(a,b){var c,d,e,f=this.buffer;for(c=this.length,f[this.length++]=b,f[this.length++]=a;c>0&&(d=this.getParent(c),f[c]>f[d]);)e=f[c],f[c]=f[d],f[d]=e,e=f[c+1],f[c+1]=f[d+1],f[d+1]=e,c=d;return this.length},d.prototype.pop=function(){var a,b,c,d,e,f=this.buffer;for(b=f[0],a=f[1],this.length-=2,f[0]=f[this.length],f[1]=f[this.length+1],e=0;(d=2*e+2,!(d>=this.length))&&(d+2<this.length&&f[d+2]>f[d]&&(d+=2),f[d]>f[e]);)c=f[e],f[e]=f[d],f[d]=c,c=f[e+1],f[e+1]=f[d+1],f[d+1]=c,e=d;return{index:a,value:b,length:this.length}};var v,w=2,x=[];for(v=0;288>v;v++)switch(m){case 143>=v:x.push([v+48,8]);break;case 255>=v:x.push([v-144+400,9]);break;case 279>=v:x.push([v-256+0,7]);break;case 287>=v:x.push([v-280+192,8]);break;default:throw"invalid literal: "+v}e.prototype.h=function(){var a,c,d,e,f=this.input;switch(this.e){case 0:for(d=0,e=f.length;e>d;){c=o?f.subarray(d,d+65535):f.slice(d,d+65535),d+=c.length;var h=c,j=d===e,n=l,p=l,q=l,r=l,s=l,t=this.b,u=this.c;if(o){for(t=new Uint8Array(this.b.buffer);t.length<=u+h.length+5;)t=new Uint8Array(t.length<<1);t.set(this.b)}if(n=j?1:0,t[u++]=0|n,p=h.length,q=~p+65536&65535,t[u++]=255&p,t[u++]=p>>>8&255,t[u++]=255&q,t[u++]=q>>>8&255,o)t.set(h,u),u+=h.length,t=t.subarray(0,u);else{for(r=0,s=h.length;s>r;++r)t[u++]=h[r];t.length=u}this.c=u,this.b=t}break;case 1:var v=new b(o?new Uint8Array(this.b.buffer):this.b,this.c);v.a(1,1,m),v.a(1,2,m);var y,z,A,B=g(this,f);for(y=0,z=B.length;z>y;y++)if(A=B[y],b.prototype.a.apply(v,x[A]),A>256)v.a(B[++y],B[++y],m),v.a(B[++y],5),v.a(B[++y],B[++y],m);else if(256===A)break;this.b=v.finish(),this.c=this.b.length;break;case w:var C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R=new b(o?new Uint8Array(this.b.buffer):this.b,this.c),S=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],T=Array(19);for(C=w,R.a(1,1,m),R.a(C,2,m),D=g(this,f),H=i(this.j,15),I=k(H),J=i(this.i,7),K=k(J),E=286;E>257&&0===H[E-1];E--);for(F=30;F>1&&0===J[F-1];F--);var U,V,W,X,Y,Z,$=E,_=F,aa=new(o?Uint32Array:Array)($+_),ba=new(o?Uint32Array:Array)(316),ca=new(o?Uint8Array:Array)(19);for(U=V=0;$>U;U++)aa[V++]=H[U];for(U=0;_>U;U++)aa[V++]=J[U];if(!o)for(U=0,X=ca.length;X>U;++U)ca[U]=0;for(U=Y=0,X=aa.length;X>U;U+=V){for(V=1;X>U+V&&aa[U+V]===aa[U];++V);if(W=V,0===aa[U])if(3>W)for(;0<W--;)ba[Y++]=0,ca[0]++;else for(;W>0;)Z=138>W?W:138,Z>W-3&&W>Z&&(Z=W-3),10>=Z?(ba[Y++]=17,ba[Y++]=Z-3,ca[17]++):(ba[Y++]=18,ba[Y++]=Z-11,ca[18]++),W-=Z;else if(ba[Y++]=aa[U],ca[aa[U]]++,W--,3>W)for(;0<W--;)ba[Y++]=aa[U],ca[aa[U]]++;else for(;W>0;)Z=6>W?W:6,Z>W-3&&W>Z&&(Z=W-3),ba[Y++]=16,ba[Y++]=Z-3,ca[16]++,W-=Z}for(a=o?ba.subarray(0,Y):ba.slice(0,Y),L=i(ca,7),P=0;19>P;P++)T[P]=L[S[P]];for(G=19;G>4&&0===T[G-1];G--);for(M=k(L),R.a(E-257,5,m),R.a(F-1,5,m),R.a(G-4,4,m),P=0;G>P;P++)R.a(T[P],3,m);for(P=0,Q=a.length;Q>P;P++)if(N=a[P],R.a(M[N],L[N],m),N>=16){switch(P++,N){case 16:O=2;break;case 17:O=3;break;case 18:O=7;break;default:throw"invalid code: "+N}R.a(a[P],O,m)}var da,ea,fa,ga,ha,ia,ja,ka,la=[I,H],ma=[K,J];for(ha=la[0],ia=la[1],ja=ma[0],ka=ma[1],da=0,ea=D.length;ea>da;++da)if(fa=D[da],R.a(ha[fa],ia[fa],m),fa>256)R.a(D[++da],D[++da],m),ga=D[++da],R.a(ja[ga],ka[ga],m),R.a(D[++da],D[++da],m);else if(256===fa)break;this.b=R.finish(),this.c=this.b.length;break;default:throw"invalid compression type"}return this.b};var y=function(){function a(a){switch(m){case 3===a:return[257,a-3,0];case 4===a:return[258,a-4,0];case 5===a:return[259,a-5,0];case 6===a:return[260,a-6,0];case 7===a:return[261,a-7,0];case 8===a:return[262,a-8,0];case 9===a:return[263,a-9,0];case 10===a:return[264,a-10,0];case 12>=a:return[265,a-11,1];case 14>=a:return[266,a-13,1];case 16>=a:return[267,a-15,1];case 18>=a:return[268,a-17,1];case 22>=a:return[269,a-19,2];case 26>=a:return[270,a-23,2];case 30>=a:return[271,a-27,2];case 34>=a:return[272,a-31,2];case 42>=a:return[273,a-35,3];case 50>=a:return[274,a-43,3];case 58>=a:return[275,a-51,3];case 66>=a:return[276,a-59,3];case 82>=a:return[277,a-67,4];case 98>=a:return[278,a-83,4];case 114>=a:return[279,a-99,4];case 130>=a:return[280,a-115,4];case 162>=a:return[281,a-131,5];case 194>=a:return[282,a-163,5];case 226>=a:return[283,a-195,5];case 257>=a:return[284,a-227,5];case 258===a:return[285,a-258,0];default:throw"invalid length: "+a}}var b,c,d=[];for(b=3;258>=b;b++)c=a(b),d[b]=c[2]<<24|c[1]<<16|c[0];return d}(),z=o?new Uint32Array(y):y;a("Zlib.RawDeflate",e),a("Zlib.RawDeflate.prototype.compress",e.prototype.h);var A,B,C,D,E={NONE:0,FIXED:1,DYNAMIC:w};if(Object.keys)A=Object.keys(E);else for(B in A=[],C=0,E)A[C++]=B;for(C=0,D=A.length;D>C;++C)B=A[C],a("Zlib.RawDeflate.CompressionType."+B,E[B])}).call(this)},{}],14:[function(a,b,c){(function(){"use strict";function a(a,b){var c=a.split("."),d=g;!(c[0]in d)&&d.execScript&&d.execScript("var "+c[0]);for(var e;c.length&&(e=c.shift());)c.length||void 0===b?d=d[e]?d[e]:d[e]={}:d[e]=b}function b(a){var b,c,d,e,f,g,i,j,k,l,m=a.length,n=0,o=Number.POSITIVE_INFINITY;for(j=0;m>j;++j)a[j]>n&&(n=a[j]),a[j]<o&&(o=a[j]);for(b=1<<n,c=new(h?Uint32Array:Array)(b),d=1,e=0,f=2;n>=d;){for(j=0;m>j;++j)if(a[j]===d){for(g=0,i=e,k=0;d>k;++k)g=g<<1|1&i,i>>=1;for(l=d<<16|j,k=g;b>k;k+=f)c[k]=l;++e}++d,e<<=1,f<<=1}return[c,n,o]}function c(a,b){switch(this.g=[],this.h=32768,this.c=this.f=this.d=this.k=0,this.input=h?new Uint8Array(a):a,this.l=!1,this.i=j,this.q=!1,(b||!(b={}))&&(b.index&&(this.d=b.index),b.bufferSize&&(this.h=b.bufferSize),b.bufferType&&(this.i=b.bufferType),b.resize&&(this.q=b.resize)),this.i){case i:this.a=32768,this.b=new(h?Uint8Array:Array)(32768+this.h+258);break;case j:this.a=0,this.b=new(h?Uint8Array:Array)(this.h),this.e=this.v,this.m=this.s,this.j=this.t;break;default:throw Error("invalid inflate mode")}}function d(a,b){for(var c,d=a.f,e=a.c,f=a.input,g=a.d,h=f.length;b>e;){if(g>=h)throw Error("input buffer is broken");d|=f[g++]<<e,e+=8}return c=d&(1<<b)-1,a.f=d>>>b,a.c=e-b,a.d=g,c}function e(a,b){for(var c,d,e=a.f,f=a.c,g=a.input,h=a.d,i=g.length,j=b[0],k=b[1];k>f&&!(h>=i);)e|=g[h++]<<f,f+=8;return c=j[e&(1<<k)-1],d=c>>>16,a.f=e>>d,a.c=f-d,a.d=h,65535&c}function f(a){function c(a,b,c){var f,g,h,i=this.p;for(h=0;a>h;)switch(f=e(this,b)){case 16:for(g=3+d(this,2);g--;)c[h++]=i;break;case 17:for(g=3+d(this,3);g--;)c[h++]=0;i=0;break;case 18:for(g=11+d(this,7);g--;)c[h++]=0;i=0;break;default:i=c[h++]=f}return this.p=i,c}var f,g,i,j,k=d(a,5)+257,l=d(a,5)+1,m=d(a,4)+4,o=new(h?Uint8Array:Array)(n.length);for(j=0;m>j;++j)o[n[j]]=d(a,3);if(!h)for(j=m,m=o.length;m>j;++j)o[n[j]]=0;f=b(o),g=new(h?Uint8Array:Array)(k),i=new(h?Uint8Array:Array)(l),a.p=0,a.j(b(c.call(a,k,f,g)),b(c.call(a,l,f,i)))}var g=this,h="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Uint32Array&&"undefined"!=typeof DataView,i=0,j=1;c.prototype.u=function(){for(;!this.l;){var a=d(this,3);switch(1&a&&(this.l=!0),a>>>=1){case 0:var b=this.input,c=this.d,e=this.b,g=this.a,k=b.length,l=void 0,m=void 0,n=e.length,o=void 0;if(this.c=this.f=0,c+1>=k)throw Error("invalid uncompressed block header: LEN");if(l=b[c++]|b[c++]<<8,c+1>=k)throw Error("invalid uncompressed block header: NLEN");if(m=b[c++]|b[c++]<<8,l===~m)throw Error("invalid uncompressed block header: length verify");if(c+l>b.length)throw Error("input buffer is broken");switch(this.i){case i:for(;g+l>e.length;){if(o=n-g,l-=o,h)e.set(b.subarray(c,c+o),g),g+=o,c+=o;else for(;o--;)e[g++]=b[c++];this.a=g,e=this.e(),g=this.a}break;case j:for(;g+l>e.length;)e=this.e({o:2});break;default:throw Error("invalid inflate mode")}if(h)e.set(b.subarray(c,c+l),g),g+=l,c+=l;else for(;l--;)e[g++]=b[c++];this.d=c,this.a=g,this.b=e;break;case 1:this.j(z,B);break;case 2:f(this);break;default:throw Error("unknown BTYPE: "+a)}}return this.m()};var k,l,m=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],n=h?new Uint16Array(m):m,o=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,258,258],p=h?new Uint16Array(o):o,q=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0],r=h?new Uint8Array(q):q,s=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577],t=h?new Uint16Array(s):s,u=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13],v=h?new Uint8Array(u):u,w=new(h?Uint8Array:Array)(288);for(k=0,l=w.length;l>k;++k)w[k]=143>=k?8:255>=k?9:279>=k?7:8;var x,y,z=b(w),A=new(h?Uint8Array:Array)(30);for(x=0,y=A.length;y>x;++x)A[x]=5;var B=b(A);c.prototype.j=function(a,b){var c=this.b,f=this.a;this.n=a;for(var g,h,i,j,k=c.length-258;256!==(g=e(this,a));)if(256>g)f>=k&&(this.a=f,c=this.e(),f=this.a),c[f++]=g;else for(h=g-257,j=p[h],0<r[h]&&(j+=d(this,r[h])),g=e(this,b),i=t[g],0<v[g]&&(i+=d(this,v[g])),f>=k&&(this.a=f,c=this.e(),f=this.a);j--;)c[f]=c[f++-i];for(;8<=this.c;)this.c-=8,this.d--;this.a=f},c.prototype.t=function(a,b){var c=this.b,f=this.a;this.n=a;for(var g,h,i,j,k=c.length;256!==(g=e(this,a));)if(256>g)f>=k&&(c=this.e(),k=c.length),c[f++]=g;else for(h=g-257,j=p[h],0<r[h]&&(j+=d(this,r[h])),g=e(this,b),i=t[g],0<v[g]&&(i+=d(this,v[g])),f+j>k&&(c=this.e(),k=c.length);j--;)c[f]=c[f++-i];for(;8<=this.c;)this.c-=8,this.d--;this.a=f},c.prototype.e=function(){var a,b,c=new(h?Uint8Array:Array)(this.a-32768),d=this.a-32768,e=this.b;if(h)c.set(e.subarray(32768,c.length));else for(a=0,b=c.length;b>a;++a)c[a]=e[a+32768];if(this.g.push(c),this.k+=c.length,h)e.set(e.subarray(d,d+32768));else for(a=0;32768>a;++a)e[a]=e[d+a];return this.a=32768,e},c.prototype.v=function(a){var b,c,d,e,f=this.input.length/this.d+1|0,g=this.input,i=this.b;return a&&("number"==typeof a.o&&(f=a.o),"number"==typeof a.r&&(f+=a.r)),2>f?(c=(g.length-this.d)/this.n[2],e=258*(c/2)|0,d=e<i.length?i.length+e:i.length<<1):d=i.length*f,h?(b=new Uint8Array(d),b.set(i)):b=i,this.b=b},c.prototype.m=function(){var a,b,c,d,e,f=0,g=this.b,i=this.g,j=new(h?Uint8Array:Array)(this.k+(this.a-32768));if(0===i.length)return h?this.b.subarray(32768,this.a):this.b.slice(32768,this.a);for(b=0,c=i.length;c>b;++b)for(a=i[b],d=0,e=a.length;e>d;++d)j[f++]=a[d];for(b=32768,c=this.a;c>b;++b)j[f++]=g[b];return this.g=[],this.buffer=j},c.prototype.s=function(){var a,b=this.a;return h?this.q?(a=new Uint8Array(b),a.set(this.b.subarray(0,b))):a=this.b.subarray(0,b):(this.b.length>b&&(this.b.length=b),a=this.b),this.buffer=a},a("Zlib.RawInflate",c),a("Zlib.RawInflate.prototype.decompress",c.prototype.u);var C,D,E,F,G={ADAPTIVE:j,BLOCK:i};if(Object.keys)C=Object.keys(G);else for(D in C=[],E=0,G)C[E++]=D;for(E=0,F=C.length;F>E;++E)D=C[E],a("Zlib.RawInflate.BufferType."+D,G[D])}).call(this)},{}],15:[function(a,b,c){(function(){"use strict";function a(a){throw a}function b(a,b){var c=a.split("."),d=w;!(c[0]in d)&&d.execScript&&d.execScript("var "+c[0]);for(var e;c.length&&(e=c.shift());)c.length||b===u?d=d[e]?d[e]:d[e]={}:d[e]=b}function c(b,c){this.index="number"==typeof c?c:0,this.i=0,this.buffer=b instanceof(x?Uint8Array:Array)?b:new(x?Uint8Array:Array)(32768),2*this.buffer.length<=this.index&&a(Error("invalid index")),this.buffer.length<=this.index&&this.f()}function d(a){this.buffer=new(x?Uint16Array:Array)(2*a),this.length=0}function e(a){var b,c,d,e,f,g,h,i,j,k,l=a.length,m=0,n=Number.POSITIVE_INFINITY;for(i=0;l>i;++i)a[i]>m&&(m=a[i]),a[i]<n&&(n=a[i]);for(b=1<<m,c=new(x?Uint32Array:Array)(b),d=1,e=0,f=2;m>=d;){for(i=0;l>i;++i)if(a[i]===d){for(g=0,h=e,j=0;d>j;++j)g=g<<1|1&h,h>>=1;for(k=d<<16|i,j=g;b>j;j+=f)c[j]=k;++e}++d,e<<=1,f<<=1}return[c,m,n]}function f(a,b){this.h=F,this.w=0,this.input=x&&a instanceof Array?new Uint8Array(a):a,this.b=0,b&&(b.lazy&&(this.w=b.lazy),"number"==typeof b.compressionType&&(this.h=b.compressionType),b.outputBuffer&&(this.a=x&&b.outputBuffer instanceof Array?new Uint8Array(b.outputBuffer):b.outputBuffer),"number"==typeof b.outputIndex&&(this.b=b.outputIndex)),this.a||(this.a=new(x?Uint8Array:Array)(32768))}function g(a,b){this.length=a,this.H=b}function h(b,c){function d(b,c){var d,e=b.H,f=[],g=0;d=J[b.length],f[g++]=65535&d,f[g++]=d>>16&255,f[g++]=d>>24;var h;switch(v){case 1===e:h=[0,e-1,0];break;case 2===e:h=[1,e-2,0];break;case 3===e:h=[2,e-3,0];break;case 4===e:h=[3,e-4,0];break;case 6>=e:h=[4,e-5,1];break;case 8>=e:h=[5,e-7,1];break;case 12>=e:h=[6,e-9,2];break;case 16>=e:h=[7,e-13,2];break;case 24>=e:h=[8,e-17,3];break;case 32>=e:h=[9,e-25,3];break;case 48>=e:h=[10,e-33,4];break;case 64>=e:h=[11,e-49,4];break;case 96>=e:h=[12,e-65,5];break;case 128>=e:h=[13,e-97,5];break;case 192>=e:h=[14,e-129,6];break;case 256>=e:h=[15,e-193,6];break;case 384>=e:h=[16,e-257,7];break;case 512>=e:h=[17,e-385,7];break;case 768>=e:h=[18,e-513,8];break;case 1024>=e:h=[19,e-769,8];break;case 1536>=e:h=[20,e-1025,9];break;case 2048>=e:h=[21,e-1537,9];break;case 3072>=e:h=[22,e-2049,10];break;case 4096>=e:h=[23,e-3073,10];break;case 6144>=e:h=[24,e-4097,11];break;case 8192>=e:h=[25,e-6145,11];break;case 12288>=e:h=[26,e-8193,12];break;case 16384>=e:h=[27,e-12289,12];break;case 24576>=e:h=[28,e-16385,13];break;case 32768>=e:h=[29,e-24577,13];break;default:a("invalid distance")}d=h,f[g++]=d[0],f[g++]=d[1],f[g++]=d[2];var i,j;for(i=0,j=f.length;j>i;++i)p[q++]=f[i];s[f[0]]++,t[f[3]]++,r=b.length+c-1,m=null}var e,f,g,h,j,k,l,m,n,o={},p=x?new Uint16Array(2*c.length):[],q=0,r=0,s=new(x?Uint32Array:Array)(286),t=new(x?Uint32Array:Array)(30),w=b.w;if(!x){for(g=0;285>=g;)s[g++]=0;for(g=0;29>=g;)t[g++]=0}for(s[256]=1,e=0,f=c.length;f>e;++e){for(g=j=0,h=3;h>g&&e+g!==f;++g)j=j<<8|c[e+g];if(o[j]===u&&(o[j]=[]),k=o[j],!(0<r--)){for(;0<k.length&&32768<e-k[0];)k.shift();if(e+3>=f){for(m&&d(m,-1),g=0,h=f-e;h>g;++g)n=c[e+g],p[q++]=n,++s[n];break}0<k.length?(l=i(c,e,k),m?m.length<l.length?(n=c[e-1],p[q++]=n,++s[n],d(l,0)):d(m,-1):l.length<w?m=l:d(l,0)):m?d(m,-1):(n=c[e],p[q++]=n,++s[n])}k.push(e)}return p[q++]=256,s[256]++,b.M=s,b.L=t,x?p.subarray(0,q):p}function i(a,b,c){var d,e,f,h,i,j,k=0,l=a.length;h=0,j=c.length;a:for(;j>h;h++){if(d=c[j-h-1],f=3,k>3){for(i=k;i>3;i--)if(a[d+i-1]!==a[b+i-1])continue a;f=k}for(;258>f&&l>b+f&&a[d+f]===a[b+f];)++f;if(f>k&&(e=d,k=f),258===f)break}return new g(k,b-e)}function j(a,b){var c,e,f,g,h,i=a.length,j=new d(572),l=new(x?Uint8Array:Array)(i);if(!x)for(g=0;i>g;g++)l[g]=0;for(g=0;i>g;++g)0<a[g]&&j.push(g,a[g]);if(c=Array(j.length/2),e=new(x?Uint32Array:Array)(j.length/2),1===c.length)return l[j.pop().index]=1,l;for(g=0,h=j.length/2;h>g;++g)c[g]=j.pop(),e[g]=c[g].value;for(f=k(e,e.length,b),g=0,h=c.length;h>g;++g)l[c[g].index]=f[g];return l}function k(a,b,c){function d(a){var c=n[a][o[a]];c===b?(d(a+1),d(a+1)):--l[c],++o[a]}var e,f,g,h,i,j=new(x?Uint16Array:Array)(c),k=new(x?Uint8Array:Array)(c),l=new(x?Uint8Array:Array)(b),m=Array(c),n=Array(c),o=Array(c),p=(1<<c)-b,q=1<<c-1;for(j[c-1]=b,f=0;c>f;++f)q>p?k[f]=0:(k[f]=1,p-=q),p<<=1,j[c-2-f]=(j[c-1-f]/2|0)+b;for(j[0]=k[0],m[0]=Array(j[0]),n[0]=Array(j[0]),f=1;c>f;++f)j[f]>2*j[f-1]+k[f]&&(j[f]=2*j[f-1]+k[f]),m[f]=Array(j[f]),n[f]=Array(j[f]);for(e=0;b>e;++e)l[e]=c;for(g=0;g<j[c-1];++g)m[c-1][g]=a[g],n[c-1][g]=g;for(e=0;c>e;++e)o[e]=0;for(1===k[c-1]&&(--l[0],++o[c-1]),f=c-2;f>=0;--f){for(h=e=0,i=o[f+1],g=0;g<j[f];g++)h=m[f+1][i]+m[f+1][i+1],h>a[e]?(m[f][g]=h,n[f][g]=b,i+=2):(m[f][g]=a[e],n[f][g]=e,++e);o[f]=0,1===k[f]&&d(f)}return l}function l(a){var b,c,d,e,f=new(x?Uint16Array:Array)(a.length),g=[],h=[],i=0;for(b=0,c=a.length;c>b;b++)g[a[b]]=(0|g[a[b]])+1;for(b=1,c=16;c>=b;b++)h[b]=i,i+=0|g[b],i<<=1;for(b=0,c=a.length;c>b;b++)for(i=h[a[b]],h[a[b]]+=1,d=f[b]=0,e=a[b];e>d;d++)f[b]=f[b]<<1|1&i,i>>>=1;return f}function m(b,c){switch(this.l=[],this.m=32768,this.e=this.g=this.c=this.q=0,this.input=x?new Uint8Array(b):b,this.s=!1,this.n=L,this.C=!1,(c||!(c={}))&&(c.index&&(this.c=c.index),c.bufferSize&&(this.m=c.bufferSize),c.bufferType&&(this.n=c.bufferType),c.resize&&(this.C=c.resize)),this.n){case K:this.b=32768,this.a=new(x?Uint8Array:Array)(32768+this.m+258);break;case L:this.b=0,this.a=new(x?Uint8Array:Array)(this.m),this.f=this.K,this.t=this.I,this.o=this.J;break;default:a(Error("invalid inflate mode"))}}function n(b,c){for(var d,e=b.g,f=b.e,g=b.input,h=b.c,i=g.length;c>f;)h>=i&&a(Error("input buffer is broken")),e|=g[h++]<<f,f+=8;return d=e&(1<<c)-1,b.g=e>>>c,b.e=f-c,b.c=h,d}function o(a,b){for(var c,d,e=a.g,f=a.e,g=a.input,h=a.c,i=g.length,j=b[0],k=b[1];k>f&&!(h>=i);)e|=g[h++]<<f,f+=8;return c=j[e&(1<<k)-1],d=c>>>16,a.g=e>>d,a.e=f-d,a.c=h,65535&c}function p(a){function b(a,b,c){var d,e,f,g=this.z;for(f=0;a>f;)switch(d=o(this,b)){case 16:for(e=3+n(this,2);e--;)c[f++]=g;break;case 17:for(e=3+n(this,3);e--;)c[f++]=0;g=0;break;case 18:for(e=11+n(this,7);e--;)c[f++]=0;g=0;break;default:g=c[f++]=d}return this.z=g,c}var c,d,f,g,h=n(a,5)+257,i=n(a,5)+1,j=n(a,4)+4,k=new(x?Uint8Array:Array)(Q.length);for(g=0;j>g;++g)k[Q[g]]=n(a,3);if(!x)for(g=j,j=k.length;j>g;++g)k[Q[g]]=0;c=e(k),d=new(x?Uint8Array:Array)(h),f=new(x?Uint8Array:Array)(i),a.z=0,a.o(e(b.call(a,h,c,d)),e(b.call(a,i,c,f)))}function q(a){if("string"==typeof a){var b,c,d=a.split("");for(b=0,c=d.length;c>b;b++)d[b]=(255&d[b].charCodeAt(0))>>>0;a=d}for(var e,f=1,g=0,h=a.length,i=0;h>0;){e=h>1024?1024:h,h-=e;do f+=a[i++],g+=f;while(--e);f%=65521,g%=65521}return(g<<16|f)>>>0}function r(b,c){var d,e;switch(this.input=b,this.c=0,(c||!(c={}))&&(c.index&&(this.c=c.index),c.verify&&(this.N=c.verify)),d=b[this.c++],e=b[this.c++],15&d){case da:this.method=da;break;default:a(Error("unsupported compression method"))}0!==((d<<8)+e)%31&&a(Error("invalid fcheck flag:"+((d<<8)+e)%31)),32&e&&a(Error("fdict flag is not supported")),this.B=new m(b,{index:this.c,bufferSize:c.bufferSize,bufferType:c.bufferType,resize:c.resize})}function s(a,b){this.input=a,this.a=new(x?Uint8Array:Array)(32768),this.h=ea.k;var c,d={};!b&&(b={})||"number"!=typeof b.compressionType||(this.h=b.compressionType);for(c in b)d[c]=b[c];
 d.outputBuffer=this.a,this.A=new f(this.input,d)}function t(a,c){var d,e,f,g;if(Object.keys)d=Object.keys(c);else for(e in d=[],f=0,c)d[f++]=e;for(f=0,g=d.length;g>f;++f)e=d[f],b(a+"."+e,c[e])}var u=void 0,v=!0,w=this,x="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Uint32Array&&"undefined"!=typeof DataView;c.prototype.f=function(){var a,b=this.buffer,c=b.length,d=new(x?Uint8Array:Array)(c<<1);if(x)d.set(b);else for(a=0;c>a;++a)d[a]=b[a];return this.buffer=d},c.prototype.d=function(a,b,c){var d,e=this.buffer,f=this.index,g=this.i,h=e[f];if(c&&b>1&&(a=b>8?(D[255&a]<<24|D[a>>>8&255]<<16|D[a>>>16&255]<<8|D[a>>>24&255])>>32-b:D[a]>>8-b),8>b+g)h=h<<b|a,g+=b;else for(d=0;b>d;++d)h=h<<1|a>>b-d-1&1,8===++g&&(g=0,e[f++]=D[h],h=0,f===e.length&&(e=this.f()));e[f]=h,this.buffer=e,this.i=g,this.index=f},c.prototype.finish=function(){var a,b=this.buffer,c=this.index;return 0<this.i&&(b[c]<<=8-this.i,b[c]=D[b[c]],c++),x?a=b.subarray(0,c):(b.length=c,a=b),a};var y,z=new(x?Uint8Array:Array)(256);for(y=0;256>y;++y){for(var A=y,B=A,C=7,A=A>>>1;A;A>>>=1)B<<=1,B|=1&A,--C;z[y]=(B<<C&255)>>>0}var D=z;d.prototype.getParent=function(a){return 2*((a-2)/4|0)},d.prototype.push=function(a,b){var c,d,e,f=this.buffer;for(c=this.length,f[this.length++]=b,f[this.length++]=a;c>0&&(d=this.getParent(c),f[c]>f[d]);)e=f[c],f[c]=f[d],f[d]=e,e=f[c+1],f[c+1]=f[d+1],f[d+1]=e,c=d;return this.length},d.prototype.pop=function(){var a,b,c,d,e,f=this.buffer;for(b=f[0],a=f[1],this.length-=2,f[0]=f[this.length],f[1]=f[this.length+1],e=0;(d=2*e+2,!(d>=this.length))&&(d+2<this.length&&f[d+2]>f[d]&&(d+=2),f[d]>f[e]);)c=f[e],f[e]=f[d],f[d]=c,c=f[e+1],f[e+1]=f[d+1],f[d+1]=c,e=d;return{index:a,value:b,length:this.length}};var E,F=2,G={NONE:0,r:1,k:F,O:3},H=[];for(E=0;288>E;E++)switch(v){case 143>=E:H.push([E+48,8]);break;case 255>=E:H.push([E-144+400,9]);break;case 279>=E:H.push([E-256+0,7]);break;case 287>=E:H.push([E-280+192,8]);break;default:a("invalid literal: "+E)}f.prototype.j=function(){var b,d,e,f,g=this.input;switch(this.h){case 0:for(e=0,f=g.length;f>e;){d=x?g.subarray(e,e+65535):g.slice(e,e+65535),e+=d.length;var i=d,k=e===f,m=u,n=u,o=u,p=u,q=u,r=this.a,s=this.b;if(x){for(r=new Uint8Array(this.a.buffer);r.length<=s+i.length+5;)r=new Uint8Array(r.length<<1);r.set(this.a)}if(m=k?1:0,r[s++]=0|m,n=i.length,o=~n+65536&65535,r[s++]=255&n,r[s++]=n>>>8&255,r[s++]=255&o,r[s++]=o>>>8&255,x)r.set(i,s),s+=i.length,r=r.subarray(0,s);else{for(p=0,q=i.length;q>p;++p)r[s++]=i[p];r.length=s}this.b=s,this.a=r}break;case 1:var t=new c(x?new Uint8Array(this.a.buffer):this.a,this.b);t.d(1,1,v),t.d(1,2,v);var w,y,z,A=h(this,g);for(w=0,y=A.length;y>w;w++)if(z=A[w],c.prototype.d.apply(t,H[z]),z>256)t.d(A[++w],A[++w],v),t.d(A[++w],5),t.d(A[++w],A[++w],v);else if(256===z)break;this.a=t.finish(),this.b=this.a.length;break;case F:var B,C,D,E,G,I,J,K,L,M,N,O,P,Q,R,S=new c(x?new Uint8Array(this.a.buffer):this.a,this.b),T=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],U=Array(19);for(B=F,S.d(1,1,v),S.d(B,2,v),C=h(this,g),I=j(this.M,15),J=l(I),K=j(this.L,7),L=l(K),D=286;D>257&&0===I[D-1];D--);for(E=30;E>1&&0===K[E-1];E--);var V,W,X,Y,Z,$,_=D,aa=E,ba=new(x?Uint32Array:Array)(_+aa),ca=new(x?Uint32Array:Array)(316),da=new(x?Uint8Array:Array)(19);for(V=W=0;_>V;V++)ba[W++]=I[V];for(V=0;aa>V;V++)ba[W++]=K[V];if(!x)for(V=0,Y=da.length;Y>V;++V)da[V]=0;for(V=Z=0,Y=ba.length;Y>V;V+=W){for(W=1;Y>V+W&&ba[V+W]===ba[V];++W);if(X=W,0===ba[V])if(3>X)for(;0<X--;)ca[Z++]=0,da[0]++;else for(;X>0;)$=138>X?X:138,$>X-3&&X>$&&($=X-3),10>=$?(ca[Z++]=17,ca[Z++]=$-3,da[17]++):(ca[Z++]=18,ca[Z++]=$-11,da[18]++),X-=$;else if(ca[Z++]=ba[V],da[ba[V]]++,X--,3>X)for(;0<X--;)ca[Z++]=ba[V],da[ba[V]]++;else for(;X>0;)$=6>X?X:6,$>X-3&&X>$&&($=X-3),ca[Z++]=16,ca[Z++]=$-3,da[16]++,X-=$}for(b=x?ca.subarray(0,Z):ca.slice(0,Z),M=j(da,7),Q=0;19>Q;Q++)U[Q]=M[T[Q]];for(G=19;G>4&&0===U[G-1];G--);for(N=l(M),S.d(D-257,5,v),S.d(E-1,5,v),S.d(G-4,4,v),Q=0;G>Q;Q++)S.d(U[Q],3,v);for(Q=0,R=b.length;R>Q;Q++)if(O=b[Q],S.d(N[O],M[O],v),O>=16){switch(Q++,O){case 16:P=2;break;case 17:P=3;break;case 18:P=7;break;default:a("invalid code: "+O)}S.d(b[Q],P,v)}var ea,fa,ga,ha,ia,ja,ka,la,ma=[J,I],na=[L,K];for(ia=ma[0],ja=ma[1],ka=na[0],la=na[1],ea=0,fa=C.length;fa>ea;++ea)if(ga=C[ea],S.d(ia[ga],ja[ga],v),ga>256)S.d(C[++ea],C[++ea],v),ha=C[++ea],S.d(ka[ha],la[ha],v),S.d(C[++ea],C[++ea],v);else if(256===ga)break;this.a=S.finish(),this.b=this.a.length;break;default:a("invalid compression type")}return this.a};var I=function(){function b(b){switch(v){case 3===b:return[257,b-3,0];case 4===b:return[258,b-4,0];case 5===b:return[259,b-5,0];case 6===b:return[260,b-6,0];case 7===b:return[261,b-7,0];case 8===b:return[262,b-8,0];case 9===b:return[263,b-9,0];case 10===b:return[264,b-10,0];case 12>=b:return[265,b-11,1];case 14>=b:return[266,b-13,1];case 16>=b:return[267,b-15,1];case 18>=b:return[268,b-17,1];case 22>=b:return[269,b-19,2];case 26>=b:return[270,b-23,2];case 30>=b:return[271,b-27,2];case 34>=b:return[272,b-31,2];case 42>=b:return[273,b-35,3];case 50>=b:return[274,b-43,3];case 58>=b:return[275,b-51,3];case 66>=b:return[276,b-59,3];case 82>=b:return[277,b-67,4];case 98>=b:return[278,b-83,4];case 114>=b:return[279,b-99,4];case 130>=b:return[280,b-115,4];case 162>=b:return[281,b-131,5];case 194>=b:return[282,b-163,5];case 226>=b:return[283,b-195,5];case 257>=b:return[284,b-227,5];case 258===b:return[285,b-258,0];default:a("invalid length: "+b)}}var c,d,e=[];for(c=3;258>=c;c++)d=b(c),e[c]=d[2]<<24|d[1]<<16|d[0];return e}(),J=x?new Uint32Array(I):I,K=0,L=1,M={F:K,D:L};m.prototype.p=function(){for(;!this.s;){var b=n(this,3);switch(1&b&&(this.s=v),b>>>=1){case 0:var c=this.input,d=this.c,e=this.a,f=this.b,g=c.length,h=u,i=u,j=e.length,k=u;switch(this.e=this.g=0,d+1>=g&&a(Error("invalid uncompressed block header: LEN")),h=c[d++]|c[d++]<<8,d+1>=g&&a(Error("invalid uncompressed block header: NLEN")),i=c[d++]|c[d++]<<8,h===~i&&a(Error("invalid uncompressed block header: length verify")),d+h>c.length&&a(Error("input buffer is broken")),this.n){case K:for(;f+h>e.length;){if(k=j-f,h-=k,x)e.set(c.subarray(d,d+k),f),f+=k,d+=k;else for(;k--;)e[f++]=c[d++];this.b=f,e=this.f(),f=this.b}break;case L:for(;f+h>e.length;)e=this.f({v:2});break;default:a(Error("invalid inflate mode"))}if(x)e.set(c.subarray(d,d+h),f),f+=h,d+=h;else for(;h--;)e[f++]=c[d++];this.c=d,this.b=f,this.a=e;break;case 1:this.o(aa,ca);break;case 2:p(this);break;default:a(Error("unknown BTYPE: "+b))}}return this.t()};var N,O,P=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],Q=x?new Uint16Array(P):P,R=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,258,258],S=x?new Uint16Array(R):R,T=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0],U=x?new Uint8Array(T):T,V=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577],W=x?new Uint16Array(V):V,X=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13],Y=x?new Uint8Array(X):X,Z=new(x?Uint8Array:Array)(288);for(N=0,O=Z.length;O>N;++N)Z[N]=143>=N?8:255>=N?9:279>=N?7:8;var $,_,aa=e(Z),ba=new(x?Uint8Array:Array)(30);for($=0,_=ba.length;_>$;++$)ba[$]=5;var ca=e(ba);m.prototype.o=function(a,b){var c=this.a,d=this.b;this.u=a;for(var e,f,g,h,i=c.length-258;256!==(e=o(this,a));)if(256>e)d>=i&&(this.b=d,c=this.f(),d=this.b),c[d++]=e;else for(f=e-257,h=S[f],0<U[f]&&(h+=n(this,U[f])),e=o(this,b),g=W[e],0<Y[e]&&(g+=n(this,Y[e])),d>=i&&(this.b=d,c=this.f(),d=this.b);h--;)c[d]=c[d++-g];for(;8<=this.e;)this.e-=8,this.c--;this.b=d},m.prototype.J=function(a,b){var c=this.a,d=this.b;this.u=a;for(var e,f,g,h,i=c.length;256!==(e=o(this,a));)if(256>e)d>=i&&(c=this.f(),i=c.length),c[d++]=e;else for(f=e-257,h=S[f],0<U[f]&&(h+=n(this,U[f])),e=o(this,b),g=W[e],0<Y[e]&&(g+=n(this,Y[e])),d+h>i&&(c=this.f(),i=c.length);h--;)c[d]=c[d++-g];for(;8<=this.e;)this.e-=8,this.c--;this.b=d},m.prototype.f=function(){var a,b,c=new(x?Uint8Array:Array)(this.b-32768),d=this.b-32768,e=this.a;if(x)c.set(e.subarray(32768,c.length));else for(a=0,b=c.length;b>a;++a)c[a]=e[a+32768];if(this.l.push(c),this.q+=c.length,x)e.set(e.subarray(d,d+32768));else for(a=0;32768>a;++a)e[a]=e[d+a];return this.b=32768,e},m.prototype.K=function(a){var b,c,d,e,f=this.input.length/this.c+1|0,g=this.input,h=this.a;return a&&("number"==typeof a.v&&(f=a.v),"number"==typeof a.G&&(f+=a.G)),2>f?(c=(g.length-this.c)/this.u[2],e=258*(c/2)|0,d=e<h.length?h.length+e:h.length<<1):d=h.length*f,x?(b=new Uint8Array(d),b.set(h)):b=h,this.a=b},m.prototype.t=function(){var a,b,c,d,e,f=0,g=this.a,h=this.l,i=new(x?Uint8Array:Array)(this.q+(this.b-32768));if(0===h.length)return x?this.a.subarray(32768,this.b):this.a.slice(32768,this.b);for(b=0,c=h.length;c>b;++b)for(a=h[b],d=0,e=a.length;e>d;++d)i[f++]=a[d];for(b=32768,c=this.b;c>b;++b)i[f++]=g[b];return this.l=[],this.buffer=i},m.prototype.I=function(){var a,b=this.b;return x?this.C?(a=new Uint8Array(b),a.set(this.a.subarray(0,b))):a=this.a.subarray(0,b):(this.a.length>b&&(this.a.length=b),a=this.a),this.buffer=a},r.prototype.p=function(){var b,c,d=this.input;return b=this.B.p(),this.c=this.B.c,this.N&&(c=(d[this.c++]<<24|d[this.c++]<<16|d[this.c++]<<8|d[this.c++])>>>0,c!==q(b)&&a(Error("invalid adler-32 checksum"))),b};var da=8,ea=G;s.prototype.j=function(){var b,c,d,e,f,g,h,i=0;switch(h=this.a,b=da){case da:c=Math.LOG2E*Math.log(32768)-8;break;default:a(Error("invalid compression method"))}switch(d=c<<4|b,h[i++]=d,b){case da:switch(this.h){case ea.NONE:f=0;break;case ea.r:f=1;break;case ea.k:f=2;break;default:a(Error("unsupported compression type"))}break;default:a(Error("invalid compression method"))}return e=f<<6|0,h[i++]=e|31-(256*d+e)%31,g=q(this.input),this.A.b=i,h=this.A.j(),i=h.length,x&&(h=new Uint8Array(h.buffer),h.length<=i+4&&(this.a=new Uint8Array(h.length+4),this.a.set(h),h=this.a),h=h.subarray(0,i+4)),h[i++]=g>>24&255,h[i++]=g>>16&255,h[i++]=g>>8&255,h[i++]=255&g,h},b("Zlib.Inflate",r),b("Zlib.Inflate.prototype.decompress",r.prototype.p),t("Zlib.Inflate.BufferType",{ADAPTIVE:M.D,BLOCK:M.F}),b("Zlib.Deflate",s),b("Zlib.Deflate.compress",function(a,b){return new s(a,b).j()}),b("Zlib.Deflate.prototype.compress",s.prototype.j),t("Zlib.Deflate.CompressionType",{NONE:ea.NONE,FIXED:ea.r,DYNAMIC:ea.k})}).call(this)},{}],16:[function(a,b,c){var d=a("../enums.js");b.exports={prefer_hash_algorithm:d.hash.sha256,encryption_cipher:d.symmetric.aes256,compression:d.compression.zip,integrity_protect:!0,rsa_blinding:!0,useWebCrypto:!0,show_version:!0,show_comment:!0,versionstring:"OpenPGP.js v1.2.0",commentstring:"http://openpgpjs.org",keyserver:"keyserver.linux.it",node_store:"./openpgp.store",debug:!1}},{"../enums.js":43}],17:[function(a,b,c){b.exports=a("./config.js")},{"./config.js":16}],18:[function(a,b,c){"use strict";var d=a("../util.js"),e=a("./cipher");b.exports={encrypt:function(a,b,c,f,g){b=new e[b](f);var h=b.blockSize,i=new Uint8Array(h),j=new Uint8Array(h);a=a+a.charAt(h-2)+a.charAt(h-1);var k,l,m,n=new Uint8Array(c.length+2+2*h),o=g?0:2;for(k=0;h>k;k++)i[k]=0;for(j=b.encrypt(i),k=0;h>k;k++)n[k]=j[k]^a.charCodeAt(k);for(i.set(n.subarray(0,h)),j=b.encrypt(i),n[h]=j[0]^a.charCodeAt(h),n[h+1]=j[1]^a.charCodeAt(h+1),g?i.set(n.subarray(2,h+2)):i.set(n.subarray(0,h)),j=b.encrypt(i),k=0;h>k;k++)n[h+2+k]=j[k+o]^c.charCodeAt(k);for(l=h;l<c.length+o;l+=h)for(m=l+2-o,i.set(n.subarray(m,m+h)),j=b.encrypt(i),k=0;h>k;k++)n[h+m+k]=j[k]^c.charCodeAt(l+k-o);return n=n.subarray(0,c.length+2+h),d.Uint8Array2str(n)},mdc:function(a,b,c){a=new e[a](b);var f,g=a.blockSize,h=new Uint8Array(g),i=new Uint8Array(g);for(f=0;g>f;f++)h[f]=0;for(h=a.encrypt(h),f=0;g>f;f++)i[f]=c.charCodeAt(f),h[f]^=i[f];return i=a.encrypt(i),d.bin2str(h)+String.fromCharCode(i[0]^c.charCodeAt(g))+String.fromCharCode(i[1]^c.charCodeAt(g+1))},decrypt:function(a,b,c,d){a=new e[a](b);var f,g=a.blockSize,h=new Uint8Array(g),i=new Uint8Array(g),j="",k=[];for(f=0;g>f;f++)h[f]=0;for(h=a.encrypt(h),f=0;g>f;f++)i[f]=c.charCodeAt(f),h[f]^=i[f];if(i=a.encrypt(i),h[g-2]!=(i[0]^c.charCodeAt(g))||h[g-1]!=(i[1]^c.charCodeAt(g+1)))throw new Error("CFB decrypt: invalid key");if(d){for(f=0;g>f;f++)h[f]=c.charCodeAt(f+2);for(j=g+2;j<c.length;j+=g)for(i=a.encrypt(h),f=0;g>f&&f+j<c.length;f++)h[f]=c.charCodeAt(j+f),k.push(String.fromCharCode(i[f]^h[f]))}else{for(f=0;g>f;f++)h[f]=c.charCodeAt(f);for(j=g;j<c.length;j+=g)for(i=a.encrypt(h),f=0;g>f&&f+j<c.length;f++)h[f]=c.charCodeAt(j+f),k.push(String.fromCharCode(i[f]^h[f]))}return d||k.splice(0,2),k.splice(c.length-g-2),k},normalEncrypt:function(a,b,c,f){a=new e[a](b);var g=a.blockSize,h="",i="",j=0,k="",l="";for(i=f.substring(0,g);c.length>g*j;){var m=a.encrypt(d.str2bin(i));h=c.substring(j*g,j*g+g);for(var n=0;n<h.length;n++)l+=String.fromCharCode(h.charCodeAt(n)^m[n]);i=l,l="",k+=i,j++}return k},normalDecrypt:function(a,b,c,f){a=new e[a](b);var g,h=a.blockSize,i="",j=0,k="",l=0;if(null===f)for(g=0;h>g;g++)i+=String.fromCharCode(0);else i=f.substring(0,h);for(;c.length>h*j;){var m=a.encrypt(d.str2bin(i));for(i=c.substring(j*h+l,j*h+h+l),g=0;g<i.length;g++)k+=String.fromCharCode(i.charCodeAt(g)^m[g]);j++}return k}}},{"../util.js":74,"./cipher":23}],19:[function(a,b,c){"use strict";function d(a){return 255&a}function e(a){return a>>8&255}function f(a){return a>>16&255}function g(a){return a>>24&255}function h(a,b,c,d){return e(p[255&a])|e(p[b>>8&255])<<8|e(p[c>>16&255])<<16|e(p[d>>>24])<<24}function i(a){var b,c,d=a.length,e=new Array(d/4);if(a&&!(d%4)){for(b=0,c=0;d>c;c+=4)e[b++]=a[c]|a[c+1]<<8|a[c+2]<<16|a[c+3]<<24;return e}}function j(a){var b,c=0,h=a.length,i=new Array(4*h);for(b=0;h>b;b++)i[c++]=d(a[b]),i[c++]=e(a[b]),i[c++]=f(a[b]),i[c++]=g(a[b]);return i}function k(a){var b,c,h,i,j,k,l=new Array(u+1),m=a.length,p=new Array(t),q=new Array(t),r=0;if(16==m)k=10,b=4;else if(24==m)k=12,b=6;else{if(32!=m)throw new Error("Invalid key-length for AES key:"+m);k=14,b=8}for(c=0;u+1>c;c++)l[c]=new Uint32Array(4);for(c=0,h=0;m>h;h++,c+=4)p[h]=a.charCodeAt(c)|a.charCodeAt(c+1)<<8|a.charCodeAt(c+2)<<16|a.charCodeAt(c+3)<<24;for(h=b-1;h>=0;h--)q[h]=p[h];for(i=0,j=0,h=0;b>h&&k+1>i;){for(;b>h&&4>j;h++,j++)l[i][j]=q[h];4==j&&(i++,j=0)}for(;k+1>i;){var s=q[b-1];if(q[0]^=o[e(s)]|o[f(s)]<<8|o[g(s)]<<16|o[d(s)]<<24,q[0]^=n[r++],8!=b)for(h=1;b>h;h++)q[h]^=q[h-1];else{for(h=1;b/2>h;h++)q[h]^=q[h-1];for(s=q[b/2-1],q[b/2]^=o[d(s)]|o[e(s)]<<8|o[f(s)]<<16|o[g(s)]<<24,h=b/2+1;b>h;h++)q[h]^=q[h-1]}for(h=0;b>h&&k+1>i;){for(;b>h&&4>j;h++,j++)l[i][j]=q[h];4==j&&(i++,j=0)}}return{rounds:k,rk:l}}function l(a,b,c){var d,e,f;for(f=i(a),e=b.rounds,d=0;e-1>d;d++)c[0]=f[0]^b.rk[d][0],c[1]=f[1]^b.rk[d][1],c[2]=f[2]^b.rk[d][2],c[3]=f[3]^b.rk[d][3],f[0]=p[255&c[0]]^q[c[1]>>8&255]^r[c[2]>>16&255]^s[c[3]>>>24],f[1]=p[255&c[1]]^q[c[2]>>8&255]^r[c[3]>>16&255]^s[c[0]>>>24],f[2]=p[255&c[2]]^q[c[3]>>8&255]^r[c[0]>>16&255]^s[c[1]>>>24],f[3]=p[255&c[3]]^q[c[0]>>8&255]^r[c[1]>>16&255]^s[c[2]>>>24];return d=e-1,c[0]=f[0]^b.rk[d][0],c[1]=f[1]^b.rk[d][1],c[2]=f[2]^b.rk[d][2],c[3]=f[3]^b.rk[d][3],f[0]=h(c[0],c[1],c[2],c[3])^b.rk[e][0],f[1]=h(c[1],c[2],c[3],c[0])^b.rk[e][1],f[2]=h(c[2],c[3],c[0],c[1])^b.rk[e][2],f[3]=h(c[3],c[0],c[1],c[2])^b.rk[e][3],j(f)}function m(a){var b=function(a){this.key=k(a),this._temp=new Uint32Array(this.blockSize/4),this.encrypt=function(a){return l(a,this.key,this._temp)}};return b.blockSize=b.prototype.blockSize=16,b.keySize=b.prototype.keySize=a/8,b}var n=(a("../../util.js"),new Uint8Array([1,2,4,8,16,32,64,128,27,54,108,216,171,77,154,47,94,188,99,198,151,53,106,212,179,125,250,239,197,145])),o=new Uint8Array([99,124,119,123,242,107,111,197,48,1,103,43,254,215,171,118,202,130,201,125,250,89,71,240,173,212,162,175,156,164,114,192,183,253,147,38,54,63,247,204,52,165,229,241,113,216,49,21,4,199,35,195,24,150,5,154,7,18,128,226,235,39,178,117,9,131,44,26,27,110,90,160,82,59,214,179,41,227,47,132,83,209,0,237,32,252,177,91,106,203,190,57,74,76,88,207,208,239,170,251,67,77,51,133,69,249,2,127,80,60,159,168,81,163,64,143,146,157,56,245,188,182,218,33,16,255,243,210,205,12,19,236,95,151,68,23,196,167,126,61,100,93,25,115,96,129,79,220,34,42,144,136,70,238,184,20,222,94,11,219,224,50,58,10,73,6,36,92,194,211,172,98,145,149,228,121,231,200,55,109,141,213,78,169,108,86,244,234,101,122,174,8,186,120,37,46,28,166,180,198,232,221,116,31,75,189,139,138,112,62,181,102,72,3,246,14,97,53,87,185,134,193,29,158,225,248,152,17,105,217,142,148,155,30,135,233,206,85,40,223,140,161,137,13,191,230,66,104,65,153,45,15,176,84,187,22]),p=new Uint32Array([2774754246,2222750968,2574743534,2373680118,234025727,3177933782,2976870366,1422247313,1345335392,50397442,2842126286,2099981142,436141799,1658312629,3870010189,2591454956,1170918031,2642575903,1086966153,2273148410,368769775,3948501426,3376891790,200339707,3970805057,1742001331,4255294047,3937382213,3214711843,4154762323,2524082916,1539358875,3266819957,486407649,2928907069,1780885068,1513502316,1094664062,49805301,1338821763,1546925160,4104496465,887481809,150073849,2473685474,1943591083,1395732834,1058346282,201589768,1388824469,1696801606,1589887901,672667696,2711000631,251987210,3046808111,151455502,907153956,2608889883,1038279391,652995533,1764173646,3451040383,2675275242,453576978,2659418909,1949051992,773462580,756751158,2993581788,3998898868,4221608027,4132590244,1295727478,1641469623,3467883389,2066295122,1055122397,1898917726,2542044179,4115878822,1758581177,0,753790401,1612718144,536673507,3367088505,3982187446,3194645204,1187761037,3653156455,1262041458,3729410708,3561770136,3898103984,1255133061,1808847035,720367557,3853167183,385612781,3309519750,3612167578,1429418854,2491778321,3477423498,284817897,100794884,2172616702,4031795360,1144798328,3131023141,3819481163,4082192802,4272137053,3225436288,2324664069,2912064063,3164445985,1211644016,83228145,3753688163,3249976951,1977277103,1663115586,806359072,452984805,250868733,1842533055,1288555905,336333848,890442534,804056259,3781124030,2727843637,3427026056,957814574,1472513171,4071073621,2189328124,1195195770,2892260552,3881655738,723065138,2507371494,2690670784,2558624025,3511635870,2145180835,1713513028,2116692564,2878378043,2206763019,3393603212,703524551,3552098411,1007948840,2044649127,3797835452,487262998,1994120109,1004593371,1446130276,1312438900,503974420,3679013266,168166924,1814307912,3831258296,1573044895,1859376061,4021070915,2791465668,2828112185,2761266481,937747667,2339994098,854058965,1137232011,1496790894,3077402074,2358086913,1691735473,3528347292,3769215305,3027004632,4199962284,133494003,636152527,2942657994,2390391540,3920539207,403179536,3585784431,2289596656,1864705354,1915629148,605822008,4054230615,3350508659,1371981463,602466507,2094914977,2624877800,555687742,3712699286,3703422305,2257292045,2240449039,2423288032,1111375484,3300242801,2858837708,3628615824,84083462,32962295,302911004,2741068226,1597322602,4183250862,3501832553,2441512471,1489093017,656219450,3114180135,954327513,335083755,3013122091,856756514,3144247762,1893325225,2307821063,2811532339,3063651117,572399164,2458355477,552200649,1238290055,4283782570,2015897680,2061492133,2408352771,4171342169,2156497161,386731290,3669999461,837215959,3326231172,3093850320,3275833730,2962856233,1999449434,286199582,3417354363,4233385128,3602627437,974525996]),q=new Uint32Array([1667483301,2088564868,2004348569,2071721613,4076011277,1802229437,1869602481,3318059348,808476752,16843267,1734856361,724260477,4278118169,3621238114,2880130534,1987505306,3402272581,2189565853,3385428288,2105408135,4210749205,1499050731,1195871945,4042324747,2913812972,3570709351,2728550397,2947499498,2627478463,2762232823,1920132246,3233848155,3082253762,4261273884,2475900334,640044138,909536346,1061125697,4160222466,3435955023,875849820,2779075060,3857043764,4059166984,1903288979,3638078323,825320019,353708607,67373068,3351745874,589514341,3284376926,404238376,2526427041,84216335,2593796021,117902857,303178806,2155879323,3806519101,3958099238,656887401,2998042573,1970662047,151589403,2206408094,741103732,437924910,454768173,1852759218,1515893998,2694863867,1381147894,993752653,3604395873,3014884814,690573947,3823361342,791633521,2223248279,1397991157,3520182632,0,3991781676,538984544,4244431647,2981198280,1532737261,1785386174,3419114822,3200149465,960066123,1246401758,1280088276,1482207464,3486483786,3503340395,4025468202,2863288293,4227591446,1128498885,1296931543,859006549,2240090516,1162185423,4193904912,33686534,2139094657,1347461360,1010595908,2678007226,2829601763,1364304627,2745392638,1077969088,2408514954,2459058093,2644320700,943222856,4126535940,3166462943,3065411521,3671764853,555827811,269492272,4294960410,4092853518,3537026925,3452797260,202119188,320022069,3974939439,1600110305,2543269282,1145342156,387395129,3301217111,2812761586,2122251394,1027439175,1684326572,1566423783,421081643,1936975509,1616953504,2172721560,1330618065,3705447295,572671078,707417214,2425371563,2290617219,1179028682,4008625961,3099093971,336865340,3739133817,1583267042,185275933,3688607094,3772832571,842163286,976909390,168432670,1229558491,101059594,606357612,1549580516,3267534685,3553869166,2896970735,1650640038,2442213800,2509582756,3840201527,2038035083,3890730290,3368586051,926379609,1835915959,2374828428,3587551588,1313774802,2846444e3,1819072692,1448520954,4109693703,3941256997,1701169839,2054878350,2930657257,134746136,3132780501,2021191816,623200879,774790258,471611428,2795919345,3031724999,3334903633,3907570467,3722289532,1953818780,522141217,1263245021,3183305180,2341145990,2324303749,1886445712,1044282434,3048567236,1718013098,1212715224,50529797,4143380225,235805714,1633796771,892693087,1465364217,3115936208,2256934801,3250690392,488454695,2661164985,3789674808,4177062675,2560109491,286335539,1768542907,3654920560,2391672713,2492740519,2610638262,505297954,2273777042,3924412704,3469641545,1431677695,673730680,3755976058,2357986191,2711706104,2307459456,218962455,3216991706,3873888049,1111655622,1751699640,1094812355,2576951728,757946999,252648977,2964356043,1414834428,3149622742,370551866]),r=new Uint32Array([1673962851,2096661628,2012125559,2079755643,4076801522,1809235307,1876865391,3314635973,811618352,16909057,1741597031,727088427,4276558334,3618988759,2874009259,1995217526,3398387146,2183110018,3381215433,2113570685,4209972730,1504897881,1200539975,4042984432,2906778797,3568527316,2724199842,2940594863,2619588508,2756966308,1927583346,3231407040,3077948087,4259388669,2470293139,642542118,913070646,1065238847,4160029431,3431157708,879254580,2773611685,3855693029,4059629809,1910674289,3635114968,828527409,355090197,67636228,3348452039,591815971,3281870531,405809176,2520228246,84545285,2586817946,118360327,304363026,2149292928,3806281186,3956090603,659450151,2994720178,1978310517,152181513,2199756419,743994412,439627290,456535323,1859957358,1521806938,2690382752,1386542674,997608763,3602342358,3011366579,693271337,3822927587,794718511,2215876484,1403450707,3518589137,0,3988860141,541089824,4242743292,2977548465,1538714971,1792327274,3415033547,3194476990,963791673,1251270218,1285084236,1487988824,3481619151,3501943760,4022676207,2857362858,4226619131,1132905795,1301993293,862344499,2232521861,1166724933,4192801017,33818114,2147385727,1352724560,1014514748,2670049951,2823545768,1369633617,2740846243,1082179648,2399505039,2453646738,2636233885,946882616,4126213365,3160661948,3061301686,3668932058,557998881,270544912,4293204735,4093447923,3535760850,3447803085,202904588,321271059,3972214764,1606345055,2536874647,1149815876,388905239,3297990596,2807427751,2130477694,1031423805,1690872932,1572530013,422718233,1944491379,1623236704,2165938305,1335808335,3701702620,574907938,710180394,2419829648,2282455944,1183631942,4006029806,3094074296,338181140,3735517662,1589437022,185998603,3685578459,3772464096,845436466,980700730,169090570,1234361161,101452294,608726052,1555620956,3265224130,3552407251,2890133420,1657054818,2436475025,2503058581,3839047652,2045938553,3889509095,3364570056,929978679,1843050349,2365688973,3585172693,1318900302,2840191145,1826141292,1454176854,4109567988,3939444202,1707781989,2062847610,2923948462,135272456,3127891386,2029029496,625635109,777810478,473441308,2790781350,3027486644,3331805638,3905627112,3718347997,1961401460,524165407,1268178251,3177307325,2332919435,2316273034,1893765232,1048330814,3044132021,1724688998,1217452104,50726147,4143383030,236720654,1640145761,896163637,1471084887,3110719673,2249691526,3248052417,490350365,2653403550,3789109473,4176155640,2553000856,287453969,1775418217,3651760345,2382858638,2486413204,2603464347,507257374,2266337927,3922272489,3464972750,1437269845,676362280,3752164063,2349043596,2707028129,2299101321,219813645,3211123391,3872862694,1115997762,1758509160,1099088705,2569646233,760903469,253628687,2960903088,1420360788,3144537787,371997206]),s=new Uint32Array([3332727651,4169432188,4003034999,4136467323,4279104242,3602738027,3736170351,2438251973,1615867952,33751297,3467208551,1451043627,3877240574,3043153879,1306962859,3969545846,2403715786,530416258,2302724553,4203183485,4011195130,3001768281,2395555655,4211863792,1106029997,3009926356,1610457762,1173008303,599760028,1408738468,3835064946,2606481600,1975695287,3776773629,1034851219,1282024998,1817851446,2118205247,4110612471,2203045068,1750873140,1374987685,3509904869,4178113009,3801313649,2876496088,1649619249,708777237,135005188,2505230279,1181033251,2640233411,807933976,933336726,168756485,800430746,235472647,607523346,463175808,3745374946,3441880043,1315514151,2144187058,3936318837,303761673,496927619,1484008492,875436570,908925723,3702681198,3035519578,1543217312,2767606354,1984772923,3076642518,2110698419,1383803177,3711886307,1584475951,328696964,2801095507,3110654417,0,3240947181,1080041504,3810524412,2043195825,3069008731,3569248874,2370227147,1742323390,1917532473,2497595978,2564049996,2968016984,2236272591,3144405200,3307925487,1340451498,3977706491,2261074755,2597801293,1716859699,294946181,2328839493,3910203897,67502594,4269899647,2700103760,2017737788,632987551,1273211048,2733855057,1576969123,2160083008,92966799,1068339858,566009245,1883781176,4043634165,1675607228,2009183926,2943736538,1113792801,540020752,3843751935,4245615603,3211645650,2169294285,403966988,641012499,3274697964,3202441055,899848087,2295088196,775493399,2472002756,1441965991,4236410494,2051489085,3366741092,3135724893,841685273,3868554099,3231735904,429425025,2664517455,2743065820,1147544098,1417554474,1001099408,193169544,2362066502,3341414126,1809037496,675025940,2809781982,3168951902,371002123,2910247899,3678134496,1683370546,1951283770,337512970,2463844681,201983494,1215046692,3101973596,2673722050,3178157011,1139780780,3299238498,967348625,832869781,3543655652,4069226873,3576883175,2336475336,1851340599,3669454189,25988493,2976175573,2631028302,1239460265,3635702892,2902087254,4077384948,3475368682,3400492389,4102978170,1206496942,270010376,1876277946,4035475576,1248797989,1550986798,941890588,1475454630,1942467764,2538718918,3408128232,2709315037,3902567540,1042358047,2531085131,1641856445,226921355,260409994,3767562352,2084716094,1908716981,3433719398,2430093384,100991747,4144101110,470945294,3265487201,1784624437,2935576407,1775286713,395413126,2572730817,975641885,666476190,3644383713,3943954680,733190296,573772049,3535497577,2842745305,126455438,866620564,766942107,1008868894,361924487,3374377449,2269761230,2868860245,1350051880,2776293343,59739276,1509466529,159418761,437718285,1708834751,3610371814,2227585602,3501746280,2193834305,699439513,1517759789,504434447,2076946608,2835108948,1842789307,742004246]),t=8,u=14;b.exports={};var v=[128,192,256];for(var w in v)b.exports[v[w]]=m(v[w])},{"../../util.js":74}],20:[function(a,b,c){function d(){}function e(a){this.bf=new d,this.bf.init(f.str2bin(a)),this.encrypt=function(a){return this.bf.encrypt_block(a)}}d.prototype.BLOCKSIZE=8,d.prototype.SBOXES=[[3509652390,2564797868,805139163,3491422135,3101798381,1780907670,3128725573,4046225305,614570311,3012652279,134345442,2240740374,1667834072,1901547113,2757295779,4103290238,227898511,1921955416,1904987480,2182433518,2069144605,3260701109,2620446009,720527379,3318853667,677414384,3393288472,3101374703,2390351024,1614419982,1822297739,2954791486,3608508353,3174124327,2024746970,1432378464,3864339955,2857741204,1464375394,1676153920,1439316330,715854006,3033291828,289532110,2706671279,2087905683,3018724369,1668267050,732546397,1947742710,3462151702,2609353502,2950085171,1814351708,2050118529,680887927,999245976,1800124847,3300911131,1713906067,1641548236,4213287313,1216130144,1575780402,4018429277,3917837745,3693486850,3949271944,596196993,3549867205,258830323,2213823033,772490370,2760122372,1774776394,2652871518,566650946,4142492826,1728879713,2882767088,1783734482,3629395816,2517608232,2874225571,1861159788,326777828,3124490320,2130389656,2716951837,967770486,1724537150,2185432712,2364442137,1164943284,2105845187,998989502,3765401048,2244026483,1075463327,1455516326,1322494562,910128902,469688178,1117454909,936433444,3490320968,3675253459,1240580251,122909385,2157517691,634681816,4142456567,3825094682,3061402683,2540495037,79693498,3249098678,1084186820,1583128258,426386531,1761308591,1047286709,322548459,995290223,1845252383,2603652396,3431023940,2942221577,3202600964,3727903485,1712269319,422464435,3234572375,1170764815,3523960633,3117677531,1434042557,442511882,3600875718,1076654713,1738483198,4213154764,2393238008,3677496056,1014306527,4251020053,793779912,2902807211,842905082,4246964064,1395751752,1040244610,2656851899,3396308128,445077038,3742853595,3577915638,679411651,2892444358,2354009459,1767581616,3150600392,3791627101,3102740896,284835224,4246832056,1258075500,768725851,2589189241,3069724005,3532540348,1274779536,3789419226,2764799539,1660621633,3471099624,4011903706,913787905,3497959166,737222580,2514213453,2928710040,3937242737,1804850592,3499020752,2949064160,2386320175,2390070455,2415321851,4061277028,2290661394,2416832540,1336762016,1754252060,3520065937,3014181293,791618072,3188594551,3933548030,2332172193,3852520463,3043980520,413987798,3465142937,3030929376,4245938359,2093235073,3534596313,375366246,2157278981,2479649556,555357303,3870105701,2008414854,3344188149,4221384143,3956125452,2067696032,3594591187,2921233993,2428461,544322398,577241275,1471733935,610547355,4027169054,1432588573,1507829418,2025931657,3646575487,545086370,48609733,2200306550,1653985193,298326376,1316178497,3007786442,2064951626,458293330,2589141269,3591329599,3164325604,727753846,2179363840,146436021,1461446943,4069977195,705550613,3059967265,3887724982,4281599278,3313849956,1404054877,2845806497,146425753,1854211946],[1266315497,3048417604,3681880366,3289982499,290971e4,1235738493,2632868024,2414719590,3970600049,1771706367,1449415276,3266420449,422970021,1963543593,2690192192,3826793022,1062508698,1531092325,1804592342,2583117782,2714934279,4024971509,1294809318,4028980673,1289560198,2221992742,1669523910,35572830,157838143,1052438473,1016535060,1802137761,1753167236,1386275462,3080475397,2857371447,1040679964,2145300060,2390574316,1461121720,2956646967,4031777805,4028374788,33600511,2920084762,1018524850,629373528,3691585981,3515945977,2091462646,2486323059,586499841,988145025,935516892,3367335476,2599673255,2839830854,265290510,3972581182,2759138881,3795373465,1005194799,847297441,406762289,1314163512,1332590856,1866599683,4127851711,750260880,613907577,1450815602,3165620655,3734664991,3650291728,3012275730,3704569646,1427272223,778793252,1343938022,2676280711,2052605720,1946737175,3164576444,3914038668,3967478842,3682934266,1661551462,3294938066,4011595847,840292616,3712170807,616741398,312560963,711312465,1351876610,322626781,1910503582,271666773,2175563734,1594956187,70604529,3617834859,1007753275,1495573769,4069517037,2549218298,2663038764,504708206,2263041392,3941167025,2249088522,1514023603,1998579484,1312622330,694541497,2582060303,2151582166,1382467621,776784248,2618340202,3323268794,2497899128,2784771155,503983604,4076293799,907881277,423175695,432175456,1378068232,4145222326,3954048622,3938656102,3820766613,2793130115,2977904593,26017576,3274890735,3194772133,1700274565,1756076034,4006520079,3677328699,720338349,1533947780,354530856,688349552,3973924725,1637815568,332179504,3949051286,53804574,2852348879,3044236432,1282449977,3583942155,3416972820,4006381244,1617046695,2628476075,3002303598,1686838959,431878346,2686675385,1700445008,1080580658,1009431731,832498133,3223435511,2605976345,2271191193,2516031870,1648197032,4164389018,2548247927,300782431,375919233,238389289,3353747414,2531188641,2019080857,1475708069,455242339,2609103871,448939670,3451063019,1395535956,2413381860,1841049896,1491858159,885456874,4264095073,4001119347,1565136089,3898914787,1108368660,540939232,1173283510,2745871338,3681308437,4207628240,3343053890,4016749493,1699691293,1103962373,3625875870,2256883143,3830138730,1031889488,3479347698,1535977030,4236805024,3251091107,2132092099,1774941330,1199868427,1452454533,157007616,2904115357,342012276,595725824,1480756522,206960106,497939518,591360097,863170706,2375253569,3596610801,1814182875,2094937945,3421402208,1082520231,3463918190,2785509508,435703966,3908032597,1641649973,2842273706,3305899714,1510255612,2148256476,2655287854,3276092548,4258621189,236887753,3681803219,274041037,1734335097,3815195456,3317970021,1899903192,1026095262,4050517792,356393447,2410691914,3873677099,3682840055],[3913112168,2491498743,4132185628,2489919796,1091903735,1979897079,3170134830,3567386728,3557303409,857797738,1136121015,1342202287,507115054,2535736646,337727348,3213592640,1301675037,2528481711,1895095763,1721773893,3216771564,62756741,2142006736,835421444,2531993523,1442658625,3659876326,2882144922,676362277,1392781812,170690266,3921047035,1759253602,3611846912,1745797284,664899054,1329594018,3901205900,3045908486,2062866102,2865634940,3543621612,3464012697,1080764994,553557557,3656615353,3996768171,991055499,499776247,1265440854,648242737,3940784050,980351604,3713745714,1749149687,3396870395,4211799374,3640570775,1161844396,3125318951,1431517754,545492359,4268468663,3499529547,1437099964,2702547544,3433638243,2581715763,2787789398,1060185593,1593081372,2418618748,4260947970,69676912,2159744348,86519011,2512459080,3838209314,1220612927,3339683548,133810670,1090789135,1078426020,1569222167,845107691,3583754449,4072456591,1091646820,628848692,1613405280,3757631651,526609435,236106946,48312990,2942717905,3402727701,1797494240,859738849,992217954,4005476642,2243076622,3870952857,3732016268,765654824,3490871365,2511836413,1685915746,3888969200,1414112111,2273134842,3281911079,4080962846,172450625,2569994100,980381355,4109958455,2819808352,2716589560,2568741196,3681446669,3329971472,1835478071,660984891,3704678404,4045999559,3422617507,3040415634,1762651403,1719377915,3470491036,2693910283,3642056355,3138596744,1364962596,2073328063,1983633131,926494387,3423689081,2150032023,4096667949,1749200295,3328846651,309677260,2016342300,1779581495,3079819751,111262694,1274766160,443224088,298511866,1025883608,3806446537,1145181785,168956806,3641502830,3584813610,1689216846,3666258015,3200248200,1692713982,2646376535,4042768518,1618508792,1610833997,3523052358,4130873264,2001055236,3610705100,2202168115,4028541809,2961195399,1006657119,2006996926,3186142756,1430667929,3210227297,1314452623,4074634658,4101304120,2273951170,1399257539,3367210612,3027628629,1190975929,2062231137,2333990788,2221543033,2438960610,1181637006,548689776,2362791313,3372408396,3104550113,3145860560,296247880,1970579870,3078560182,3769228297,1714227617,3291629107,3898220290,166772364,1251581989,493813264,448347421,195405023,2709975567,677966185,3703036547,1463355134,2715995803,1338867538,1343315457,2802222074,2684532164,233230375,2599980071,2000651841,3277868038,1638401717,4028070440,3237316320,6314154,819756386,300326615,590932579,1405279636,3267499572,3150704214,2428286686,3959192993,3461946742,1862657033,1266418056,963775037,2089974820,2263052895,1917689273,448879540,3550394620,3981727096,150775221,3627908307,1303187396,508620638,2975983352,2726630617,1817252668,1876281319,1457606340,908771278,3720792119,3617206836,2455994898,1729034894,1080033504],[976866871,3556439503,2881648439,1522871579,1555064734,1336096578,3548522304,2579274686,3574697629,3205460757,3593280638,3338716283,3079412587,564236357,2993598910,1781952180,1464380207,3163844217,3332601554,1699332808,1393555694,1183702653,3581086237,1288719814,691649499,2847557200,2895455976,3193889540,2717570544,1781354906,1676643554,2592534050,3230253752,1126444790,2770207658,2633158820,2210423226,2615765581,2414155088,3127139286,673620729,2805611233,1269405062,4015350505,3341807571,4149409754,1057255273,2012875353,2162469141,2276492801,2601117357,993977747,3918593370,2654263191,753973209,36408145,2530585658,25011837,3520020182,2088578344,530523599,2918365339,1524020338,1518925132,3760827505,3759777254,1202760957,3985898139,3906192525,674977740,4174734889,2031300136,2019492241,3983892565,4153806404,3822280332,352677332,2297720250,60907813,90501309,3286998549,1016092578,2535922412,2839152426,457141659,509813237,4120667899,652014361,1966332200,2975202805,55981186,2327461051,676427537,3255491064,2882294119,3433927263,1307055953,942726286,933058658,2468411793,3933900994,4215176142,1361170020,2001714738,2830558078,3274259782,1222529897,1679025792,2729314320,3714953764,1770335741,151462246,3013232138,1682292957,1483529935,471910574,1539241949,458788160,3436315007,1807016891,3718408830,978976581,1043663428,3165965781,1927990952,4200891579,2372276910,3208408903,3533431907,1412390302,2931980059,4132332400,1947078029,3881505623,4168226417,2941484381,1077988104,1320477388,886195818,18198404,3786409e3,2509781533,112762804,3463356488,1866414978,891333506,18488651,661792760,1628790961,3885187036,3141171499,876946877,2693282273,1372485963,791857591,2686433993,3759982718,3167212022,3472953795,2716379847,445679433,3561995674,3504004811,3574258232,54117162,3331405415,2381918588,3769707343,4154350007,1140177722,4074052095,668550556,3214352940,367459370,261225585,2610173221,4209349473,3468074219,3265815641,314222801,3066103646,3808782860,282218597,3406013506,3773591054,379116347,1285071038,846784868,2669647154,3771962079,3550491691,2305946142,453669953,1268987020,3317592352,3279303384,3744833421,2610507566,3859509063,266596637,3847019092,517658769,3462560207,3443424879,370717030,4247526661,2224018117,4143653529,4112773975,2788324899,2477274417,1456262402,2901442914,1517677493,1846949527,2295493580,3734397586,2176403920,1280348187,1908823572,3871786941,846861322,1172426758,3287448474,3383383037,1655181056,3139813346,901632758,1897031941,2986607138,3066810236,3447102507,1393639104,373351379,950779232,625454576,3124240540,4148612726,2007998917,544563296,2244738638,2330496472,2058025392,1291430526,424198748,50039436,29584100,3605783033,2429876329,2791104160,1057563949,3255363231,3075367218,3463963227,1469046755,985887462]],
@@ -840,7 +879,159 @@ define("StoreController", ['Key'], function(Key) {
 
     return StoreController.getInstance();
 });
-define("background", ['StoreController', 'Key', 'MessageReader'], function(Store, Key, MessageReader){
+define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store){
+
+	var instance = null;
+	var self;
+
+	function MessageWriter(){
+		self = this;
+		this.thread = null;
+		if (instance !== null)
+			throw new Error("MessageWriter instance already exists");
+	}
+
+
+	/*
+	 * Encrypts outgoing message
+	 * @param {data} params passed to send() in xhr 
+	 */
+	MessageWriter.prototype.encryptMessage = function(data, callback) {
+
+		var expr = /\[body\]=(.*?)&/;
+		var messageBody = data.match(expr);
+
+		// sending a picture, sticker, thumbs up
+		if(messageBody === null){
+			callback({message:data});
+			return;
+		}		
+
+		messageBody = decodeURIComponent(messageBody[1]);
+		
+		if (self.thread.isEncrypted){
+
+			var payload = {};
+
+			(function(){
+
+				var i = 0;
+
+				function encryptMessage(){
+					// for each person in the thread, encrypt your message 
+					if (i < self.thread.numPeople){
+
+						var id = parseInt(Object.keys(self.thread.keys)[i]);
+						openpgp.encryptMessage(self.thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
+
+							payload[self.thread.keys[id].FBID] =  pgpMessage;
+
+							i++;
+							encryptMessage();
+						});
+					}
+					else{
+						// replace the plaintext message with encrypted message
+						payload = '[body]=' + encodeURIComponent(JSON.stringify(payload)) + '&';
+						data = data.replace(expr, payload);
+						callback({message:data});
+					}
+				}
+				encryptMessage();
+			})();
+		}
+		else{
+			callback({message:data});
+		}	
+	};
+
+
+
+	/* Constructs a new thread object & retrieves key's for every participant
+	 * Notifies the view as to whether encryption was on/off for the current thread
+	 * @param data {object} ajax response from facebook's api to threadlist_info
+	 */
+    MessageWriter.prototype.setThread = function(data, sendResponse){
+
+    	var threadInfo, threadId, participants;
+
+    	// parse response from threadlist_info.php
+        threadInfo = JSON.parse(data);
+
+        // array of participants in the active thread
+        participants = threadInfo.payload.participants;
+
+        // id of the active thread (group-convo)
+        threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
+
+        // id of the active thread (solo-convo)
+        if (threadId === undefined)
+        	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
+
+        // make a new thread, store its' id
+        this.thread = new Thread(threadId);
+
+        // get the settings for the current thread, check what public
+        // keys are in storage then notify the view
+        Store.getSettings(this.thread.id, function(encrypted){
+
+    		(function(){
+    			var i = 0;
+
+    			function forloop(){
+        			if (i < participants.length){
+
+        				Store.getKey(participants[i].vanity, function(key){
+
+        					// var key = {};
+        					var fbid = participants[i].fbid;
+        					var vanity = participants[i].vanity;
+
+        					// if we found a key 
+        					if(key){
+        						key.setFBID(fbid);
+        						self.thread.addKey(key);
+        					}
+        						
+        					else{
+        						self.thread.hasAllKeys = false;
+        					}
+        					i++;
+        					forloop();
+        				});
+        			}
+        			else{
+        				sendResponse({hasAllKeys: self.thread.hasAllKeys,
+        							  encrypted: encrypted,
+        							  keys: self.thread.keys});
+
+        				Store.getSettings(self.thread.id, function(encrypted){
+        					self.thread.setEncrypted(encrypted); 
+        				})	   				
+        			}
+        		}
+        		forloop();
+    		})();
+        });
+    }
+
+
+    MessageWriter.prototype.updateEncryptionSettings = function(encrypted){
+    	self.thread.setEncrypted(encrypted);
+    	Store.setSettings(self.thread.id);
+    }
+
+
+	MessageWriter.getInstance = function() {
+		if (instance === null)
+			instance = new MessageWriter();
+		return instance;
+	}
+
+	return MessageWriter.getInstance();
+
+});
+define("background", ['StoreController', 'Key', 'MessageReader', 'MessageWriter'], function(Store, Key, MessageReader, MessageWriter){
 
     // data needed for making requests to facebook
     var postData = {
@@ -848,92 +1039,110 @@ define("background", ['StoreController', 'Key', 'MessageReader'], function(Store
         fb_dtsg :null,
         lastFetched: new Date()
     }
-    var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
-    var messenger_loaded_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*';
+
+    var initialised;
+
+chrome.runtime.onMessageExternal.addListener(externalHandler);
+chrome.runtime.onMessage.addListener(handleMessages);  
 
 
 // listener for injected scripts
-chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse){
-
-    if(request.type == 'decrypt_message'){
-        MessageReader.processMessage(request, sendResponse);
-    }
-    else if(request.type == 'decrypt_message_batch'){
-        MessageReader.processMessage(request, sendResponse);
-    }
-    else if(request.type == 'encrypt_message'){
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-
-            // pass the message to the content script
-            chrome.tabs.sendMessage(tabs[0].id, request, function(response) {
-                
-                // send the response back to content-start
-                sendResponse(response);              
-            });
-        });                
-    }
-    else{
-        postData.uid = request.uid;
-        postData.fb_dtsg = request.fb_dtsg;
+function externalHandler(request, sender, sendResponse){
+    switch(request.type){
+        case "decrypt_message":
+            MessageReader.processMessage(request, sendResponse);
+            break;
+        case "decrypt_message_batch":
+            MessageReader.processMessage(request, sendResponse);
+            break;
+        case "encrypt_message":
+            MessageWriter.encryptMessage(request.data, sendResponse);
+            break;
+        default:
+            postData.uid = request.uid;
+            postData.fb_dtsg = request.fb_dtsg;
     }
     return true;
-});
+}
 
 
+// listener for content scripts
+function handleMessages(request, sender, sendResponse){
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse){
-        // send the content script the fields needed to make requests to facebook
-        if (request.type == 'getPostData'){
-            sendResponse({payload: postData}); 
+    switch(request.type){
+        case "set_thread_info":
+            MessageWriter.setThread(request.data, sendResponse);
+            break;
+        case "set_encryption":
+            MessageWriter.updateEncryptionSettings(request.encrypted);
+            break;
+        case "get_post_data":
+            sendResponse({payload: postData});
+            break;
+        case "is_enabled":
+            init();
+            break;
+        case "decrypt_key":
+            unlockKey();
+            break;
+        case "disable_decryption":
+            MessageReader.isDecrypting = false;
+            break;
+    }
+
+    function init(){
+        Store.hasPrivKey(function(key){
+
+            var hasKey = !!key ? true : false;
+            MessageReader.bindKey(key, postData.uid);
+
+            var imgPath = hasKey ? 'images/locked.png' : 'images/unlocked.png'; 
+            var title = hasKey ? 'Whisper' : 'No private key';
+
+            chrome.pageAction.setIcon({tabId: sender.tab.id, path:{19: imgPath, 38: imgPath}}, function(){
+
+                chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
+                
+            }); 
+            sendResponse({success: hasKey});
+        });
+    }
+
+    function unlockKey(){
+        if(!MessageReader.decrypt(request.password)){
+            sendResponse({success:false});
         }
-        // refresh messenger pages on insertion/deletion of keys
-        else if (request.type == 'key_update'){
+        else{
+            MessageReader.setFBID(postData.uid);
+            sendResponse({success:true});
+        }    
+    }
+
+    return true; 
+}
+
+
+
+
+
+// refresh messenger pages on insertion/deletion of keys
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse){
+        if (request.type == 'key_update'){
             chrome.tabs.query({url: "https://*.messenger.com/t/*"}, function(tabs) {
                 for (var i = 0; i < tabs.length; i++) {
                     chrome.tabs.reload(tabs[i].id);
                 };
             });
         }
-        // notify message controller if user has a key
-        else if (request.type == 'enabled'){
-
-            Store.hasPrivKey(function(key){
-
-                var hasKey = !!key ? true : false;
-                MessageReader.bindKey(key, postData.uid);
-
-                var imgPath = hasKey ? 'images/locked.png' : 'images/unlocked.png'; 
-                var title = hasKey ? 'Whisper' : 'No private key';
-
-                chrome.pageAction.setIcon({tabId: sender.tab.id, path:{19: imgPath, 38: imgPath}}, function(){
-
-                    chrome.pageAction.setTitle({title: title, tabId: sender.tab.id});
-                    
-                }); 
-                sendResponse({success: hasKey});         
-            });
-        }
-        else if(request.type == 'decryptKey'){
-            if(!MessageReader.decrypt(request.password)){
-                sendResponse({success:false});
-            }
-            else{
-                MessageReader.setFBID(postData.uid);
-                sendResponse({success:true});
-            }
-        }  
-        else if(request.type == 'disableDecryption'){
-            MessageReader.isDecrypting = false;
-        }
-        return true; 
-    }           
+    }
 );
 
 
-
 chrome.tabs.onUpdated.addListener(
-    function(tabId, changeInfo, tab) {   
+    function(tabId, changeInfo, tab) {  
+        var messenger_url = 'https\:\/\/[^ ]*messenger.com\/[^ ]*';
+        var messenger_loaded_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*'; 
         // display pageAction if on messenger.com
         if (!!tab.url.match(messenger_url)) {
             chrome.pageAction.show(tab.id);
@@ -948,7 +1157,6 @@ chrome.tabs.onUpdated.addListener(
         }  
     }
 );
-
 
 });
 

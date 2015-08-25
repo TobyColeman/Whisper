@@ -10,8 +10,7 @@ function inject(script){
 }
 
 chrome.storage.local.get('whisper_key', function(result){
- 	if(!!result['whisper_key']) inject('js/content-start.js');
+ 	if(!!result['whisper_key']) inject('js/injected.js');
 });
-
 
 })();

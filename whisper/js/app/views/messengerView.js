@@ -81,6 +81,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('pwDialog').close();
 		});
+		em.subscribe('get_thread_index', setThread);
 	}
 
 
@@ -109,7 +110,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
-			em.publish('setEncryption', {encrypted: checkBox.checked});
+			em.publish('set_encryption', {encrypted: checkBox.checked});
 		});
 
 		// listen for dialog close event when entering password, will turn off encryption
@@ -118,7 +119,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			checkBox.checked = false;
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('keyPw').value = '';
-			em.publish('setDecryption', {enabled: false});
+			em.publish('disable_decryption', {enabled: false});
 			document.getElementById('pwDialog').close();
 		});
 
@@ -127,6 +128,9 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			if(e.keyCode == 13){
 				e.preventDefault();
 				processForm(e);
+			}
+			else if(e.keyCode == 27){
+				em.publish('disable_decryption', {enabled: false});
 			}
 		};
 
@@ -155,14 +159,14 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		// reset the checkbox & disable whilst setting retrieved 
 		checkBox.disabled = true;
 		checkBox.checked = false;
-		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
+		em.publish('set_thread', {site:'messenger', threadIndex: activeThread});
 	}
 
 
 	function processForm(e){
 		e.preventDefault();
 		var password = document.getElementById('keyPw').value;
-		em.publish('decryptKey', {password: password});
+		em.publish('decrypt_key', {password: password});
 	}
 
 

@@ -26,7 +26,8 @@ var baseConfig = {
         'MessageController' : 'app/controllers/MessageController',
 
         // Messaging
-        'MessageReader': 'app/background/MessageReader',
+        'MessageReader': 'app/messaging/MessageReader',
+        'MessageWriter': 'app/messaging/MessageWriter',
 
         // Models
         'Key': 'app/models/Key',
@@ -79,7 +80,7 @@ var configs = [
     // messenger build
     {
         include: ['almond', 'openpgp', 'Utils', 'EventManager', 'KeyController',
-                  'StoreController', 'MessageController', 'Key', 'Thread', 
+                  'StoreController', 'MessageController', 'Key', 'Thread', 'MessageWriter',
                   'messengerView', 'main'],
         out: '../../whisper-built/js/main.js',
         skipModuleInsertion: true,
@@ -92,7 +93,7 @@ var configs = [
     // injected scripts
     {
         include: ['ajaxProxy', 'fb-overrides'],
-        out: '../../whisper-built/js/content-start.js',
+        out: '../../whisper-built/js/injected.js',
         skipModuleInsertion: true
     },
 
@@ -104,7 +105,7 @@ var configs = [
     },
 
     {
-        include: ['almond', 'MessageReader', 'StoreController', 'Key', 'background'],
+        include: ['almond', 'MessageReader', 'MessageWriter', 'StoreController', 'Key', 'background'],
         out: '../../whisper-built/js/background.js',
         skipModuleInsertion: true,
         wrap: {

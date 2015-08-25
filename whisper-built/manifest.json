@@ -49,6 +49,6 @@
 
 	"web_accessible_resources": [
 		"fonts/*.*", 
-		"js/content-start.js"
+		"js/injected.js"
 	]	
 }

@@ -34,38 +34,5 @@ define(function() {
 	};
 
 
-	Thread.prototype.makeMessage = function(message, sender) {
-
-		var payload = {
-			sender: sender,
-			messages: []
-		};
-
-		(function(){
-			var i = 0;
-
-			function encryptMessage(){
-				if (i < this.numPeople){
-					openpgp.encryptMessage(keys[i].pubKey.keys, message).then(function(pgpMessage){
-
-						var message = {
-							recipient: keys[i],
-							content: pgpMessage
-						};
-
-						payload.messages.push(message);
-
-						i++;
-						encryptMessage();
-					})
-				}
-				else{
-
-				}
-			}
-		});
-	};
-
-
 	return Thread;
 });

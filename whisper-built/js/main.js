@@ -1080,81 +1080,9 @@ define("KeyController", ['StoreController', 'Key', 'openpgp', 'EventManager'],
 
         return KeyController.getInstance();
     });
-define('Thread',[],function() {
-
-	function Thread(id){
-		this.id = id;
-		this.isEncrypted = false;
-		this.hasAllKeys = true;
-		this.numPeople = 0;
-		this.keys = {};
-	}
-
-
-	Thread.prototype.setEncrypted = function(encrypted) {
-		this.isEncrypted = encrypted;
-	};
-
-
-	Thread.prototype.setNumPeople = function() {
-		this.numPeople +=1;
-	};
-
-
-	Thread.prototype.addKey = function(key) {
-		this.keys[key.FBID] = key;
-		this.setNumPeople();
-	};
-
-
-	Thread.prototype.removeKey = function(key) {
-
-		var index = this.keys.indexOf(key);
-
-		if (index > -1)
-			this.keys.splice(index, 1);
-	};
-
-
-	Thread.prototype.makeMessage = function(message, sender) {
-
-		var payload = {
-			sender: sender,
-			messages: []
-		};
-
-		(function(){
-			var i = 0;
-
-			function encryptMessage(){
-				if (i < this.numPeople){
-					openpgp.encryptMessage(keys[i].pubKey.keys, message).then(function(pgpMessage){
-
-						var message = {
-							recipient: keys[i],
-							content: pgpMessage
-						};
-
-						payload.messages.push(message);
-
-						i++;
-						encryptMessage();
-					})
-				}
-				else{
-
-				}
-			}
-		});
-	};
-
-
-	return Thread;
-});
-define("MessageController", ["EventManager", "StoreController", "Key", "Thread", "Utils", "openpgp"], function(e, Store, Key, Thread, Utils, openpgp){
+define("MessageController", ["EventManager", "Utils", "openpgp"], function(em, Utils, openpgp){
 
 	var instance = null;
-	var thread, myKey;
 
 	function MessageController() {
 		self = this;
@@ -1165,86 +1093,20 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 
 	MessageController.prototype.init = function(callback) {
 
-		chrome.runtime.sendMessage({type: 'enabled'}, function(response){
+		chrome.runtime.sendMessage({type: 'is_enabled'}, function(response){
 
 			if(response.success){
-				e.subscribe('setThread', self.getThreadInfo);
-				e.subscribe('setEncryption', self.setEncryption);
-				e.subscribe('decryptKey', self.decryptKey);  
-				e.subscribe('setDecryption', function(data){
-					chrome.runtime.sendMessage({type:'disableDecryption'});
+				em.subscribe('set_thread', self.getThreadInfo);
+				em.subscribe('decrypt_key', self.decryptKey);  
+				em.subscribe('set_encryption', function(data){
+					chrome.runtime.sendMessage({type:'set_encryption', encrypted: data.encrypted});
+				});
+				em.subscribe('disable_decryption', function(data){
+					chrome.runtime.sendMessage({type:'disable_decryption'});
 				}); 
-				self.listen(); 
 			}
 			callback(response.success);
 		});
-	};
-
-
-	MessageController.prototype.listen = function() {
-
-		// listeners for modifying sent/recieved messages
-		chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
-			if (request.type == 'encrypt_message'){
-				self.encryptMessage(request.data, sendResponse);
-			}
-			return true;
-		});
-	};
-
-
-	/*
-	 * Encrypts outgoing message
-	 * @param data params passed to send() in xhr 
-	 */
-	MessageController.prototype.encryptMessage = function(data, callback) {
-
-		var expr = /\[body\]=(.*?)&/;
-		var messageBody = data.match(expr);
-
-		// sending a picture, sticker, thumbs up
-		if(messageBody === null){
-			callback({message:data});
-			return;
-		}		
-
-		messageBody = decodeURIComponent(messageBody[1]);
-		
-		if (thread.isEncrypted){
-
-			var payload = {};
-
-			(function(){
-
-				var i = 0;
-
-				function encryptMessage(){
-					// for each person in the thread, encrypt your message 
-					if (i < thread.numPeople){
-
-						var id = Object.keys(thread.keys)[i];
-
-						openpgp.encryptMessage(thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
-
-							payload[thread.keys[id].FBID] =  pgpMessage;
-
-							i++;
-							encryptMessage();
-						});
-					}
-					else{
-						// replace the plaintext message with encrypted message
-						payload = '[body]=' + encodeURIComponent(JSON.stringify(payload)) + '&';
-						data = data.replace(expr, payload);
-						callback({message:data});
-					}
-				}
-				encryptMessage();
-			})();
-		}
-		else{
-			callback({message:data});
-		}	
 	};
 
 
@@ -1255,91 +1117,33 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	MessageController.prototype.getThreadInfo = function(data) {
 
 		// get the id of the thread
-		chrome.runtime.sendMessage({type: 'getPostData', site: data.site}, function(response){
+		chrome.runtime.sendMessage({type: 'get_post_data', site: data.site}, function(response){
 			postData = response.payload;
             self.makeRequest("/ajax/mercury/threadlist_info.php", 
                         {type  : 'POST',
                          params: 'inbox[offset]=' + data.threadIndex + '&inbox[limit]=1&__user=' + postData.uid + '&__a=1b&__req=1&fb_dtsg=' + postData.fb_dtsg,
                      	 retries: 3}, 
-                         self.setActiveThread);
+                         sendThreadData);
 		});
+
+		function sendThreadData(data){
+			chrome.runtime.sendMessage({type: 'set_thread_info', data:data}, function(response){
+				// if missing a key, the view disables encryption controls
+				if(response.hasAllKeys){
+					em.publish('renderThreadSettings', {isEncrypted: response.encrypted,
+										   		   	   keys: response.keys,
+										   		   	   hasAllKeys: true});
+				}
+
+				else{
+					em.publish('renderThreadSettings', {isEncrypted: response.encrypted,
+										   		   	   keys: response.keys,
+										   		   	   hasAllKeys: false});					
+				}
+
+			});
+		}
 	};
-
-
-	/* Constructs a new thread object & retrieves key's for every participant
-	 * Notifies the view as to whether encryption was on/off for the current thread
-	 * @param data {object} ajax response from facebook's api to threadlist_info
-	 */
-    MessageController.prototype.setActiveThread = function(data){
-
-    	var threadInfo, threadId, participants;
-
-    	// parse response from threadlist_info.php
-        threadInfo = JSON.parse(data);
-
-        // array of participants in the active thread
-        participants = threadInfo.payload.participants;
-
-        // id of the active thread (group-convo)
-        threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
-
-        // id of the active thread (solo-convo)
-        if (threadId === undefined)
-        	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
-
-        // make a new thread, store its' id
-        thread = new Thread(threadId);
-
-        // get the settings for the current thread, check what public
-        // keys are in storage then notify the view
-        Store.getSettings(thread.id, function(encrypted){
-
-    		(function(){
-    			var i = 0;
-
-    			function forloop(){
-        			if (i < participants.length){
-
-        				Store.getKey(participants[i].vanity, function(key){
-
-        					// var key = {};
-        					var fbid = participants[i].fbid;
-        					var vanity = participants[i].vanity;
-
-        					// if we found a key 
-        					if(key){
-        						key.setFBID(fbid);
-        						thread.addKey(key);
-        					}
-        						
-        					else{
-        						thread.hasAllKeys = false;
-        					}
-        					i++;
-        					forloop();
-        				});
-        			}
-        			else{
-        				// if we're missing a key, we'll tell the view to disable
-        				// the encryption controls
-        				if(thread.hasAllKeys)
-	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: thread.keys,
-	    										   		   	   hasAllKeys: true});
-	    				else
-	    					e.publish('renderThreadSettings', {isEncrypted: encrypted,
-	    										   		   	   keys: thread.keys,
-	    										   		   	   hasAllKeys: false});
-
-	    				// if we have all the keys and the thread is tagged as encrypted
-	    				// ask for the user's password if needed
-			        	thread.setEncrypted(encrypted);    				
-        			}
-        		}
-        		forloop();
-    		})();
-        });
-    }
 
 
 	/*
@@ -1347,24 +1151,15 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	 * @param data {object} contains password from dialog in the view
 	 */
 	MessageController.prototype.decryptKey = function(data) {
-		chrome.runtime.sendMessage({type:'decryptKey', password: data.password}, function(response){
+		chrome.runtime.sendMessage({type:'decrypt_key', password: data.password}, function(response){
 			if (response.success){
-				e.publish('correctPassword');
+				em.publish('correctPassword');
 			}
 			else{
-				e.publish('wrongPassword');
+				em.publish('wrongPassword');
 			}
 		});
 	};
-
-
-    /* Toggles encryption on/off for the current thread & stores settings
-     * @param data {object} contains a boolean for encrypted state
-     */ 
-    MessageController.prototype.setEncryption = function(data) {
-    	thread.setEncrypted(data.encrypted);
-    	Store.setSettings(thread.id);
-    };
 
 
 	// ajax helper function
@@ -1407,6 +1202,196 @@ define("MessageController", ["EventManager", "StoreController", "Key", "Thread",
 	return MessageController.getInstance();
 });
 
+define('Thread',[],function() {
+
+	function Thread(id){
+		this.id = id;
+		this.isEncrypted = false;
+		this.hasAllKeys = true;
+		this.numPeople = 0;
+		this.keys = {};
+	}
+
+
+	Thread.prototype.setEncrypted = function(encrypted) {
+		this.isEncrypted = encrypted;
+	};
+
+
+	Thread.prototype.setNumPeople = function() {
+		this.numPeople +=1;
+	};
+
+
+	Thread.prototype.addKey = function(key) {
+		this.keys[key.FBID] = key;
+		this.setNumPeople();
+	};
+
+
+	Thread.prototype.removeKey = function(key) {
+
+		var index = this.keys.indexOf(key);
+
+		if (index > -1)
+			this.keys.splice(index, 1);
+	};
+
+
+	return Thread;
+});
+define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store){
+
+	var instance = null;
+	var self;
+
+	function MessageWriter(){
+		self = this;
+		this.thread = null;
+		if (instance !== null)
+			throw new Error("MessageWriter instance already exists");
+	}
+
+
+	/*
+	 * Encrypts outgoing message
+	 * @param {data} params passed to send() in xhr 
+	 */
+	MessageWriter.prototype.encryptMessage = function(data, callback) {
+
+		var expr = /\[body\]=(.*?)&/;
+		var messageBody = data.match(expr);
+
+		// sending a picture, sticker, thumbs up
+		if(messageBody === null){
+			callback({message:data});
+			return;
+		}		
+
+		messageBody = decodeURIComponent(messageBody[1]);
+		
+		if (self.thread.isEncrypted){
+
+			var payload = {};
+
+			(function(){
+
+				var i = 0;
+
+				function encryptMessage(){
+					// for each person in the thread, encrypt your message 
+					if (i < self.thread.numPeople){
+
+						var id = parseInt(Object.keys(self.thread.keys)[i]);
+						openpgp.encryptMessage(self.thread.keys[id].pubKey, messageBody).then(function(pgpMessage){
+
+							payload[self.thread.keys[id].FBID] =  pgpMessage;
+
+							i++;
+							encryptMessage();
+						});
+					}
+					else{
+						// replace the plaintext message with encrypted message
+						payload = '[body]=' + encodeURIComponent(JSON.stringify(payload)) + '&';
+						data = data.replace(expr, payload);
+						callback({message:data});
+					}
+				}
+				encryptMessage();
+			})();
+		}
+		else{
+			callback({message:data});
+		}	
+	};
+
+
+
+	/* Constructs a new thread object & retrieves key's for every participant
+	 * Notifies the view as to whether encryption was on/off for the current thread
+	 * @param data {object} ajax response from facebook's api to threadlist_info
+	 */
+    MessageWriter.prototype.setThread = function(data, sendResponse){
+
+    	var threadInfo, threadId, participants;
+
+    	// parse response from threadlist_info.php
+        threadInfo = JSON.parse(data);
+
+        // array of participants in the active thread
+        participants = threadInfo.payload.participants;
+
+        // id of the active thread (group-convo)
+        threadId = threadInfo.payload.ordered_threadlists[0].thread_fbids[0];
+
+        // id of the active thread (solo-convo)
+        if (threadId === undefined)
+        	threadId = threadInfo.payload.ordered_threadlists[0].other_user_fbids[0];
+
+        // make a new thread, store its' id
+        this.thread = new Thread(threadId);
+
+        // get the settings for the current thread, check what public
+        // keys are in storage then notify the view
+        Store.getSettings(this.thread.id, function(encrypted){
+
+    		(function(){
+    			var i = 0;
+
+    			function forloop(){
+        			if (i < participants.length){
+
+        				Store.getKey(participants[i].vanity, function(key){
+
+        					// var key = {};
+        					var fbid = participants[i].fbid;
+        					var vanity = participants[i].vanity;
+
+        					// if we found a key 
+        					if(key){
+        						key.setFBID(fbid);
+        						self.thread.addKey(key);
+        					}
+        						
+        					else{
+        						self.thread.hasAllKeys = false;
+        					}
+        					i++;
+        					forloop();
+        				});
+        			}
+        			else{
+        				sendResponse({hasAllKeys: self.thread.hasAllKeys,
+        							  encrypted: encrypted,
+        							  keys: self.thread.keys});
+
+        				Store.getSettings(self.thread.id, function(encrypted){
+        					self.thread.setEncrypted(encrypted); 
+        				})	   				
+        			}
+        		}
+        		forloop();
+    		})();
+        });
+    }
+
+
+    MessageWriter.prototype.updateEncryptionSettings = function(encrypted){
+    	self.thread.setEncrypted(encrypted);
+    	Store.setSettings(self.thread.id);
+    }
+
+
+	MessageWriter.getInstance = function() {
+		if (instance === null)
+			instance = new MessageWriter();
+		return instance;
+	}
+
+	return MessageWriter.getInstance();
+
+});
 // View for messenger.com
 
 define("messengerView", ["Utils", "EventManager"], function (Utils, em){
@@ -1490,6 +1475,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('pwDialog').close();
 		});
+		em.subscribe('get_thread_index', setThread);
 	}
 
 
@@ -1518,7 +1504,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 
 		// enable / disable encryption for current conversation
 		checkBox.addEventListener('click', function(){
-			em.publish('setEncryption', {encrypted: checkBox.checked});
+			em.publish('set_encryption', {encrypted: checkBox.checked});
 		});
 
 		// listen for dialog close event when entering password, will turn off encryption
@@ -1527,7 +1513,7 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			checkBox.checked = false;
 			document.getElementById('pwDialog').children[0].style.display = 'none';
 			document.getElementById('keyPw').value = '';
-			em.publish('setDecryption', {enabled: false});
+			em.publish('disable_decryption', {enabled: false});
 			document.getElementById('pwDialog').close();
 		});
 
@@ -1536,6 +1522,9 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 			if(e.keyCode == 13){
 				e.preventDefault();
 				processForm(e);
+			}
+			else if(e.keyCode == 27){
+				em.publish('disable_decryption', {enabled: false});
 			}
 		};
 
@@ -1564,14 +1553,14 @@ define("messengerView", ["Utils", "EventManager"], function (Utils, em){
 		// reset the checkbox & disable whilst setting retrieved 
 		checkBox.disabled = true;
 		checkBox.checked = false;
-		em.publish('setThread', {site:'messenger', threadIndex: activeThread});
+		em.publish('set_thread', {site:'messenger', threadIndex: activeThread});
 	}
 
 
 	function processForm(e){
 		e.preventDefault();
 		var password = document.getElementById('keyPw').value;
-		em.publish('decryptKey', {password: password});
+		em.publish('decrypt_key', {password: password});
 	}
 
 
