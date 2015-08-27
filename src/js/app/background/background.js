@@ -1,6 +1,8 @@
 define("background", ['StoreController', 'Key', 'MessageReader',
-    'MessageWriter'
-], function(Store, Key, MessageReader, MessageWriter) {
+    'MessageWriter', 'TabManager'
+], function(Store, Key, MessageReader, MessageWriter, TabManager) {
+    chrome.runtime.onMessageExternal.addListener(externalHandler);
+    chrome.runtime.onMessage.addListener(handleMessages);
 
     // data needed for making requests to facebook
     var postData = {
@@ -9,27 +11,29 @@ define("background", ['StoreController', 'Key', 'MessageReader',
         lastFetched: new Date()
     }
 
-    var messenger_loaded_url = 'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*';
+    var messenger_loaded_url =
+        'https\:\/\/[^ ]*messenger.com\/t\/[^ ]*';
 
-    chrome.runtime.onMessageExternal.addListener(externalHandler);
-
-    chrome.runtime.onMessage.addListener(handleMessages);
+    var messenger_url =
+        'https\:\/\/[^ ]*messenger.com\/[^ ]*';
 
     // listener for injected scripts
     function externalHandler(request, sender, sendResponse) {
-
-        if (!sender.url.match(messenger_loaded_url))
+        if (!sender.url.match(messenger_url))
             return;
 
         switch (request.type) {
             case "decrypt_message":
-                MessageReader.processMessage(request, sendResponse);
+                MessageReader.processMessage(sender.tab.id, request,
+                    sendResponse);
                 break;
             case "decrypt_message_batch":
-                MessageReader.processMessage(request, sendResponse);
+                MessageReader.processMessage(sender.tab.id, request,
+                    sendResponse);
                 break;
             case "encrypt_message":
-                MessageWriter.encryptMessage(request.data, sendResponse);
+                MessageWriter.encryptMessage(sender.tab.id, request.data,
+                    sendResponse);
                 break;
             default:
                 postData.uid = request.uid;
@@ -43,10 +47,12 @@ define("background", ['StoreController', 'Key', 'MessageReader',
     function handleMessages(request, sender, sendResponse) {
         switch (request.type) {
             case "set_thread_info":
-                MessageWriter.setThread(request.data, sendResponse);
+                MessageWriter.setThread(sender.tab.id, request.data,
+                    sendResponse);
                 break;
             case "set_encryption":
-                MessageWriter.updateEncryptionSettings(request.encrypted);
+                TabManager.updateEncryptionSettings(sender.tab.id,
+                    request.encrypted);
                 break;
             case "get_post_data":
                 sendResponse({
@@ -54,22 +60,21 @@ define("background", ['StoreController', 'Key', 'MessageReader',
                 });
                 break;
             case "is_enabled":
-                init();
+                init(sender);
                 break;
             case "decrypt_key":
                 unlockKey();
                 break;
-            case "disable_decryption":
-                MessageReader.isDecrypting = false;
+            case "no_password":
+                TabManager.getTab(sender.tab.id).setEncrypted(false);
                 break;
         }
 
-        function init() {
+        function init(sender) {
             Store.hasPrivKey(function(key) {
-
                 var hasKey = !!key ? true : false;
 
-                MessageReader.bindKey(key, postData.uid);
+                TabManager.addTab(sender.tab.id, key);
 
                 var imgPath = hasKey ? 'images/locked.png' :
                     'images/unlocked.png';
@@ -98,12 +103,12 @@ define("background", ['StoreController', 'Key', 'MessageReader',
         }
 
         function unlockKey() {
-            if (!MessageReader.decrypt(request.password)) {
+            if (!TabManager.decryptKey(sender.tab.id, request.password)) {
                 sendResponse({
                     success: false
                 });
             } else {
-                MessageReader.setFBID(postData.uid);
+                TabManager.getTab(sender.tab.id).setKeyFBID(postData.uid);
                 sendResponse({
                     success: true
                 });
@@ -130,23 +135,28 @@ define("background", ['StoreController', 'Key', 'MessageReader',
 
     chrome.tabs.onUpdated.addListener(
         function(tabId, changeInfo, tab) {
-            var messenger_url =
-                'https\:\/\/[^ ]*messenger.com\/[^ ]*';
-
             // display pageAction if on messenger.com
             if (!!tab.url.match(messenger_url)) {
                 chrome.pageAction.show(tab.id);
 
-                // if threads loaded, inject the view
-                if (!!tab.url.match(messenger_loaded_url)) {
-                    chrome.tabs.sendMessage(tab.id, {
-                        type: 'init',
-                        init: true
+                // user changed thread
+                if (!!tab.url.match(messenger_loaded_url) && tab.status ==
+                    'complete') {
+                    chrome.tabs.sendMessage(tabId, {
+                        type: 'setThread'
                     });
                 }
+                if (tab.url == 'https://www.messenger.com/new') {
+                    TabManager.getTab(tabId).setThread(-1);
+                    chrome.tabs.sendMessage(tabId, {
+                        type: 'new_message'
+                    });
+                }
+
             } else {
                 chrome.pageAction.hide(tab.id);
             }
         }
     );
+
 });

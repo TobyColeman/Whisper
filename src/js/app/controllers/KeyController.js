@@ -1,6 +1,5 @@
 define("KeyController", ['StoreController', 'Key', 'EventManager'],
     function(Store, Key, EventManager) {
-
         var instance = null;
 
         var ERRORS = {
@@ -23,7 +22,6 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
          * and publishes the results to EventManager
          */
         KeyController.prototype.init = function() {
-
             EventManager.subscribe('newKey', this.generateKey);
 
             EventManager.subscribe('privKeyInsert', this.insertPrivKey);
@@ -43,7 +41,7 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
             });
 
             // check if the user has any friends
-            Store.hasFriends(function(keys) {
+            Store.getFriends(function(keys) {
                 if (!keys)
                     EventManager.publish('noPubKeys', {
                         keys: false
@@ -60,7 +58,6 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
          * @param data {object} contains form data for creating the key
          */
         KeyController.prototype.generateKey = function(data) {
-
             var options = {
                 numBits: data.numBits,
                 userId: data.name + ' <' + data.email + '>',
@@ -99,7 +96,6 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
          * @param data {object} contains facebook id and private key
          */
         KeyController.prototype.insertPrivKey = function(data) {
-
             var result = self.checkKeyIntegrity(data.privKey);
 
             // malformed key check
@@ -164,13 +160,11 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
             });
         }
 
-
         /*
          * Used when a user wants to insert an already generate private key
          * @param data {object} contains facebook id and public key
          */
         KeyController.prototype.insertPubKey = function(data) {
-
             var result = self.checkKeyIntegrity(data.pubKey);
 
             if (result['err']) {
@@ -219,13 +213,11 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
             });
         }
 
-
         /*
          * checks if the key is a valid
          * @param key {string} public/private openpgp key
          */
         KeyController.prototype.checkKeyIntegrity = function(key) {
-
             var result = openpgp.key.readArmored(key);
 
             if (result['err'])
@@ -238,7 +230,6 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
             };
 
         }
-
 
         /*
          * checks if the correct password has been entered for the private key
@@ -254,7 +245,6 @@ define("KeyController", ['StoreController', 'Key', 'EventManager'],
 
             return true;
         }
-
 
         // return singleton instance
         KeyController.getInstance = function() {

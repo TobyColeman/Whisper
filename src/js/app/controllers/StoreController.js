@@ -1,5 +1,4 @@
 define("StoreController", ['Key'], function(Key) {
-
     var instance = null;
 
     function StoreController() {
@@ -37,7 +36,6 @@ define("StoreController", ['Key'], function(Key) {
      */
     StoreController.prototype.setKey = function(vanityID, pubKey,
         privKey, callback) {
-
         var data = {};
 
         if (privKey !== null) {
@@ -57,7 +55,6 @@ define("StoreController", ['Key'], function(Key) {
         
         chrome.storage.local.set(data, callback);
     }
-
 
     /* 
      * removes a key from local storage
@@ -91,7 +88,7 @@ define("StoreController", ['Key'], function(Key) {
      * Find out if user has any friends/public keys in storages
      * @param callback {function} executed when retreival from ls is complete
      */
-    StoreController.prototype.hasFriends = function(callback) {
+    StoreController.prototype.getFriends = function(callback) {
         this.getKey(null, function(results) {
 
             var friends = false;
@@ -139,7 +136,6 @@ define("StoreController", ['Key'], function(Key) {
         })
     };
 
-
     // Sets whether encryption is enabled/disabled for a conversation
     StoreController.prototype.setSettings = function(key, callback) {
         chrome.storage.local.get({
@@ -159,7 +155,6 @@ define("StoreController", ['Key'], function(Key) {
             }, callback);
         });
     };
-
 
     // notifies background script of a new key / deletion
     StoreController.prototype.sendUpdate = function() {

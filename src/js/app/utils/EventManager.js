@@ -1,5 +1,4 @@
 define("EventManager", function() {
-
     var instance = null;
 
     var events = {};
@@ -54,7 +53,6 @@ define("EventManager", function() {
 
         events[event].splice(listenerIndex, 1);
     };
-
 
     // return singleton instance
     EventManager.getInstance = function() {

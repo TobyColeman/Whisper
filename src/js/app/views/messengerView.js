@@ -1,6 +1,5 @@
 // View for messenger.com
 define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
-
     // Styles used when injecting plugin elements into messenger.com
     var STYLES = {
         // heading of the current chat window
@@ -28,6 +27,9 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
     var exceptions = ['rightCol', 'colSpan', 'threadPeopleList',
         'threadPersonName'
     ];
+
+    var noPassword = false;
+    var checkBox;
 
 
     function init() {
@@ -92,55 +94,48 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
     // adds all the event listeners
     function bindDomEvents() {
 
-        // watches for changes between threads
-        var threadTitle = document.getElementsByClassName(STYLES.heading)[
-            0];
+        chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+            if (request.type == 'setThread'){
+                setThread();
+                injectToThread();
+            }      
+            else if (request.type = 'new_message'){
+                checkBox.checked = false;
+            }
+        });
+
+        // inserts options button 
+        var threadlist = document.getElementsByClassName('_4u-c')[0].
+        getElementsByClassName('uiScrollableAreaContent')[0].children[1];
+
         var config = {
             attributes: true,
-            childList: true,
-            characterData: true,
             subtree: true
         };
-        var titleObserver = new MutationObserver(function() {
-            setThread();
+        var tListObserver = new MutationObserver(function() {
+          injectToThread();
         });
-        titleObserver.observe(threadTitle, config);
+        tListObserver.observe(threadlist, config);
 
-        // watches for change in the right colum / where thread interactions are
-        var threadInfoWrapper = document.getElementsByClassName(STYLES.threadInfoPaneWrapper)[
-            0];
-        var config = {
-            attributes: true,
-            subtree: false
-        };
-        var threadInfoPaneObserver = new MutationObserver(function(
-            mutations) {
-            injectToThread();
-        });
-        threadInfoPaneObserver.observe(threadInfoWrapper, config);
-
-
-        checkBox = document.getElementById('encryption-toggle').getElementsByTagName(
-            'INPUT')[0];
+        
         inputBox = document.getElementsByClassName('_54-z')[0];
 
-        // enable / disable encryption for current conversation
-        checkBox.addEventListener('click', function() {
-            em.publish('set_encryption', {
-                encrypted: checkBox.checked
-            });
-        });
+
 
         // listen for dialog close event when entering password, will turn off encryption
         document.getElementById('closeDialog').addEventListener('click',
             function(e) {
                 e.preventDefault();
-                checkBox.checked = false;
                 document.getElementById('pwDialog').children[0].style
                     .display = 'none';
                 document.getElementById('keyPw').value = '';
-                em.publish('disable_decryption', {
+                em.publish('no_password', {
                     enabled: false
+                });
+                noPassword = true;
+                disableOptions();
+                em.publish('set_encryption', {
+                    encrypted: false
                 });
                 document.getElementById('pwDialog').close();
             });
@@ -151,8 +146,13 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
                 e.preventDefault();
                 processForm(e);
             } else if (e.keyCode == 27) {
-                em.publish('disable_decryption', {
+                em.publish('no_password', {
                     enabled: false
+                });
+                noPassword = true;
+                disableOptions();
+                em.publish('set_encryption', {
+                    encrypted: false
                 });
             }
         };
@@ -179,6 +179,10 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
         // index of the active thread needed for finding thread info 
         activeThread = threadList.indexOf(activeThread);
 
+        // bit hacky, if new message offset by -1
+        if(document.getElementsByClassName('_1ht6')[0].innerText.toLowerCase().indexOf('new message') != -1)
+            activeThread -=1;
+
         // disable text input as we get settings for thread;
         inputBox.setAttribute('contenteditable', false);
 
@@ -186,7 +190,6 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
         checkBox.disabled = true;
         checkBox.checked = false;
         em.publish('set_thread', {
-            site: 'messenger',
             threadIndex: activeThread
         });
     }
@@ -200,22 +203,33 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
         });
     }
 
+    function enableOptions(){
+        var encryptionText = checkBox.parentNode.parentNode.children[1];
+        checkBox.disabled = false;
+        encryptionText.style.textDecoration = 'none';
+        encryptionText.style.color = '#141823';
+    }
+
+    function disableOptions(){
+        var encryptionText = checkBox.parentNode.parentNode.children[1];    
+        checkBox.disabled = true;
+        encryptionText.style.textDecoration = 'line-through';
+        encryptionText.style.color = '#F0F0F0';
+        checkBox.checked = false;
+    }
+
 
     function renderThreadSettings(data) {
 
         var encryptionText = checkBox.parentNode.parentNode.children[1];
 
         // encryption disabled - not enough keys
-        if (!data.hasAllKeys) {
-            checkBox.disabled = true;
-            encryptionText.style.textDecoration = 'line-through';
-            encryptionText.style.color = '#F0F0F0';
+        if (!data.hasAllKeys || noPassword) {
+            disableOptions();
         }
         // encryption enabled
-        else {
-            checkBox.disabled = false;
-            encryptionText.style.textDecoration = 'none';
-            encryptionText.style.color = '#141823';
+        else if(data.hasAllKeys && !noPassword){
+            enableOptions();
             checkBox.checked = data.isEncrypted;
         }
 
@@ -286,7 +300,6 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
 
     // inject the checkbox toggle option into the current thread
     function injectToThread() {
-
         var threadInfoPane = document.getElementsByClassName(STYLES.threadInfoPane)[
             0];
 
@@ -294,7 +307,7 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
                 'encryption-toggle') !== null)
             return;
 
-        var threadInfoRow = threadInfoPane.childNodes[1].cloneNode(true)
+        var threadInfoRow = threadInfoPane.childNodes[2].cloneNode(true)
         threadInfoRow.id = 'encryption-toggle';
         threadInfoRow.getElementsByClassName(STYLES.colSpan)[0].innerText =
             chrome.i18n.getMessage("Encryption");
@@ -305,6 +318,16 @@ define("messengerView", ["Utils", "EventManager"], function(Utils, em) {
 
         threadInfoPane.childNodes[1].insertAdjacentElement('afterEnd',
             threadInfoRow);
+
+        checkBox = document.getElementById('encryption-toggle').getElementsByTagName(
+                    'INPUT')[0];    
+
+        // enable / disable encryption for current conversation
+        checkBox.addEventListener('click', function() {
+            em.publish('set_encryption', {
+                encrypted: checkBox.checked
+            });
+        });
     }
 
 

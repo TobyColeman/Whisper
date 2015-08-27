@@ -1,21 +1,17 @@
 var extensionId = 'mljjhffoolehodpjmimidgkfgannmbdn';
 
 (function(xhr) {
-
     var send = xhr.send;
 
     var open = xhr.open;
 
     // override open method
     xhr.open = function(method, url, async) {
-
         var oldReady = this.onreadystatechange;
 
         xhr.send = function(data) {
-
             // user is sending a message
             if (method == 'POST') {
-
                 var fb_dtsg = data.match(/fb_dtsg=(.*?)&/)[1];
     
                 var uid = data.match(/__user=(.*?)&/)[1];
@@ -25,11 +21,10 @@ var extensionId = 'mljjhffoolehodpjmimidgkfgannmbdn';
                     fb_dtsg: fb_dtsg,
                     uid: uid
                 }
-
+                
                 chrome.runtime.sendMessage(extensionId, payload);
 
-                if (url == '/ajax/mercury/send_messages.php') {
-
+                if (url.match('\/ajax\/mercury\/send_messages\.php[^ ]*')) {
                     var that = this;
 
                     var payload = {

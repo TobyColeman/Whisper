@@ -1,6 +1,5 @@
 define("MessageController", ["EventManager", "Utils"], function(em,
     Utils) {
-
     var instance = null;
 
     function MessageController() {
@@ -11,7 +10,6 @@ define("MessageController", ["EventManager", "Utils"], function(em,
     }
 
     MessageController.prototype.init = function(callback) {
-
         chrome.runtime.sendMessage({
             type: 'is_enabled'
         }, function(response) {
@@ -28,10 +26,10 @@ define("MessageController", ["EventManager", "Utils"], function(em,
                     });
 
                 });
-                em.subscribe('disable_decryption', function(
+                em.subscribe('no_password', function(
                     data) {
                     chrome.runtime.sendMessage({
-                        type: 'disable_decryption'
+                        type: 'no_password'
                     });
                 });
             }
@@ -45,11 +43,9 @@ define("MessageController", ["EventManager", "Utils"], function(em,
      * @param data {object} contains index of the current thread & the site
      */
     MessageController.prototype.getThreadInfo = function(data) {
-
         // get the id of the thread
         chrome.runtime.sendMessage({
-            type: 'get_post_data',
-            site: data.site
+            type: 'get_post_data'
         }, function(response) {
             postData = response.payload;
 
@@ -61,9 +57,8 @@ define("MessageController", ["EventManager", "Utils"], function(em,
                         postData.uid +
                         '&__a=1b&__req=1&fb_dtsg=' +
                         postData.fb_dtsg,
-                    retries: 3
-                },
-                sendThreadData);
+                    retries: 1
+                }, sendThreadData);
         });
 
         function sendThreadData(data) {

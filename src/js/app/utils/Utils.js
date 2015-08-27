@@ -1,5 +1,4 @@
 define(function() {
-
     var instance = null;
 
     function Utils() {
@@ -15,7 +14,6 @@ define(function() {
      */
     Utils.prototype.addListenerToClass = function(className, listener,
         callback) {
-
         var elements = document.getElementsByClassName(className);
 
         if (elements.length === 0) {
@@ -34,7 +32,6 @@ define(function() {
      * @param className {string} the name of the class
      */
     Utils.prototype.classExists = function(className) {
-
         if (document.getElementsByClassName(className)[0])
             return true;
 
@@ -47,7 +44,6 @@ define(function() {
      * @param callback {function} operation performed on each node/child
      */
     Utils.prototype.forEachChild = function(node, callback) {
-
         callback(node);
 
         if (node.children !== undefined) {

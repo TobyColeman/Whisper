@@ -27,6 +27,7 @@ var baseConfig = {
         // Models
         'Key': 'app/models/Key',
         'Thread': 'app/models/Thread',
+        'Tab': 'app/models/Tab',
 
         // Views
         'optionsView': 'app/views/optionsView',
@@ -53,6 +54,7 @@ var baseConfig = {
         'background': 'app/Background/background',
         'MessageReader': 'app/background/MessageReader',
         'MessageWriter': 'app/background/MessageWriter',
+        'TabManager': 'app/background/TabManager'
     }
  };
 
@@ -103,7 +105,7 @@ var configs = [
     },
 
     {
-        include: ['almond', 'MessageReader', 'MessageWriter', 'StoreController', 'Key', 'background'],
+        include: ['almond', 'MessageReader', 'MessageWriter', 'StoreController', 'Key', 'background', 'TabManager', 'Tab'],
         out: '../dist/js/background.js',
         skipModuleInsertion: true,
         wrap: {

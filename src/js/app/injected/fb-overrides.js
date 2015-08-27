@@ -1,21 +1,16 @@
 (function() {
-
     onLoaded("AsyncRequest", function() {
-
         (function(AsyncRequest) {
-
             var oldDispatch = AsyncRequest._dispatchResponse;
 
             AsyncRequest._dispatchResponse = function(
                 AsyncResponse) {
-
                 var that = this;
 
                 var payload = AsyncResponse.getPayload();
 
                 if (payload.actions && payload.actions.length >
                     0) {
-
                     var message = {
                         type: 'decrypt_message_batch',
                         data: payload.actions
@@ -24,7 +19,6 @@
                     chrome.runtime.sendMessage(extensionId,
                         message,
                         function(response) {
-
                             AsyncResponse.payload.actions =
                                 response.message;
 
@@ -39,15 +33,12 @@
         })(AsyncRequest.prototype);
     });
 
-
     onLoaded("Arbiter", function() {
-
         var inform = Arbiter.inform;
 
         Arbiter.inform = function(eventType, data, c) {
-
             if (eventType == 'channel/message:messaging' &&
-                data.obj.is_unread) {
+                data.obj.folder == 'inbox') {
 
                 var that = this;
 
@@ -78,7 +69,6 @@
 
     // disable the input box as soon as it's available 
     window.addEventListener("DOMContentLoaded", function() {
-
         var observer = new MutationObserver(function(mutations) {
 
             mutations.forEach(function(mutation) {

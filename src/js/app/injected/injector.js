@@ -1,5 +1,4 @@
 (function() {
-
     function inject(script) {
         var s = document.createElement('script');
 
@@ -15,7 +14,5 @@
     chrome.storage.local.get('whisper_key', function(result) {
         if (!!result['whisper_key']) inject('js/injected.js');
     });
-
-    console.log('PGP', openpgp);
-
+    
 })();

@@ -1,5 +1,4 @@
 define("Thread", function() {
-
     function Thread(id) {
         this.id = id;
         this.isEncrypted = false;
@@ -13,7 +12,7 @@ define("Thread", function() {
     };
 
     Thread.prototype.setNumPeople = function() {
-        this.numPeople += 1;
+        this.numPeople = Object.keys(this.keys).length;
     };
 
     Thread.prototype.addKey = function(key) {

@@ -95,3 +95,7 @@ label{
 #errorBlock{
 	margin: 0px auto;
 }
+
+.width-40{
+	max-width: 40%;
+}

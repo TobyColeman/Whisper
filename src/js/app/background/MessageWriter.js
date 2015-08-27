@@ -1,12 +1,11 @@
-define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
-
+define("MessageWriter", ["Thread", "StoreController", "TabManager"], function(
+    Thread, Store, TabManager) {
     var instance = null;
+
     var self;
 
     function MessageWriter() {
         self = this;
-
-        this.thread = null;
 
         if (instance !== null)
             throw new Error("MessageWriter instance already exists");
@@ -16,7 +15,10 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
      * Encrypts outgoing message
      * @param {data} params passed to send() in xhr 
      */
-    MessageWriter.prototype.encryptMessage = function(data, callback) {
+    MessageWriter.prototype.encryptMessage = function(tabId, data,
+        callback) {
+        var tab = TabManager.getTab(tabId);
+
         var expr = /\[body\]=(.*?)&/;
 
         var messageBody = data.match(expr);
@@ -32,24 +34,22 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
 
         messageBody = decodeURIComponent(messageBody[1]);
 
-        if (self.thread.isEncrypted) {
+        if (tab.thread.isEncrypted) {
             var payload = {};
 
             (function() {
-
                 var i = 0;
 
                 function encryptMessage() {
                     // for each person in the thread, encrypt your message 
-                    if (i < self.thread.numPeople) {
+                    if (i < tab.thread.numPeople) {
 
-                        var id = parseInt(Object.keys(self.thread
+                        var id = parseInt(Object.keys(tab.thread
                             .keys)[i]);
-                        openpgp.encryptMessage(self.thread.keys[
+                        openpgp.encryptMessage(tab.thread.keys[
                             id].pubKey, messageBody).then(
                             function(pgpMessage) {
-
-                                payload[self.thread.keys[id]
+                                payload[tab.thread.keys[id]
                                     .FBID] = pgpMessage;
 
                                 i++;
@@ -61,9 +61,9 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
                         payload = '[body]=' +
                             encodeURIComponent(JSON.stringify(
                                 payload)) + '&';
-                        
+
                         data = data.replace(expr, payload);
-                        
+
                         callback({
                             message: data
                         });
@@ -79,15 +79,14 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
         }
     };
 
-
-
     /* Constructs a new thread object & retrieves key's for every participant
      * Notifies the view as to whether encryption was on/off for the current thread
      * @param data {object} ajax response from facebook's api to threadlist_info
      */
-    MessageWriter.prototype.setThread = function(data, sendResponse) {
-
-        var threadInfo, threadId, participants;
+    MessageWriter.prototype.setThread = function(tabId, data,
+        sendResponse) {
+        var threadInfo, threadId, participants, tab = TabManager.getTab(
+            tabId);
 
         // parse response from threadlist_info.php
         threadInfo = JSON.parse(data);
@@ -105,21 +104,18 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
                 0];
 
         // make a new thread, store its' id
-        this.thread = new Thread(threadId);
+        tab.setThread(threadId);
 
         // get the settings for the current thread, check what public
         // keys are in storage then notify the view
-        Store.getSettings(this.thread.id, function(encrypted) {
+        Store.getSettings(tab.thread.id, function(encrypted) {
             (function() {
                 var i = 0;
 
                 function constructThread() {
                     if (i < participants.length) {
-
                         Store.getKey(participants[i].vanity,
                             function(key) {
-
-                                // var key = {};
                                 var fbid =
                                     participants[i]
                                     .fbid;
@@ -132,30 +128,30 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
                                     key.setFBID(
                                         fbid);
 
-                                    self.thread.addKey(
+                                    tab.thread.addKey(
                                         key);
                                 } else {
-                                    self.thread.hasAllKeys =
+                                    tab.thread.hasAllKeys =
                                         false;
                                 }
 
                                 i++;
-                                
+
                                 constructThread();
                             });
                     } else {
                         sendResponse({
-                            hasAllKeys: self.thread
+                            hasAllKeys: tab.thread
                                 .hasAllKeys,
                             encrypted: encrypted,
-                            keys: self.thread.keys
+                            keys: tab.thread.keys
                         });
 
-                        Store.getSettings(self.thread.id,
+                        Store.getSettings(tab.thread.id,
                             function(encrypted) {
-                                self.thread.setEncrypted(
+                                tab.thread.setEncrypted(
                                     encrypted);
-                            })
+                            });
                     }
                 }
 
@@ -164,21 +160,13 @@ define("MessageWriter", ["Thread", "StoreController"], function(Thread, Store) {
         });
     }
 
-    MessageWriter.prototype.updateEncryptionSettings = function(
-        encrypted) {
-       
-        self.thread.setEncrypted(encrypted);
-       
-        Store.setSettings(self.thread.id);
-    }
-
     MessageWriter.getInstance = function() {
         if (instance === null)
             instance = new MessageWriter();
-        
+
         return instance;
     }
 
     return MessageWriter.getInstance();
-    
+
 });

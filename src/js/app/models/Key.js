@@ -1,6 +1,4 @@
 define("Key", function() {
-
-    
     // @param pgpKey {dict} contains a public key, optional private key and a facebook id
     function Key(pgpKey) {
         this.pubKey = openpgp.key.readArmored(pgpKey['pubKey']).keys[0];
@@ -12,7 +10,6 @@ define("Key", function() {
 
         this.vanityID = pgpKey['vanityID'];
     }
-
     
     // @returns {string} the id of the key, format: FirstName LastName <email@domain.com>
     Key.prototype.getId = function() {
