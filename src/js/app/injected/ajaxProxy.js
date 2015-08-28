@@ -11,7 +11,7 @@ var extensionId = 'mljjhffoolehodpjmimidgkfgannmbdn';
 
         xhr.send = function(data) {
             // user is sending a message
-            if (method == 'POST') {
+            if (method == 'POST' && !url.match(/https:\/\/upload\.messenger\.com\/ajax\/mercury\/upload\.php[^*]/)) {
                 var fb_dtsg = data.match(/fb_dtsg=(.*?)&/)[1];
     
                 var uid = data.match(/__user=(.*?)&/)[1];
