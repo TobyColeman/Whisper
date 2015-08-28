@@ -43,7 +43,6 @@ define("MessageController", ["EventManager", "Utils"], function(em,
      * @param data {object} contains index of the current thread & the site
      */
     MessageController.prototype.getThreadInfo = function(data) {
-        // get the id of the thread
         chrome.runtime.sendMessage({
             type: 'get_post_data'
         }, function(response) {

@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "__MSG_extNAME__",
-	"version": "1.0.0",
+	"version": "0.0.0.1",
 	"author": "Toby Coleman",
 
 	"default_locale": "en",
