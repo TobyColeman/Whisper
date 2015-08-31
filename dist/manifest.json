@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "__MSG_extNAME__",
-	"version": "0.0.0.1",
+	"version": "0.0.0.3",
 	"author": "Toby Coleman",
 
 	"default_locale": "en",
@@ -44,7 +44,7 @@
 
 	"background": {
 		"scripts": ["js/openpgp.js","js/background.js"],
-		"persistent": false
+		"persistent": true
 	},
 
 	"web_accessible_resources": [
